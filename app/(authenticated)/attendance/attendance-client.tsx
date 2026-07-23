@@ -34,6 +34,7 @@ export default function AttendanceClient({ todayRecord, cutoffTime, initialSecon
   const [error, setError] = useState("");
   const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [leaveType, setLeaveType] = useState(leaveTypes[0]?.mappedStatus ?? "PERMISSION");
+  const [leaveTypeId, setLeaveTypeId] = useState(leaveTypes[0]?.id ?? "");
   const [leaveNote, setLeaveNote] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(initialSecondsUntil);
 
@@ -93,6 +94,7 @@ export default function AttendanceClient({ todayRecord, cutoffTime, initialSecon
       body: JSON.stringify({
         action: "leave",
         requestedStatus: leaveType,
+        leaveTypeId: leaveTypeId,
         note: leaveNote || undefined,
       }),
     });
@@ -211,12 +213,18 @@ export default function AttendanceClient({ todayRecord, cutoffTime, initialSecon
               Leave type
             </label>
             <select
-              value={leaveType}
-              onChange={(e) => setLeaveType(e.target.value)}
+              value={leaveTypeId}
+              onChange={(e) => {
+                const selected = leaveTypes.find((lt) => lt.id === e.target.value);
+                if (selected) {
+                  setLeaveTypeId(selected.id);
+                  setLeaveType(selected.mappedStatus);
+                }
+              }}
               style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
             >
               {leaveTypes.map((lt) => (
-                <option key={lt.id} value={lt.mappedStatus}>
+                <option key={lt.id} value={lt.id}>
                   {lt.name}
                 </option>
               ))}

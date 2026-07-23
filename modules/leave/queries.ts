@@ -43,10 +43,6 @@ export async function createLeaveType(
   isAnnualRecurring: boolean,
   mappedStatus: AttendanceStatus
 ): Promise<LeaveTypeRow> {
-  const validStatuses: AttendanceStatus[] = ["PERMISSION", "ANNUAL_LEAVE", "OTHER"];
-  if (!validStatuses.includes(mappedStatus)) {
-    throw new Error("mappedStatus must be PERMISSION, ANNUAL_LEAVE, or OTHER");
-  }
   return prisma.leaveType.create({
     data: { name, isAnnualRecurring, mappedStatus },
   });
@@ -104,6 +100,74 @@ export async function createLeaveGrant(
   });
 }
 
+export async function createBulkLeaveGrants(
+  leaveTypeId: string,
+  days: number,
+  grantedDate: Date,
+  note?: string
+): Promise<LeaveGrantRow[]> {
+  const leaveType = await prisma.leaveType.findUnique({ where: { id: leaveTypeId } });
+  if (!leaveType) throw new Error("Leave type not found");
+
+  const allUsers = await prisma.user.findMany({ select: { id: true } });
+
+  let expiresAt: Date | null = null;
+  if (leaveType.isAnnualRecurring) {
+    expiresAt = new Date(grantedDate.getFullYear() + 2, grantedDate.getMonth(), 1);
+  }
+
+  const data = allUsers.map((u) => ({
+    userId: u.id,
+    leaveTypeId,
+    days,
+    grantedDate,
+    note: note || null,
+    expiresAt,
+  }));
+
+  await prisma.leaveGrant.createMany({ data });
+
+  return prisma.leaveGrant.findMany({
+    where: { leaveTypeId, grantedDate },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      leaveType: { select: { id: true, name: true } },
+    },
+  });
+}
+
+export async function updateLeaveGrant(
+  id: string,
+  data: { days?: number; grantedDate?: Date; note?: string }
+): Promise<LeaveGrantRow> {
+  const grant = await prisma.leaveGrant.findUnique({ where: { id } });
+  if (!grant) throw new Error("Grant not found");
+
+  const updateData: Record<string, unknown> = {};
+  if (data.days !== undefined) updateData.days = data.days;
+  if (data.grantedDate !== undefined) {
+    updateData.grantedDate = data.grantedDate;
+    const leaveType = await prisma.leaveType.findUnique({ where: { id: grant.leaveTypeId } });
+    if (leaveType?.isAnnualRecurring) {
+      updateData.expiresAt = new Date(data.grantedDate.getFullYear() + 2, data.grantedDate.getMonth(), 1);
+    }
+  }
+  if (data.note !== undefined) updateData.note = data.note || null;
+
+  return prisma.leaveGrant.update({
+    where: { id },
+    data: updateData,
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      leaveType: { select: { id: true, name: true } },
+    },
+  });
+}
+
+export async function deleteLeaveGrant(id: string): Promise<void> {
+  await prisma.leaveGrant.delete({ where: { id } });
+}
+
 export async function getLeaveBalances(userId: string): Promise<LeaveBalance[]> {
   const today = addisTodayDate();
   const leaveTypes = await prisma.leaveType.findMany({ orderBy: { name: "asc" } });
@@ -128,7 +192,8 @@ export async function getLeaveBalances(userId: string): Promise<LeaveBalance[]> 
     const usedRecords = await prisma.attendanceRecord.findMany({
       where: {
         userId,
-        status: lt.mappedStatus,
+        leaveTypeId: lt.id,
+        status: { in: ["PERMISSION", "ANNUAL_LEAVE", "OTHER"] },
         date: { gte: earliestGrantDate },
       },
     });

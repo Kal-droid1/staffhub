@@ -50,6 +50,8 @@ model AttendanceRecord {
   requestedStatus AttendanceStatus @default(PRESENT)
   note            String?
   status          AttendanceStatus @default(PENDING)
+  leaveTypeId     String?
+  leaveType       LeaveType?       @relation(fields: [leaveTypeId], references: [id])
   reviewedById    String?
   reviewedBy      User?            @relation("ReviewedBy", fields: [reviewedById], references: [id])
   reviewedAt      DateTime?
@@ -59,12 +61,13 @@ model AttendanceRecord {
 }
 
 model LeaveType {
-  id               String           @id @default(uuid())
-  name             String           @unique
-  isAnnualRecurring Boolean         @default(false)
+  id               String             @id @default(uuid())
+  name             String             @unique
+  isAnnualRecurring Boolean           @default(false)
   mappedStatus     AttendanceStatus
-  createdAt        DateTime         @default(now())
+  createdAt        DateTime           @default(now())
   grants           LeaveGrant[]
+  attendance       AttendanceRecord[]
 }
 
 model LeaveGrant {

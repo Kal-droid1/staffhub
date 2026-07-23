@@ -68,10 +68,8 @@ export async function POST(req: NextRequest) {
 
   if (action === "leave") {
     const requestedStatus = (body.requestedStatus as AttendanceStatus) || "PERMISSION";
-    if (!["PERMISSION", "ANNUAL_LEAVE", "OTHER"].includes(requestedStatus)) {
-      return NextResponse.json({ error: "Invalid leave type" }, { status: 400 });
-    }
-    const record = await createLeaveRequest(session.user.id, requestedStatus, body.note);
+    const leaveTypeId = body.leaveTypeId || undefined;
+    const record = await createLeaveRequest(session.user.id, requestedStatus, body.note, leaveTypeId);
     return NextResponse.json(
       {
         record: {

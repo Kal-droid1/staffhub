@@ -86,7 +86,8 @@ export async function createSignIn(userId: string) {
 export async function createLeaveRequest(
   userId: string,
   requestedStatus: AttendanceStatus,
-  note?: string
+  note?: string,
+  leaveTypeId?: string
 ) {
   return prisma.attendanceRecord.create({
     data: {
@@ -95,6 +96,7 @@ export async function createLeaveRequest(
       requestedStatus,
       note: note || null,
       status: "PENDING",
+      leaveTypeId: leaveTypeId || null,
     },
   });
 }

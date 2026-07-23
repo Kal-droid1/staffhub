@@ -8,6 +8,7 @@ interface PendingRecord {
   date: string;
   signInTime: string | null;
   requestedStatus: string;
+  leaveTypeId: string | null;
   note: string | null;
   user: {
     id: string;
@@ -26,23 +27,33 @@ interface Balance {
   remaining: number;
 }
 
+interface LeaveType {
+  id: string;
+  name: string;
+  mappedStatus: string;
+}
+
 interface Props {
   pendingRecords: PendingRecord[];
   balances: Record<string, Balance[]>;
+  leaveTypes: LeaveType[];
 }
 
-const LEAVE_STATUSES = ["PERMISSION", "ANNUAL_LEAVE", "OTHER"];
-
-export default function ApproveClient({ pendingRecords, balances }: Props) {
+export default function ApproveClient({ pendingRecords, balances, leaveTypes }: Props) {
   const router = useRouter();
   const [records, setRecords] = useState<PendingRecord[]>(pendingRecords);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
+  function getLeaveTypeName(leaveTypeId: string | null): string | null {
+    if (!leaveTypeId) return null;
+    return leaveTypes.find((t) => t.id === leaveTypeId)?.name ?? null;
+  }
+
   function getBalanceWarning(r: PendingRecord): string | null {
-    if (!LEAVE_STATUSES.includes(r.requestedStatus)) return null;
+    if (!r.leaveTypeId) return null;
     const userBalances = balances[r.user.id];
     if (!userBalances) return null;
-    const matching = userBalances.find((b) => b.leaveTypeName === r.requestedStatus);
+    const matching = userBalances.find((b) => b.leaveTypeId === r.leaveTypeId);
     if (!matching) return null;
     if (matching.remaining <= 0) {
       return `Balance would be negative (remaining: ${matching.remaining} day${matching.remaining !== 1 ? "s" : ""})`;
@@ -95,6 +106,9 @@ export default function ApproveClient({ pendingRecords, balances }: Props) {
         <tbody>
           {records.map((r) => {
             const warning = getBalanceWarning(r);
+            const displayStatus = r.leaveTypeId
+              ? getLeaveTypeName(r.leaveTypeId) ?? r.requestedStatus
+              : r.requestedStatus;
             return (
               <tr
                 key={r.id}
@@ -111,7 +125,7 @@ export default function ApproveClient({ pendingRecords, balances }: Props) {
                 <td style={{ padding: "0.5rem" }}>
                   {new Date(r.date).toLocaleDateString()}
                 </td>
-                <td style={{ padding: "0.5rem" }}>{r.requestedStatus}</td>
+                <td style={{ padding: "0.5rem" }}>{displayStatus}</td>
                 <td style={{ padding: "0.5rem" }}>
                   {r.signInTime
                     ? new Date(r.signInTime).toLocaleTimeString()

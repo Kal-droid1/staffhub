@@ -6,24 +6,9 @@ const prisma = new PrismaClient();
 const TEST_PASSWORD = "password123";
 
 const testUsers = [
-  {
-    name: "Alice Staff",
-    email: "alice@staffhub.test",
-    role: Role.STAFF,
-    department: "Engineering",
-  },
-  {
-    name: "Bob Manager",
-    email: "bob@staffhub.test",
-    role: Role.MANAGER,
-    department: "Engineering",
-  },
-  {
-    name: "Carol Admin",
-    email: "carol@staffhub.test",
-    role: Role.ADMIN,
-    department: null,
-  },
+  { name: "Alice Staff", email: "alice@staffhub.test", role: Role.STAFF, department: "Engineering" },
+  { name: "Bob Manager", email: "bob@staffhub.test", role: Role.MANAGER, department: "Engineering" },
+  { name: "Carol Admin", email: "carol@staffhub.test", role: Role.ADMIN, department: null },
 ];
 
 async function main() {
@@ -33,13 +18,7 @@ async function main() {
     await prisma.user.upsert({
       where: { email: user.email },
       update: {},
-      create: {
-        name: user.name,
-        email: user.email,
-        password: hashedPassword,
-        role: user.role,
-        department: user.department,
-      },
+      create: { name: user.name, email: user.email, password: hashedPassword, role: user.role, department: user.department },
     });
   }
 
