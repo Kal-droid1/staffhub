@@ -9,6 +9,7 @@ interface LeaveType {
   name: string;
   isAnnualRecurring: boolean;
   mappedStatus: string;
+  defaultDays: number;
 }
 
 interface Props {
@@ -25,6 +26,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
   const [name, setName] = useState("");
   const [isAnnual, setIsAnnual] = useState(false);
   const [mappedStatus, setMappedStatus] = useState("PERMISSION");
+  const [defaultDays, setDefaultDays] = useState(20);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -34,7 +36,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setSaving(true);
     setError("");
 
-    const body: Record<string, unknown> = { name: name.trim(), isAnnualRecurring: isAnnual };
+    const body: Record<string, unknown> = { name: name.trim(), isAnnualRecurring: isAnnual, defaultDays };
     if (editingId) {
       body.id = editingId;
     } else {
@@ -65,6 +67,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setName("");
     setIsAnnual(false);
     setMappedStatus("PERMISSION");
+    setDefaultDays(20);
     setSaving(false);
     router.refresh();
   }
@@ -74,6 +77,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setName(t.name);
     setIsAnnual(t.isAnnualRecurring);
     setMappedStatus(t.mappedStatus);
+    setDefaultDays(t.defaultDays);
     setShowForm(true);
   }
 
@@ -83,6 +87,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setName("");
     setIsAnnual(false);
     setMappedStatus("PERMISSION");
+    setDefaultDays(20);
     setError("");
   }
 
@@ -123,6 +128,22 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
                 />
                 Annual (grants expire after 2 years)
               </label>
+            </div>
+
+            <div style={{ marginBottom: "0.75rem" }}>
+              <label className="form-label">Default Days</label>
+              <input
+                type="number"
+                className="form-input"
+                min="0.5"
+                step="0.5"
+                value={defaultDays}
+                onChange={(e) => setDefaultDays(Number(e.target.value))}
+                style={{ maxWidth: 120 }}
+              />
+              <p className="form-hint">
+                Pre-fills the Days field when creating a new grant for this type.
+              </p>
             </div>
 
             {!editingId && (
@@ -169,6 +190,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
               <tr>
                 <th>Name</th>
                 <th style={{ textAlign: "center" }}>Annual</th>
+                <th style={{ textAlign: "center" }}>Default Days</th>
                 <th>Mapped Status</th>
                 <th>Actions</th>
               </tr>
@@ -178,6 +200,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
                 <tr key={t.id}>
                   <td style={{ fontWeight: 600 }}>{t.name}</td>
                   <td style={{ textAlign: "center" }}>{t.isAnnualRecurring ? "Yes" : "No"}</td>
+                  <td style={{ textAlign: "center" }}>{t.defaultDays}</td>
                   <td>{t.mappedStatus}</td>
                   <td>
                     <button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">

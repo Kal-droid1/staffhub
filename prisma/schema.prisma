@@ -65,6 +65,7 @@ model LeaveType {
   name             String             @unique
   isAnnualRecurring Boolean           @default(false)
   mappedStatus     AttendanceStatus
+  defaultDays      Float              @default(20)
   createdAt        DateTime           @default(now())
   grants           LeaveGrant[]
   attendance       AttendanceRecord[]

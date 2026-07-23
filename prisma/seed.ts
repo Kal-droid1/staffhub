@@ -35,20 +35,18 @@ async function main() {
   });
   console.log("Settings seeded: cutoffTime = 09:00\n");
 
-  const defaultLeaveTypes: { name: string; isAnnualRecurring: boolean; mappedStatus: AttendanceStatus }[] = [
-    { name: "Annual Leave", isAnnualRecurring: true, mappedStatus: "ANNUAL_LEAVE" },
-    { name: "Permission", isAnnualRecurring: false, mappedStatus: "PERMISSION" },
-    { name: "Other", isAnnualRecurring: false, mappedStatus: "OTHER" },
+  const defaultLeaveTypes: { name: string; isAnnualRecurring: boolean; mappedStatus: AttendanceStatus; defaultDays: number }[] = [
+    { name: "Annual Leave", isAnnualRecurring: true, mappedStatus: "ANNUAL_LEAVE", defaultDays: 20 },
   ];
 
   for (const lt of defaultLeaveTypes) {
     await prisma.leaveType.upsert({
       where: { name: lt.name },
       update: {},
-      create: { name: lt.name, isAnnualRecurring: lt.isAnnualRecurring, mappedStatus: lt.mappedStatus },
+      create: { name: lt.name, isAnnualRecurring: lt.isAnnualRecurring, mappedStatus: lt.mappedStatus, defaultDays: lt.defaultDays },
     });
   }
-  console.log("Leave types seeded: Annual Leave, Permission, Other\n");
+  console.log("Leave types seeded: Annual Leave\n");
 
   const allUsers = await prisma.user.findMany({ select: { id: true, name: true } });
   const annualType = await prisma.leaveType.findUnique({ where: { name: "Annual Leave" } });

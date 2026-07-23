@@ -41,16 +41,17 @@ export async function getLeaveTypes(): Promise<LeaveTypeRow[]> {
 export async function createLeaveType(
   name: string,
   isAnnualRecurring: boolean,
-  mappedStatus: AttendanceStatus
+  mappedStatus: AttendanceStatus,
+  defaultDays?: number
 ): Promise<LeaveTypeRow> {
   return prisma.leaveType.create({
-    data: { name, isAnnualRecurring, mappedStatus },
+    data: { name, isAnnualRecurring, mappedStatus, defaultDays: defaultDays ?? 20 },
   });
 }
 
 export async function updateLeaveType(
   id: string,
-  data: { name?: string; isAnnualRecurring?: boolean }
+  data: { name?: string; isAnnualRecurring?: boolean; defaultDays?: number }
 ): Promise<LeaveTypeRow> {
   return prisma.leaveType.update({
     where: { id },

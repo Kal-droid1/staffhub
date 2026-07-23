@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { name, isAnnualRecurring, mappedStatus } = body;
+  const { name, isAnnualRecurring, mappedStatus, defaultDays } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json({ error: "Name is required." }, { status: 400 });
@@ -31,7 +31,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const leaveType = await createLeaveType(name.trim(), isAnnualRecurring, mappedStatus as AttendanceStatus);
+    const leaveType = await createLeaveType(
+      name.trim(),
+      isAnnualRecurring,
+      mappedStatus as AttendanceStatus,
+      typeof defaultDays === "number" ? defaultDays : undefined
+    );
     return NextResponse.json(leaveType, { status: 201 });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Failed to create leave type";
@@ -46,15 +51,16 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { id, name, isAnnualRecurring } = body;
+  const { id, name, isAnnualRecurring, defaultDays } = body;
 
   if (!id) {
     return NextResponse.json({ error: "id is required." }, { status: 400 });
   }
 
-  const data: { name?: string; isAnnualRecurring?: boolean } = {};
+  const data: { name?: string; isAnnualRecurring?: boolean; defaultDays?: number } = {};
   if (typeof name === "string" && name.trim().length > 0) data.name = name.trim();
   if (typeof isAnnualRecurring === "boolean") data.isAnnualRecurring = isAnnualRecurring;
+  if (typeof defaultDays === "number") data.defaultDays = defaultDays;
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "No fields to update." }, { status: 400 });

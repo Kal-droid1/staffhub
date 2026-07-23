@@ -11,6 +11,7 @@ interface LeaveType {
   name: string;
   isAnnualRecurring: boolean;
   mappedStatus: string;
+  defaultDays: number;
 }
 
 interface Balance {
@@ -55,7 +56,7 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
   const [showGrantForm, setShowGrantForm] = useState(false);
   const [editingGrantId, setEditingGrantId] = useState<string | null>(null);
   const [grantTypeId, setGrantTypeId] = useState(leaveTypes[0]?.id ?? "");
-  const [grantDays, setGrantDays] = useState(20);
+  const [grantDays, setGrantDays] = useState(leaveTypes[0]?.defaultDays ?? 20);
   const [grantDate, setGrantDate] = useState(adisToday());
   const [grantNote, setGrantNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -63,7 +64,7 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
 
   const [showBulk, setShowBulk] = useState(false);
   const [bulkTypeId, setBulkTypeId] = useState(leaveTypes[0]?.id ?? "");
-  const [bulkDays, setBulkDays] = useState(20);
+  const [bulkDays, setBulkDays] = useState(leaveTypes[0]?.defaultDays ?? 20);
   const [bulkDate, setBulkDate] = useState(adisToday());
   const [bulkNote, setBulkNote] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -116,7 +117,8 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
 
     setShowGrantForm(false);
     setEditingGrantId(null);
-    setGrantDays(20);
+    setGrantTypeId(leaveTypes[0]?.id ?? "");
+    setGrantDays(leaveTypes[0]?.defaultDays ?? 20);
     setGrantDate(adisToday());
     setGrantNote("");
     setSaving(false);
@@ -175,7 +177,8 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
     if (summaryRes.ok) setSummary(summaryData);
 
     setShowBulk(false);
-    setBulkDays(20);
+    setBulkTypeId(leaveTypes[0]?.id ?? "");
+    setBulkDays(leaveTypes[0]?.defaultDays ?? 20);
     setBulkDate(adisToday());
     setBulkNote("");
     setBulkSaving(false);
@@ -269,12 +272,20 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
 
       <div className="flex-row gap-sm mb-3 flex-wrap">
         {!showGrantForm && (
-          <button onClick={() => setShowGrantForm(true)} className="btn btn-primary">
+          <button onClick={() => {
+            setShowGrantForm(true);
+            const currentType = leaveTypes.find((t) => t.id === grantTypeId);
+            if (currentType) setGrantDays(currentType.defaultDays);
+          }} className="btn btn-primary">
             + Add Grant
           </button>
         )}
         {!showBulk && (
-          <button onClick={() => setShowBulk(true)} className="btn btn-secondary">
+          <button onClick={() => {
+            setShowBulk(true);
+            const currentType = leaveTypes.find((t) => t.id === bulkTypeId);
+            if (currentType) setBulkDays(currentType.defaultDays);
+          }} className="btn btn-secondary">
             Grant to All Staff
           </button>
         )}
@@ -291,7 +302,11 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
                 <label className="form-label">Leave Type</label>
                 <select
                   value={bulkTypeId}
-                  onChange={(e) => setBulkTypeId(e.target.value)}
+                  onChange={(e) => {
+                    const selected = leaveTypes.find((t) => t.id === e.target.value);
+                    setBulkTypeId(e.target.value);
+                    if (selected) setBulkDays(selected.defaultDays);
+                  }}
                   className="form-select"
                   style={{ minWidth: 180 }}
                 >
@@ -365,7 +380,11 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
                 <label className="form-label">Leave Type</label>
                 <select
                   value={grantTypeId}
-                  onChange={(e) => setGrantTypeId(e.target.value)}
+                  onChange={(e) => {
+                    const selected = leaveTypes.find((t) => t.id === e.target.value);
+                    setGrantTypeId(e.target.value);
+                    if (selected) setGrantDays(selected.defaultDays);
+                  }}
                   className="form-select"
                   style={{ minWidth: 180 }}
                 >
