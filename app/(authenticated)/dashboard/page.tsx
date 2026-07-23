@@ -3,6 +3,7 @@ import { requireAuth } from "@/modules/core/require-auth";
 import { getLeaveBalances } from "@/modules/leave/queries";
 import type { Role } from "@prisma/client";
 import Card from "@/modules/core/components/card";
+import { formatDays, formatDaysLabel } from "@/lib/format";
 
 function getRoleLabel(role: Role): string {
   if (ROLE_HIERARCHY[role] >= ROLE_HIERARCHY.ADMIN) return "Admin";
@@ -46,7 +47,7 @@ export default async function DashboardPage() {
         <Card>
           <p className="stat-label">Total Leave Remaining</p>
           <p className="stat-number" style={{ marginTop: "0.25rem" }}>
-            {totalRemaining.toFixed(1)}
+            {formatDaysLabel(totalRemaining)}
           </p>
           <p className="text-sm text-muted" style={{ marginTop: "0.15rem" }}>
             across all leave types
@@ -86,8 +87,8 @@ export default async function DashboardPage() {
                       </span>
                     )}
                   </td>
-                  <td style={{ textAlign: "center" }}>{b.granted}</td>
-                  <td style={{ textAlign: "center" }}>{b.used}</td>
+                  <td style={{ textAlign: "center" }}>{formatDays(b.granted)}</td>
+                  <td style={{ textAlign: "center" }}>{formatDays(b.used)}</td>
                   <td style={{ textAlign: "center", fontWeight: 600 }}>
                     <span
                       className={
@@ -96,7 +97,7 @@ export default async function DashboardPage() {
                           : "status-pill status-pill--success"
                       }
                     >
-                      {b.remaining}
+                      {formatDays(b.remaining)}
                     </span>
                   </td>
                 </tr>

@@ -6,6 +6,7 @@ import Card from "@/modules/core/components/card";
 import StatusPill from "@/modules/core/components/status-pill";
 import PersonRow from "@/modules/core/components/person-row";
 import RadialGauge from "@/modules/core/components/radial-gauge";
+import { formatDays, formatDaysLabel } from "@/lib/format";
 
 interface TodayRecord {
   id: string;
@@ -296,7 +297,7 @@ export default function AttendanceClient({
     const matching = userBalances.find((b) => b.leaveTypeId === r.leaveTypeId);
     if (!matching) return null;
     if (matching.remaining <= 0) {
-      return `Balance would be negative (remaining: ${matching.remaining} day${matching.remaining !== 1 ? "s" : ""})`;
+      return `Balance would be negative (remaining: ${formatDaysLabel(matching.remaining)})`;
     }
     return null;
   }
@@ -633,7 +634,7 @@ export default function AttendanceClient({
                     <div key={b.leaveTypeId} style={{ textAlign: "center" }}>
                       <div className="text-sm text-muted">{b.leaveTypeName}</div>
                       <div style={{ fontWeight: 600, color: b.remaining <= 0 ? "var(--color-danger)" : "var(--color-success)" }}>
-                        {b.remaining}
+                        {formatDays(b.remaining)}
                       </div>
                     </div>
                   ))}

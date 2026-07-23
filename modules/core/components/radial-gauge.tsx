@@ -1,3 +1,5 @@
+import { formatDays } from "@/lib/format";
+
 interface RadialGaugeProps {
   value: number;
   max: number;
@@ -56,7 +58,7 @@ export default function RadialGauge({
           className="radial-gauge__value"
           fill="var(--color-text)"
         >
-          {Math.round(value)} / {Math.round(max)}
+          {formatDays(value)} / {formatDays(max)}
         </text>
       </svg>
       {label && <span className="radial-gauge__label">{label}</span>}

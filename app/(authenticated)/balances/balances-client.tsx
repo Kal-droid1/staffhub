@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 import RadialGauge from "@/modules/core/components/radial-gauge";
 import PersonRow from "@/modules/core/components/person-row";
+import { formatDays } from "@/lib/format";
 
 interface LeaveType {
   id: string;
@@ -254,11 +255,11 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
                       <div className="flex-row gap-lg" style={{ justifyContent: "center" }}>
                         <div style={{ textAlign: "center" }}>
                           <div className="text-sm text-muted">Granted</div>
-                          <div style={{ fontWeight: 600 }}>{b.granted}</div>
+                          <div style={{ fontWeight: 600 }}>{formatDays(b.granted)}</div>
                         </div>
                         <div style={{ textAlign: "center" }}>
                           <div className="text-sm text-muted">Used</div>
-                          <div style={{ fontWeight: 600 }}>{b.used}</div>
+                          <div style={{ fontWeight: 600 }}>{formatDays(b.used)}</div>
                         </div>
                       </div>
                     </div>
@@ -472,7 +473,7 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
               {userGrants.map((g) => (
                 <tr key={g.id}>
                   <td style={{ fontWeight: 600 }}>{getGrantTypeName(g.leaveTypeId)}</td>
-                  <td style={{ textAlign: "center", fontWeight: 600 }}>{g.days}</td>
+                  <td style={{ textAlign: "center", fontWeight: 600 }}>{formatDays(g.days)}</td>
                   <td>{g.grantedDate.slice(0, 10)}</td>
                   <td>{g.expiresAt ? g.expiresAt.slice(0, 10) : "Never"}</td>
                   <td className="text-muted">{g.note || "\u2014"}</td>
