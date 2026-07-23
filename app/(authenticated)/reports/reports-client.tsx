@@ -81,7 +81,7 @@ export default function ReportsClient({ currentUserId }: Props) {
     ? summary.filter((s) => s.userName === staffMap[staffId])
     : summary;
 
-  const csvUrl = `/api/reports/monthly?month=${month}&year=${year}&format=csv${staffId ? `&userId=${staffId}` : ""}`;
+  const xlsxUrl = `/api/reports/monthly?month=${month}&year=${year}&format=xlsx${staffId ? `&userId=${staffId}` : ""}`;
 
   return (
     <div style={{ maxWidth: 1000, margin: "40px auto", padding: "0 1rem" }}>
@@ -170,7 +170,7 @@ export default function ReportsClient({ currentUserId }: Props) {
 
         {loaded && (
           <a
-            href={csvUrl}
+            href={xlsxUrl}
             style={{
               display: "inline-flex",
               alignItems: "center",

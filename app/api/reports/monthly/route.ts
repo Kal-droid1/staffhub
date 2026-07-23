@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { getMonthlyReport } from "@/modules/attendance/queries";
+import ExcelJS from "exceljs";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -29,8 +30,8 @@ export async function GET(req: NextRequest) {
 
   const { summary } = await getMonthlyReport(month, year, userId);
 
-  if (format === "csv") {
-    return buildCsvResponse(summary, month, year);
+  if (format === "xlsx") {
+    return buildXlsxResponse(summary, month, year);
   }
 
   const staff = summary.map((s) => ({
@@ -51,49 +52,83 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ summary: summaryJson, staff });
 }
 
-function buildCsvResponse(
+async function buildXlsxResponse(
   summary: Awaited<ReturnType<typeof getMonthlyReport>>["summary"],
   month: number,
   year: number
-): NextResponse {
-  const csvRows: string[] = [];
+): Promise<NextResponse> {
+  const workbook = new ExcelJS.Workbook();
+  const summarySheet = workbook.addWorksheet("Summary");
+  const detailSheet = workbook.addWorksheet("Daily Detail");
 
-  csvRows.push("userName,presentCount,absentCount,leaveCount,pendingCount");
+  const headerFont = { bold: true };
+  const headerFill: ExcelJS.Fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE5E7EB" },
+  };
+  const redFont = { color: { argb: "FFDC2626" }, bold: true };
+
+  summarySheet.columns = [
+    { header: "Staff", key: "userName", width: 24 },
+    { header: "Present", key: "presentCount", width: 12 },
+    { header: "Absent", key: "absentCount", width: 12 },
+    { header: "Leave", key: "leaveCount", width: 12 },
+    { header: "Pending", key: "pendingCount", width: 12 },
+  ];
+
+  const summaryHeader = summarySheet.getRow(1);
+  summaryHeader.font = headerFont;
+  summaryHeader.fill = headerFill;
+
   for (const row of summary) {
-    csvRows.push(
-      `${escapeCsv(row.user.name)},${row.present},${row.absent},${row.leave},${row.pending}`
-    );
-  }
-
-  csvRows.push("");
-  csvRows.push("--- Daily Detail ---");
-  csvRows.push("date,userName,status,note");
-
-  for (const row of summary) {
-    for (const r of row.records) {
-      const dateStr = r.date.toISOString().slice(0, 10);
-      csvRows.push(
-        `${dateStr},${escapeCsv(r.userName)},${r.status},${escapeCsv(r.note ?? "")}`
-      );
+    const dataRow = summarySheet.addRow({
+      userName: row.user.name,
+      presentCount: row.present,
+      absentCount: row.absent,
+      leaveCount: row.leave,
+      pendingCount: row.pending,
+    });
+    if (row.absent > 0) {
+      dataRow.getCell("absentCount").font = redFont;
     }
   }
 
-  const csv = csvRows.join("\n");
+  summarySheet.views = [{ state: "frozen", ySplit: 1 }];
+
+  detailSheet.columns = [
+    { header: "Date", key: "date", width: 14 },
+    { header: "Staff", key: "userName", width: 24 },
+    { header: "Status", key: "status", width: 16 },
+    { header: "Note", key: "note", width: 40 },
+  ];
+
+  const detailHeader = detailSheet.getRow(1);
+  detailHeader.font = headerFont;
+  detailHeader.fill = headerFill;
+
+  for (const row of summary) {
+    for (const r of row.records) {
+      detailSheet.addRow({
+        date: r.date.toISOString().slice(0, 10),
+        userName: r.userName,
+        status: r.status,
+        note: r.note ?? "",
+      });
+    }
+  }
+
+  detailSheet.views = [{ state: "frozen", ySplit: 1 }];
+
+  const buffer = await workbook.xlsx.writeBuffer();
 
   const monthLabel = String(month).padStart(2, "0");
-  const filename = `staffhub-attendance-${year}-${monthLabel}.csv`;
+  const filename = `staffhub-attendance-${year}-${monthLabel}.xlsx`;
 
-  return new NextResponse(csv, {
+  return new NextResponse(buffer, {
     headers: {
-      "Content-Type": "text/csv",
+      "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       "Content-Disposition": `attachment; filename="${filename}"`,
     },
   });
-}
-
-function escapeCsv(value: string): string {
-  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }

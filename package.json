@@ -14,7 +14,9 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed-reports": "npx tsx prisma/seed-reports.ts",
-    "db:seed-reports-cleanup": "npx tsx prisma/seed-reports-cleanup.ts"
+    "db:seed-reports-cleanup": "npx tsx prisma/seed-reports-cleanup.ts",
+    "db:seed-feb-2026": "npx tsx prisma/seed-feb-2026.ts",
+    "db:seed-feb-2026-cleanup": "npx tsx prisma/seed-feb-2026-cleanup.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -22,6 +24,7 @@
   "dependencies": {
     "@prisma/client": "^6.2.1",
     "bcryptjs": "^3.0.3",
+    "exceljs": "^4.4.0",
     "next": "^15.1.6",
     "next-auth": "^4.24.15",
     "react": "^19.0.0",
