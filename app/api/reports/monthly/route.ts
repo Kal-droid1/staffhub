@@ -4,6 +4,8 @@ import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { getMonthlyReport } from "@/modules/attendance/queries";
 import ExcelJS from "exceljs";
+import AdmZip from "adm-zip";
+import { readFileSync } from "fs";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -57,15 +59,58 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+function stripCommentsFromTemplate(): Buffer {
+  const raw = readFileSync("staffhub-report-template.xlsx");
+  const zip = new AdmZip(raw);
+
+  const entries = zip.getEntries();
+  for (const entry of entries) {
+    if (entry.entryName.includes("comments") || entry.entryName.includes("commentsDrawing")) {
+      zip.deleteFile(entry.entryName);
+    }
+  }
+
+  const relsEntries = entries.filter((e) => e.entryName.endsWith(".xml.rels"));
+  for (const relsEntry of relsEntries) {
+    let xml = relsEntry.getData().toString("utf-8");
+    xml = xml.replace(/<Relationship[^>]*comments[^>]*\/>/g, "");
+    xml = xml.replace(/<Relationship[^>]*vmlDrawing[^>]*\/>/g, "");
+    zip.updateFile(relsEntry.entryName, Buffer.from(xml, "utf-8"));
+  }
+
+  const ctEntry = entries.find((e) => e.entryName === "[Content_Types].xml");
+  if (ctEntry) {
+    let xml = ctEntry.getData().toString("utf-8");
+    xml = xml.replace(/<Override[^>]*comments[^>]*\/>/g, "");
+    xml = xml.replace(/<Default[^>]*vml[^>]*\/>/g, "");
+    zip.updateFile(ctEntry.entryName, Buffer.from(xml, "utf-8"));
+  }
+
+  return Buffer.from(zip.toBuffer());
+}
+
 async function buildXlsxResponse(
   summary: Awaited<ReturnType<typeof getMonthlyReport>>["summary"],
   month: number,
   year: number
 ): Promise<NextResponse> {
-  const workbook = new ExcelJS.Workbook();
+  const cleanTemplate = stripCommentsFromTemplate();
 
-  buildSummarySheet(workbook, summary, month, year);
-  buildDetailSheet(workbook, summary);
+  const workbook = new ExcelJS.Workbook();
+  // @ts-expect-error -- Buffer type mismatch between Node v24 and exceljs types; works at runtime
+  await workbook.xlsx.load(cleanTemplate);
+
+  const summarySheet = workbook.getWorksheet("Summary");
+  const detailSheet = workbook.getWorksheet("Daily Detail");
+  if (!summarySheet || !detailSheet) {
+    return NextResponse.json({ error: "Template sheets missing" }, { status: 500 });
+  }
+
+  const monthCell = summarySheet.getCell("C3");
+  monthCell.value = `${MONTH_NAMES[month - 1]} ${year}`;
+
+  fillSummaryData(summarySheet, summary);
+  fillDetailData(detailSheet, summary);
 
   const buffer = await workbook.xlsx.writeBuffer();
 
@@ -80,195 +125,109 @@ async function buildXlsxResponse(
   });
 }
 
-function buildSummarySheet(
-  workbook: ExcelJS.Workbook,
-  summary: Awaited<ReturnType<typeof getMonthlyReport>>["summary"],
-  month: number,
-  year: number
-) {
-  const sheet = workbook.addWorksheet("Summary", {
-    properties: { defaultColWidth: 8 },
-    views: [{ showGridLines: false }],
-  });
-
-  sheet.columns = [
-    { width: 26 },
-    { width: 12 },
-    { width: 12 },
-    { width: 12 },
-  ];
-
-  sheet.getRow(1).height = 28;
-  const titleRow = sheet.getRow(1);
-  titleRow.getCell(1).value = "Harar Lutheran Child Development Program";
-  applyStyle(titleRow.getCell(1), styleTitleBanner);
-
-  sheet.getRow(2).height = 20;
-  const subRow = sheet.getRow(2);
-  subRow.getCell(1).value = "Monthly Attendance Summary";
-  applyStyle(subRow.getCell(1), styleSubtitle);
-
-  sheet.getRow(3).height = 18;
-  const monthRow = sheet.getRow(3);
-  monthRow.getCell(1).value = "Report Month:";
-  applyStyle(monthRow.getCell(1), styleMonthLabel);
-  monthRow.getCell(3).value = `${MONTH_NAMES[month - 1]} ${year}`;
-  applyStyle(monthRow.getCell(3), styleMonthValue);
-
-  sheet.getRow(5).height = 18;
-  const headerValues = ["Staff Name", "Present", "Absent", "Leave"];
-  for (let c = 0; c < headerValues.length; c++) {
-    const cell = sheet.getRow(5).getCell(c + 1);
-    cell.value = headerValues[c];
-    applyStyle(cell, styleHeaderCell);
-  }
-
-  for (let i = 0; i < summary.length; i++) {
-    const row = sheet.getRow(6 + i);
-    const s = summary[i];
-    const rowFill = i % 2 === 0 ? evenRowFill : oddRowFill;
-
-    const nameCell = row.getCell(1);
-    nameCell.value = s.user.name;
-    applyStyle(nameCell, { ...styleDataCell, fill: rowFill });
-
-    for (let c = 2; c <= 4; c++) {
-      const cell = row.getCell(c);
-      applyStyle(cell, { ...styleDataCell, fill: rowFill, alignment: styleCenterAlign });
-    }
-
-    row.getCell(2).value = s.present;
-    row.getCell(3).value = s.absent;
-    row.getCell(4).value = s.leave;
-  }
-
-  sheet.views = [
-    { showGridLines: false, state: "frozen", ySplit: 5 },
-  ];
-}
-
-function buildDetailSheet(
-  workbook: ExcelJS.Workbook,
+function fillSummaryData(
+  sheet: ExcelJS.Worksheet,
   summary: Awaited<ReturnType<typeof getMonthlyReport>>["summary"]
 ) {
-  const sheet = workbook.addWorksheet("Daily Detail", {
-    properties: { defaultColWidth: 8 },
-    views: [{ showGridLines: false }],
-  });
+  const DATA_START = 6;
+  const TEMPLATE_ROWS = 5;
+  const neededRows = Math.max(TEMPLATE_ROWS, summary.length);
+  const extraNeeded = neededRows - TEMPLATE_ROWS;
 
-  sheet.columns = [
-    { width: 18 },
-    { width: 24 },
-    { width: 12 },
-    { width: 32 },
-  ];
-
-  sheet.getRow(1).height = 26;
-  const titleCell = sheet.getRow(1).getCell(1);
-  titleCell.value = "Harar Lutheran Child Development Program \u2014 Daily Attendance Detail";
-  applyStyle(titleCell, styleTitleBanner);
-  sheet.mergeCells(1, 1, 1, 4);
-
-  sheet.getRow(3).height = 18;
-  const detailHeaders = ["Date", "Staff Name", "Status", "Note"];
-  for (let c = 0; c < detailHeaders.length; c++) {
-    const cell = sheet.getRow(3).getCell(c + 1);
-    cell.value = detailHeaders[c];
-    applyStyle(cell, styleHeaderCell);
-  }
-
-  let dataRow = 4;
-  for (const s of summary) {
-    for (const r of s.records) {
-      const row = sheet.getRow(dataRow);
-
-      const dateCell = row.getCell(1);
-      dateCell.value = r.date.toISOString().slice(0, 10);
-      applyStyle(dateCell, styleDetailCell);
-
-      const nameCell = row.getCell(2);
-      nameCell.value = r.userName;
-      applyStyle(nameCell, styleDetailCell);
-
-      const statusCell = row.getCell(3);
-      statusCell.value = r.status;
-      applyStyle(statusCell, styleDetailCell);
-
-      const noteCell = row.getCell(4);
-      noteCell.value = r.note ?? "";
-      applyStyle(noteCell, styleNoteCell);
-
-      dataRow++;
+  if (extraNeeded > 0) {
+    for (let i = 0; i < extraNeeded; i++) {
+      const srcRow = sheet.getRow(DATA_START + TEMPLATE_ROWS - 1);
+      const newRow = sheet.insertRow(DATA_START + TEMPLATE_ROWS + i, []);
+      copyRowStyle(srcRow, newRow);
     }
   }
 
-  sheet.views = [
-    { showGridLines: false, state: "frozen", ySplit: 3 },
-  ];
+  for (let i = 0; i < Math.max(TEMPLATE_ROWS, summary.length); i++) {
+    const rowNumber = DATA_START + i;
+    const row = sheet.getRow(rowNumber);
+
+    const nameCell = row.getCell(1);
+    const presentCell = row.getCell(2);
+    const absentCell = row.getCell(3);
+    const leaveCell = row.getCell(4);
+
+    if (i < summary.length) {
+      const s = summary[i];
+      nameCell.value = s.user.name;
+      presentCell.value = s.present;
+      absentCell.value = s.absent;
+      leaveCell.value = s.leave;
+    } else {
+      nameCell.value = null;
+      presentCell.value = null;
+      absentCell.value = null;
+      leaveCell.value = null;
+    }
+  }
 }
 
-const FONT_FAMILY = { name: "Times New Roman" };
+function copyRowStyle(src: ExcelJS.Row, dst: ExcelJS.Row) {
+  dst.height = src.height;
 
-const borderThin: ExcelJS.Borders = {
-  top: { style: "thin", color: { argb: "FFB7B7B7" } },
-  right: { style: "thin", color: { argb: "FFB7B7B7" } },
-  bottom: { style: "thin", color: { argb: "FFB7B7B7" } },
-  left: { style: "thin", color: { argb: "FFB7B7B7" } },
-  diagonal: { style: undefined },
-};
+  for (let c = 1; c <= src.cellCount; c++) {
+    const srcCell = src.getCell(c);
+    const dstCell = dst.getCell(c);
 
-const evenRowFill: ExcelJS.Fill = {
-  type: "pattern", pattern: "solid", fgColor: { argb: "FFD9E2F3" },
-};
-const oddRowFill: ExcelJS.Fill = {
-  type: "pattern", pattern: "solid", fgColor: { argb: "FFDCE6F1" },
-};
+    const srcStyle = srcCell.style as Record<string, unknown>;
+    const dstStyle = dstCell.style as Record<string, unknown>;
 
-const styleTitleBanner: Partial<ExcelJS.Style> = {
-  font: { ...FONT_FAMILY, bold: true, color: { argb: "FFFFFFFF" }, size: 16 },
-  fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F4E78" } },
-};
+    dstStyle.font = srcStyle.font;
+    dstStyle.fill = srcStyle.fill;
+    dstStyle.border = srcStyle.border;
+    dstStyle.alignment = srcStyle.alignment;
+    dstStyle.numFmt = srcStyle.numFmt;
+  }
+}
 
-const styleSubtitle: Partial<ExcelJS.Style> = {
-  font: { ...FONT_FAMILY, bold: true, color: { argb: "FF1F4E78" }, size: 12 },
-};
+function fillDetailData(
+  sheet: ExcelJS.Worksheet,
+  summary: Awaited<ReturnType<typeof getMonthlyReport>>["summary"]
+) {
+  const allRecords: { date: string; userName: string; status: string; note: string }[] = [];
+  for (const s of summary) {
+    for (const r of s.records) {
+      allRecords.push({
+        date: r.date.toISOString().slice(0, 10),
+        userName: r.userName,
+        status: r.status,
+        note: r.note ?? "",
+      });
+    }
+  }
 
-const styleMonthLabel: Partial<ExcelJS.Style> = {
-  font: { ...FONT_FAMILY, bold: true, size: 10 },
-};
+  const DATA_START = 4;
+  const TEMPLATE_ROWS = 1;
+  const neededRows = Math.max(TEMPLATE_ROWS, allRecords.length);
+  const extraNeeded = neededRows - TEMPLATE_ROWS;
 
-const styleMonthValue: Partial<ExcelJS.Style> = {
-  font: { ...FONT_FAMILY, bold: true, color: { argb: "FF1F4E78" }, size: 10 },
-};
+  if (extraNeeded > 0) {
+    const srcRow = sheet.getRow(DATA_START);
+    for (let i = 0; i < extraNeeded; i++) {
+      const newRow = sheet.insertRow(DATA_START + 1 + i, []);
+      copyRowStyle(srcRow, newRow);
+    }
+  }
 
-const styleHeaderCell: Partial<ExcelJS.Style> = {
-  font: { ...FONT_FAMILY, bold: true, color: { argb: "FFFFFFFF" }, size: 11 },
-  fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FF2E75B6" } },
-  border: borderThin,
-};
+  for (let i = 0; i < Math.max(TEMPLATE_ROWS, allRecords.length); i++) {
+    const rowNumber = DATA_START + i;
+    const row = sheet.getRow(rowNumber);
 
-const styleDataCell: Partial<ExcelJS.Style> = {
-  font: { ...FONT_FAMILY, size: 11 },
-  border: borderThin,
-};
-
-const styleDetailCell: Partial<ExcelJS.Style> = {
-  font: { ...FONT_FAMILY, size: 11 },
-  border: borderThin,
-};
-
-const styleNoteCell: Partial<ExcelJS.Style> = {
-  font: { ...FONT_FAMILY, italic: true, color: { argb: "FF808080" }, size: 10 },
-  border: borderThin,
-};
-
-const styleCenterAlign: Partial<ExcelJS.Alignment> = {
-  horizontal: "center",
-};
-
-function applyStyle(cell: ExcelJS.Cell, style: Partial<ExcelJS.Style>) {
-  if (style.font) cell.font = { ...cell.font, ...style.font } as ExcelJS.Font;
-  if (style.fill) cell.fill = style.fill;
-  if (style.border) cell.border = style.border;
-  if (style.alignment) cell.alignment = style.alignment as ExcelJS.Alignment;
+    if (i < allRecords.length) {
+      const r = allRecords[i];
+      row.getCell(1).value = r.date;
+      row.getCell(2).value = r.userName;
+      row.getCell(3).value = r.status;
+      row.getCell(4).value = r.note;
+    } else {
+      row.getCell(1).value = null;
+      row.getCell(2).value = null;
+      row.getCell(3).value = null;
+      row.getCell(4).value = null;
+    }
+  }
 }
