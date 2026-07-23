@@ -29,6 +29,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
   const [defaultDays, setDefaultDays] = useState(20);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -89,6 +90,17 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setMappedStatus("PERMISSION");
     setDefaultDays(20);
     setError("");
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this leave type and all its grants?")) return;
+    setDeletingId(id);
+    const res = await fetch(`/api/leave-types?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setTypes((prev) => prev.filter((t) => t.id !== id));
+    }
+    setDeletingId(null);
+    router.refresh();
   }
 
   return (
@@ -202,10 +214,19 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
                   <td style={{ textAlign: "center" }}>{t.isAnnualRecurring ? "Yes" : "No"}</td>
                   <td style={{ textAlign: "center" }}>{t.defaultDays}</td>
                   <td>{t.mappedStatus}</td>
-                  <td>
-                    <button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">
-                      Edit
-                    </button>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <div className="flex-row gap-sm">
+                      <button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(t.id)}
+                        disabled={deletingId === t.id}
+                        className="btn btn-danger btn-sm"
+                      >
+                        {deletingId === t.id ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

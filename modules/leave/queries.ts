@@ -169,6 +169,11 @@ export async function deleteLeaveGrant(id: string): Promise<void> {
   await prisma.leaveGrant.delete({ where: { id } });
 }
 
+export async function deleteLeaveType(id: string): Promise<void> {
+  await prisma.leaveGrant.deleteMany({ where: { leaveTypeId: id } });
+  await prisma.leaveType.delete({ where: { id } });
+}
+
 export async function getLeaveBalances(userId: string): Promise<LeaveBalance[]> {
   const today = addisTodayDate();
   const leaveTypes = await prisma.leaveType.findMany({ orderBy: { name: "asc" } });
