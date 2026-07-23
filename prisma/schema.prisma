@@ -23,25 +23,31 @@ enum AttendanceStatus {
 }
 
 model User {
-  id          String  @id @default(uuid())
+  id          String             @id @default(uuid())
   name        String
-  email       String  @unique
+  email       String             @unique
   password    String
-  role        Role    @default(STAFF)
+  role        Role               @default(STAFF)
   department  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  attendance  AttendanceRecord[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  attendance  AttendanceRecord[] @relation("UserAttendance")
+  reviewed    AttendanceRecord[] @relation("ReviewedBy")
 }
 
 model AttendanceRecord {
-  id          String           @id @default(uuid())
-  userId      String
-  user        User             @relation(fields: [userId], references: [id])
-  date        DateTime         @db.Date
-  signInTime  DateTime?
-  status      AttendanceStatus @default(PENDING)
-  createdAt   DateTime         @default(now())
+  id              String           @id @default(uuid())
+  userId          String
+  user            User             @relation("UserAttendance", fields: [userId], references: [id])
+  date            DateTime         @db.Date
+  signInTime      DateTime?
+  requestedStatus AttendanceStatus @default(PRESENT)
+  note            String?
+  status          AttendanceStatus @default(PENDING)
+  reviewedById    String?
+  reviewedBy      User?            @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  createdAt       DateTime         @default(now())
 
   @@unique([userId, date])
 }

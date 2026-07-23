@@ -10,8 +10,13 @@ export default async function AttendancePage() {
     ? {
         id: todayRecord.id,
         signInTime: todayRecord.signInTime?.toISOString() ?? null,
+        requestedStatus: todayRecord.requestedStatus,
+        note: todayRecord.note,
         status: todayRecord.status,
         date: todayRecord.date.toISOString(),
+        reviewedBy: todayRecord.reviewedBy
+          ? { id: todayRecord.reviewedBy.id, name: todayRecord.reviewedBy.name }
+          : null,
       }
     : null;
 

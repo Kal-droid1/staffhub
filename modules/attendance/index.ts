@@ -1,1 +1,8 @@
-export { getTodayRecord, createSignIn } from "./queries";
+export {
+  getTodayRecord,
+  createSignIn,
+  createLeaveRequest,
+  getPendingRecords,
+  approveRecord,
+  rejectRecord,
+} from "./queries";

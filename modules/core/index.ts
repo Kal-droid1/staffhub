@@ -5,4 +5,5 @@ export { getSession } from "./session";
 export { SessionContext, useSession, useUser } from "./client";
 export { withRole } from "./with-role";
 export { requireAuth } from "./require-auth";
+export { default as NavBar } from "./nav-bar";
 export type { SessionUser } from "./user";
