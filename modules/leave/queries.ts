@@ -186,19 +186,19 @@ export async function getLeaveBalances(userId: string): Promise<LeaveBalance[]> 
 
     const granted = validGrants.reduce((sum, g) => sum + g.days, 0);
 
-    const earliestGrantDate =
-      validGrants.length > 0 ? validGrants[0].grantedDate : today;
-
-    const usedRecords = await prisma.attendanceRecord.findMany({
-      where: {
-        userId,
-        leaveTypeId: lt.id,
-        status: { in: ["PERMISSION", "ANNUAL_LEAVE", "OTHER"] },
-        date: { gte: earliestGrantDate },
-      },
-    });
-
-    const used = usedRecords.length;
+    let used = 0;
+    if (validGrants.length > 0) {
+      const earliestGrantDate = validGrants[0].grantedDate;
+      const usedRecords = await prisma.attendanceRecord.findMany({
+        where: {
+          userId,
+          leaveTypeId: lt.id,
+          status: { in: ["PERMISSION", "ANNUAL_LEAVE", "OTHER"] },
+          date: { gte: earliestGrantDate },
+        },
+      });
+      used = usedRecords.length;
+    }
 
     balances.push({
       leaveTypeId: lt.id,

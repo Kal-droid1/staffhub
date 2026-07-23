@@ -221,7 +221,7 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
           ) : (
             <div className="card-grid" style={{ marginBottom: "1.25rem" }}>
               {selectedUser.balances.map((b) => {
-                const maxVal = Math.max(b.granted, b.remaining + b.used, 1);
+                const maxVal = Math.max(b.granted, b.remaining + b.used);
                 return (
                   <Card key={b.leaveTypeId} hover>
                     <div

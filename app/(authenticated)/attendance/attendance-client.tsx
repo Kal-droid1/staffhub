@@ -149,7 +149,7 @@ export default function AttendanceClient({
   const cutoffPassed = secondsLeft <= 0;
 
   const totalOwnRemaining = ownBalances.reduce((sum, b) => sum + b.remaining, 0);
-  const maxOwnGranted = Math.max(ownBalances.reduce((sum, b) => sum + b.granted, 0), totalOwnRemaining, 1);
+  const maxOwnGranted = Math.max(ownBalances.reduce((sum, b) => sum + b.granted, 0), totalOwnRemaining);
 
   useEffect(() => {
     if (record) return;
