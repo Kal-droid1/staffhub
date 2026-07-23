@@ -23,6 +23,7 @@ interface PendingRecord {
   signInTime: string | null;
   requestedStatus: string;
   leaveTypeId: string | null;
+  batchId: string | null;
   note: string | null;
   user: {
     id: string;
@@ -126,6 +127,8 @@ export default function AttendanceClient({
   const [leaveType, setLeaveType] = useState(leaveTypes[0]?.mappedStatus ?? "PERMISSION");
   const [leaveTypeId, setLeaveTypeId] = useState(leaveTypes[0]?.id ?? "");
   const [leaveNote, setLeaveNote] = useState("");
+  const [leaveStartDate, setLeaveStartDate] = useState("");
+  const [leaveEndDate, setLeaveEndDate] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(initialSecondsUntil);
 
   const [pending, setPending] = useState<PendingRecord[]>(pendingRecords);
@@ -199,6 +202,8 @@ export default function AttendanceClient({
     setLoading(true);
     setError("");
 
+    const isMultiDay = leaveStartDate && leaveEndDate && leaveStartDate !== leaveEndDate && leaveTypeId;
+
     const res = await fetch("/api/attendance/sign-in", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -206,6 +211,8 @@ export default function AttendanceClient({
         action: "leave",
         requestedStatus: leaveType,
         leaveTypeId: leaveTypeId,
+        startDate: isMultiDay ? leaveStartDate : undefined,
+        endDate: isMultiDay ? leaveEndDate : undefined,
         note: leaveNote || undefined,
       }),
     });
@@ -219,6 +226,16 @@ export default function AttendanceClient({
         setError(data.error || "Something went wrong.");
       }
     } else {
+      if (data.multiDayBatch) {
+        setShowLeaveForm(false);
+        setLeaveStartDate("");
+        setLeaveEndDate("");
+        setError("");
+        setRecord(null);
+        router.refresh();
+        setLoading(false);
+        return;
+      }
       setRecord(data.record);
     }
     setLoading(false);
@@ -233,7 +250,12 @@ export default function AttendanceClient({
       body: JSON.stringify({ recordId, action }),
     });
     if (res.ok) {
-      setPending((prev) => prev.filter((r) => r.id !== recordId));
+      const target = pending.find((r) => r.id === recordId);
+      if (target?.batchId) {
+        setPending((prev) => prev.filter((r) => r.batchId !== target.batchId));
+      } else {
+        setPending((prev) => prev.filter((r) => r.id !== recordId));
+      }
     }
     setApproveLoadingId(null);
     router.refresh();
@@ -278,6 +300,56 @@ export default function AttendanceClient({
     }
     return null;
   }
+
+  interface BatchGroup {
+    firstId: string;
+    batchId: string | null;
+    user: { id: string; name: string; email: string; department: string | null };
+    requestedStatus: string;
+    leaveTypeId: string | null;
+    note: string | null;
+    dateRange: string;
+    count: number;
+    records: PendingRecord[];
+  }
+
+  function groupPendingIntoBatches(records: PendingRecord[]): BatchGroup[] {
+    const groups = new Map<string | null, PendingRecord[]>();
+    for (const r of records) {
+      const key = r.batchId || r.id;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.push(r);
+      } else {
+        groups.set(key, [r]);
+      }
+    }
+
+    const result: BatchGroup[] = [];
+    for (const [key, recs] of groups) {
+      recs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const first = recs[0];
+      const last = recs[recs.length - 1];
+      const dateRange = recs.length > 1
+        ? `${new Date(first.date).toLocaleDateString()} - ${new Date(last.date).toLocaleDateString()}`
+        : new Date(first.date).toLocaleDateString();
+
+      result.push({
+        firstId: first.id,
+        batchId: first.batchId,
+        user: first.user,
+        requestedStatus: first.requestedStatus,
+        leaveTypeId: first.leaveTypeId,
+        note: first.note,
+        dateRange,
+        count: recs.length,
+        records: recs,
+      });
+    }
+    return result;
+  }
+
+  const batchGroups = groupPendingIntoBatches(pending);
 
   const fetchReport = useCallback(async () => {
     setReportLoading(true);
@@ -438,6 +510,29 @@ export default function AttendanceClient({
                   ))}
                 </select>
               </div>
+              <div className="flex-row gap-md mb-2 flex-wrap">
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">Start date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={leaveStartDate}
+                    onChange={(e) => setLeaveStartDate(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">End date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={leaveEndDate}
+                    onChange={(e) => setLeaveEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="form-hint mb-2">
+                Leave the dates empty to request a single day. Multi-day requests skip weekends.
+              </p>
               <div style={{ marginBottom: "1rem" }}>
                 <label className="form-label">Note (optional)</label>
                 <input
@@ -553,7 +648,7 @@ export default function AttendanceClient({
         Pending Approvals
       </h2>
 
-      {pending.length === 0 ? (
+      {batchGroups.length === 0 ? (
         <Card>
           <p className="text-muted text-center" style={{ padding: "1.5rem 0", margin: 0 }}>
             No pending attendance records.
@@ -567,39 +662,38 @@ export default function AttendanceClient({
                 <th>Staff</th>
                 <th>Date</th>
                 <th>Requested</th>
-                <th>Sign-in</th>
                 <th>Note</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {pending.map((r) => {
-                const warning = getBalanceWarning(r);
-                const displayStatus = r.leaveTypeId
-                  ? getLeaveTypeName(r.leaveTypeId) ?? r.requestedStatus
-                  : r.requestedStatus;
+              {batchGroups.map((g) => {
+                const firstRecord = g.records[0];
+                const warning = getBalanceWarning(firstRecord);
+                const displayStatus = g.leaveTypeId
+                  ? getLeaveTypeName(g.leaveTypeId) ?? g.requestedStatus
+                  : g.requestedStatus;
+                const label = g.count > 1
+                  ? `${displayStatus} (${g.count} days)`
+                  : displayStatus;
+                const isLoading = approveLoadingId === g.firstId;
                 return (
-                  <tr key={r.id}>
+                  <tr key={g.firstId}>
                     <td>
                       <PersonRow
-                        name={r.user.name}
-                        department={r.user.department ?? undefined}
+                        name={g.user.name}
+                        department={g.user.department ?? undefined}
                         size="sm"
                       />
                     </td>
-                    <td>{new Date(r.date).toLocaleDateString()}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>{g.dateRange}</td>
                     <td>
                       <StatusPill
-                        status={r.requestedStatus.toLowerCase() === "present" ? "present" : "pending"}
-                        label={displayStatus}
+                        status={g.requestedStatus.toLowerCase() === "present" ? "present" : "pending"}
+                        label={label}
                       />
                     </td>
-                    <td>
-                      {r.signInTime
-                        ? new Date(r.signInTime).toLocaleTimeString()
-                        : "\u2014"}
-                    </td>
-                    <td className="text-muted">{r.note || "\u2014"}</td>
+                    <td className="text-muted">{g.note || "\u2014"}</td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       {warning && (
                         <div className="mb-1">
@@ -610,15 +704,15 @@ export default function AttendanceClient({
                       )}
                       <div className="flex-row gap-sm">
                         <button
-                          onClick={() => handleApproveAction(r.id, "approve")}
-                          disabled={approveLoadingId === r.id}
+                          onClick={() => handleApproveAction(g.firstId, "approve")}
+                          disabled={isLoading}
                           className="btn btn-success btn-sm"
                         >
-                          Approve
+                          {isLoading ? "…" : "Approve"}
                         </button>
                         <button
-                          onClick={() => handleApproveAction(r.id, "reject")}
-                          disabled={approveLoadingId === r.id}
+                          onClick={() => handleApproveAction(g.firstId, "reject")}
+                          disabled={isLoading}
                           className="btn btn-danger btn-sm"
                         >
                           Reject

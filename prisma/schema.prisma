@@ -52,6 +52,7 @@ model AttendanceRecord {
   status          AttendanceStatus @default(PENDING)
   leaveTypeId     String?
   leaveType       LeaveType?       @relation(fields: [leaveTypeId], references: [id])
+  batchId         String?
   reviewedById    String?
   reviewedBy      User?            @relation("ReviewedBy", fields: [reviewedById], references: [id])
   reviewedAt      DateTime?

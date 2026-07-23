@@ -87,16 +87,70 @@ export async function createLeaveRequest(
   userId: string,
   requestedStatus: AttendanceStatus,
   note?: string,
-  leaveTypeId?: string
+  leaveTypeId?: string,
+  startDate?: Date,
+  endDate?: Date
 ) {
+  const effectiveEnd = endDate ?? startDate ?? todayDate();
+
   return prisma.attendanceRecord.create({
     data: {
       userId,
-      date: todayDate(),
+      date: effectiveEnd,
       requestedStatus,
       note: note || null,
       status: "PENDING",
       leaveTypeId: leaveTypeId || null,
+    },
+  });
+}
+
+export async function createLeaveRequestBatch(
+  userId: string,
+  requestedStatus: AttendanceStatus,
+  leaveTypeId: string,
+  startDate: Date,
+  endDate: Date,
+  note?: string
+) {
+  const batchId = crypto.randomUUID();
+  const records: {
+    userId: string;
+    date: Date;
+    requestedStatus: AttendanceStatus;
+    note: string | null;
+    status: AttendanceStatus;
+    leaveTypeId: string;
+    batchId: string;
+  }[] = [];
+
+  const cursor = new Date(startDate);
+  const end = new Date(endDate);
+
+  while (cursor <= end) {
+    const dow = cursor.getDay();
+    if (dow !== 0 && dow !== 6) {
+      records.push({
+        userId,
+        date: new Date(cursor),
+        requestedStatus,
+        note: note || null,
+        status: "PENDING",
+        leaveTypeId,
+        batchId,
+      });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  if (records.length === 0) return null;
+
+  await prisma.attendanceRecord.createMany({ data: records });
+
+  return prisma.attendanceRecord.findFirst({
+    where: { batchId },
+    include: {
+      user: { select: { id: true, name: true, email: true, department: true } },
     },
   });
 }
@@ -107,7 +161,7 @@ export async function getPendingRecords() {
     include: {
       user: { select: { id: true, name: true, email: true, department: true } },
     },
-    orderBy: { date: "desc" },
+    orderBy: [{ batchId: "asc" }, { date: "asc" }],
   });
 }
 
@@ -115,25 +169,40 @@ export async function approveRecord(recordId: string, reviewerId: string) {
   const record = await prisma.attendanceRecord.findUnique({ where: { id: recordId } });
   if (!record) return null;
 
-  return prisma.attendanceRecord.update({
-    where: { id: recordId },
+  const where = record.batchId
+    ? { batchId: record.batchId }
+    : { id: recordId };
+
+  await prisma.attendanceRecord.updateMany({
+    where,
     data: {
       status: record.requestedStatus,
       reviewedById: reviewerId,
       reviewedAt: new Date(),
     },
   });
+
+  return prisma.attendanceRecord.findUnique({ where: { id: recordId } });
 }
 
 export async function rejectRecord(recordId: string, reviewerId: string) {
-  return prisma.attendanceRecord.update({
-    where: { id: recordId },
+  const record = await prisma.attendanceRecord.findUnique({ where: { id: recordId } });
+  if (!record) return null;
+
+  const where = record.batchId
+    ? { batchId: record.batchId }
+    : { id: recordId };
+
+  await prisma.attendanceRecord.updateMany({
+    where,
     data: {
       status: "ABSENT",
       reviewedById: reviewerId,
       reviewedAt: new Date(),
     },
   });
+
+  return prisma.attendanceRecord.findUnique({ where: { id: recordId } });
 }
 
 export async function getSettings() {

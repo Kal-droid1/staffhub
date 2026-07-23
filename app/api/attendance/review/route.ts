@@ -26,6 +26,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, status: record.status });
   }
 
-  const record = await rejectRecord(recordId, session.user.id);
-  return NextResponse.json({ success: true, status: record.status });
+  const rejected = await rejectRecord(recordId, session.user.id);
+  if (!rejected) {
+    return NextResponse.json({ error: "Record not found" }, { status: 404 });
+  }
+  return NextResponse.json({ success: true, status: rejected.status });
 }

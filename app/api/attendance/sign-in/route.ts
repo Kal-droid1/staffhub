@@ -5,6 +5,7 @@ import {
   getTodayRecord,
   createSignIn,
   createLeaveRequest,
+  createLeaveRequestBatch,
   getSettings,
   isPastCutoff,
 } from "@/modules/attendance/queries";
@@ -69,6 +70,26 @@ export async function POST(req: NextRequest) {
   if (action === "leave") {
     const requestedStatus = (body.requestedStatus as AttendanceStatus) || "PERMISSION";
     const leaveTypeId = body.leaveTypeId || undefined;
+    const startDate = body.startDate || undefined;
+    const endDate = body.endDate || undefined;
+
+    const isMultiDay = startDate && endDate && startDate !== endDate && leaveTypeId;
+
+    if (isMultiDay) {
+      const batchRecord = await createLeaveRequestBatch(
+        session.user.id,
+        requestedStatus,
+        leaveTypeId,
+        new Date(startDate),
+        new Date(endDate),
+        body.note
+      );
+      return NextResponse.json(
+        { multiDayBatch: true, count: body._count, record: null },
+        { status: 201 }
+      );
+    }
+
     const record = await createLeaveRequest(session.user.id, requestedStatus, body.note, leaveTypeId);
     return NextResponse.json(
       {

@@ -2,6 +2,7 @@ export {
   getTodayRecord,
   createSignIn,
   createLeaveRequest,
+  createLeaveRequestBatch,
   getPendingRecords,
   approveRecord,
   rejectRecord,

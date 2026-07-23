@@ -30,6 +30,7 @@ export default async function AttendancePage() {
     signInTime: string | null;
     requestedStatus: string;
     leaveTypeId: string | null;
+    batchId: string | null;
     note: string | null;
     user: {
       id: string;
@@ -48,6 +49,7 @@ export default async function AttendancePage() {
       signInTime: r.signInTime?.toISOString() ?? null,
       requestedStatus: r.requestedStatus,
       leaveTypeId: r.leaveTypeId,
+      batchId: r.batchId,
       note: r.note,
       user: {
         id: r.user.id,
