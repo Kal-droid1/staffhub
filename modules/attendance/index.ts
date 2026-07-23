@@ -11,4 +11,6 @@ export {
   getSecondsUntilCutoff,
   getAddisTime,
   markAbsentForMissingUsers,
+  getMonthlyReport,
 } from "./queries";
+export type { MonthlyReportUser } from "./queries";

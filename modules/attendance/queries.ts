@@ -187,3 +187,136 @@ export async function markAbsentForMissingUsers() {
 
   return missingUserIds.length;
 }
+
+export type MonthlyReportUser = {
+  user: { id: string; name: string; email: string; department: string | null };
+  present: number;
+  absent: number;
+  leave: number;
+  pending: number;
+  records: {
+    id: string;
+    date: Date;
+    status: string;
+    note: string | null;
+    userName: string;
+  }[];
+};
+
+export async function getMonthlyReport(
+  month: number,
+  year: number,
+  userId?: string
+): Promise<{ summary: MonthlyReportUser[] }> {
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 1);
+
+  const where: Record<string, unknown> = {
+    date: { gte: monthStart, lt: monthEnd },
+  };
+  if (userId) where.userId = userId;
+
+  const records = await prisma.attendanceRecord.findMany({
+    where,
+    include: {
+      user: { select: { id: true, name: true, email: true, department: true } },
+    },
+    orderBy: { date: "asc" },
+  });
+
+  const byUser = new Map<
+    string,
+    {
+      user: { id: string; name: string; email: string; department: string | null };
+      present: number;
+      absent: number;
+      leave: number;
+      pending: number;
+      records: {
+        id: string;
+        date: Date;
+        status: string;
+        note: string | null;
+        userName: string;
+      }[];
+    }
+  >();
+
+  for (const r of records) {
+    const uid = r.userId;
+    if (!byUser.has(uid)) {
+      byUser.set(uid, {
+        user: r.user,
+        present: 0,
+        absent: 0,
+        leave: 0,
+        pending: 0,
+        records: [],
+      });
+    }
+    const entry = byUser.get(uid)!;
+    entry.records.push({
+      id: r.id,
+      date: r.date,
+      status: r.status,
+      note: r.note,
+      userName: r.user.name,
+    });
+
+    switch (r.status) {
+      case "PRESENT":
+        entry.present++;
+        break;
+      case "ABSENT":
+        entry.absent++;
+        break;
+      case "PERMISSION":
+      case "ANNUAL_LEAVE":
+      case "OTHER":
+        entry.leave++;
+        break;
+      case "PENDING":
+        entry.pending++;
+        break;
+    }
+  }
+
+  if (userId && byUser.size === 0) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, department: true },
+    });
+    if (user) {
+      byUser.set(userId, {
+        user,
+        present: 0,
+        absent: 0,
+        leave: 0,
+        pending: 0,
+        records: [],
+      });
+    }
+  } else if (!userId) {
+    const allUsers = await prisma.user.findMany({
+      select: { id: true, name: true, email: true, department: true },
+    });
+    for (const u of allUsers) {
+      if (!byUser.has(u.id)) {
+        byUser.set(u.id, {
+          user: u,
+          present: 0,
+          absent: 0,
+          leave: 0,
+          pending: 0,
+          records: [],
+        });
+      }
+    }
+  }
+
+  const summary = Array.from(byUser.values()).sort(
+    (a, b) => b.absent - a.absent
+  );
+
+  return { summary };
+}
