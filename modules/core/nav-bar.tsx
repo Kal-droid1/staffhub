@@ -33,6 +33,11 @@ export default function NavBar() {
             Approve
           </Link>
         )}
+        {(role === "MANAGER" || role === "ADMIN") && (
+          <Link href="/settings" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+            Settings
+          </Link>
+        )}
       </div>
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}

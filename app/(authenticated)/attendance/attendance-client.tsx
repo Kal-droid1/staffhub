@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 interface Record {
@@ -15,9 +15,18 @@ interface Record {
 
 interface Props {
   todayRecord: Record | null;
+  cutoffTime: string;
+  initialSecondsUntil: number;
 }
 
-export default function AttendanceClient({ todayRecord }: Props) {
+function formatCountdown(totalSeconds: number): string {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+export default function AttendanceClient({ todayRecord, cutoffTime, initialSecondsUntil }: Props) {
   const router = useRouter();
   const [record, setRecord] = useState<Record | null>(todayRecord);
   const [loading, setLoading] = useState(false);
@@ -25,6 +34,26 @@ export default function AttendanceClient({ todayRecord }: Props) {
   const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [leaveType, setLeaveType] = useState("PERMISSION");
   const [leaveNote, setLeaveNote] = useState("");
+  const [secondsLeft, setSecondsLeft] = useState(initialSecondsUntil);
+
+  const cutoffPassed = secondsLeft <= 0;
+
+  useEffect(() => {
+    if (record) return; // already recorded, no countdown needed
+    if (secondsLeft <= 0) return;
+
+    const interval = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [record, secondsLeft]);
 
   async function handleSignIn() {
     setLoading(true);
@@ -123,22 +152,36 @@ export default function AttendanceClient({ todayRecord }: Props) {
       <h1>Attendance</h1>
       <p>You haven&apos;t recorded your attendance today.</p>
 
+      {!cutoffPassed && (
+        <p style={{ fontSize: "1.1rem", fontWeight: 500, color: "#2563eb" }}>
+          Sign-in closes in {formatCountdown(secondsLeft)}
+        </p>
+      )}
+
+      {cutoffPassed && (
+        <p style={{ color: "#dc2626", fontWeight: 500 }}>
+          Sign-in closed for today (cutoff was {cutoffTime}). Use Request leave if needed.
+        </p>
+      )}
+
       <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
-        <button
-          onClick={handleSignIn}
-          disabled={loading}
-          style={{
-            padding: "0.75rem 1.5rem",
-            fontSize: "1rem",
-            backgroundColor: "#16a34a",
-            color: "white",
-            border: "none",
-            borderRadius: "0.375rem",
-            cursor: "pointer",
-          }}
-        >
-          {loading && !showLeaveForm ? "Signing in..." : "Sign in"}
-        </button>
+        {!cutoffPassed && (
+          <button
+            onClick={handleSignIn}
+            disabled={loading}
+            style={{
+              padding: "0.75rem 1.5rem",
+              fontSize: "1rem",
+              backgroundColor: "#16a34a",
+              color: "white",
+              border: "none",
+              borderRadius: "0.375rem",
+              cursor: "pointer",
+            }}
+          >
+            {loading && !showLeaveForm ? "Signing in..." : "Sign in"}
+          </button>
+        )}
 
         <button
           onClick={() => setShowLeaveForm(!showLeaveForm)}

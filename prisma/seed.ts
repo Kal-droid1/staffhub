@@ -48,6 +48,13 @@ async function main() {
     console.log(`  ${user.role.padEnd(7)} | ${user.email} | ${TEST_PASSWORD}`);
   }
   console.log("");
+
+  await prisma.settings.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: { id: "singleton", cutoffTime: "09:00" },
+  });
+  console.log("Settings seeded: cutoffTime = 09:00\n");
 }
 
 main()

@@ -35,6 +35,11 @@ model User {
   reviewed    AttendanceRecord[] @relation("ReviewedBy")
 }
 
+model Settings {
+  id         String @id @default("singleton")
+  cutoffTime String @default("09:00")
+}
+
 model AttendanceRecord {
   id              String           @id @default(uuid())
   userId          String

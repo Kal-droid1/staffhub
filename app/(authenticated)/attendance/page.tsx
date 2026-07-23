@@ -1,10 +1,12 @@
 import { requireAuth } from "@/modules/core/require-auth";
-import { getTodayRecord } from "@/modules/attendance/queries";
+import { getTodayRecord, getSettings, getSecondsUntilCutoff } from "@/modules/attendance/queries";
 import AttendanceClient from "./attendance-client";
 
 export default async function AttendancePage() {
   const user = await requireAuth();
   const todayRecord = await getTodayRecord(user.id);
+  const settings = await getSettings();
+  const secondsUntil = getSecondsUntilCutoff(settings.cutoffTime);
 
   const serialized = todayRecord
     ? {
@@ -20,5 +22,11 @@ export default async function AttendancePage() {
       }
     : null;
 
-  return <AttendanceClient todayRecord={serialized} />;
+  return (
+    <AttendanceClient
+      todayRecord={serialized}
+      cutoffTime={settings.cutoffTime}
+      initialSecondsUntil={secondsUntil}
+    />
+  );
 }
