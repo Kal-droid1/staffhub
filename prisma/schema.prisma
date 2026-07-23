@@ -33,6 +33,7 @@ model User {
   updatedAt   DateTime           @updatedAt
   attendance  AttendanceRecord[] @relation("UserAttendance")
   reviewed    AttendanceRecord[] @relation("ReviewedBy")
+  leaveGrants LeaveGrant[]
 }
 
 model Settings {
@@ -55,4 +56,26 @@ model AttendanceRecord {
   createdAt       DateTime         @default(now())
 
   @@unique([userId, date])
+}
+
+model LeaveType {
+  id               String           @id @default(uuid())
+  name             String           @unique
+  isAnnualRecurring Boolean         @default(false)
+  mappedStatus     AttendanceStatus
+  createdAt        DateTime         @default(now())
+  grants           LeaveGrant[]
+}
+
+model LeaveGrant {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  leaveTypeId String
+  leaveType   LeaveType @relation(fields: [leaveTypeId], references: [id])
+  days        Float
+  grantedDate DateTime  @db.Date
+  note        String?
+  expiresAt   DateTime? @db.Date
+  createdAt   DateTime  @default(now())
 }

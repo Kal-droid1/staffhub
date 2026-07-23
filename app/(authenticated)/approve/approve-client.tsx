@@ -17,14 +17,38 @@ interface PendingRecord {
   };
 }
 
-interface Props {
-  pendingRecords: PendingRecord[];
+interface Balance {
+  leaveTypeId: string;
+  leaveTypeName: string;
+  isAnnualRecurring: boolean;
+  granted: number;
+  used: number;
+  remaining: number;
 }
 
-export default function ApproveClient({ pendingRecords }: Props) {
+interface Props {
+  pendingRecords: PendingRecord[];
+  balances: Record<string, Balance[]>;
+}
+
+const LEAVE_STATUSES = ["PERMISSION", "ANNUAL_LEAVE", "OTHER"];
+
+export default function ApproveClient({ pendingRecords, balances }: Props) {
   const router = useRouter();
   const [records, setRecords] = useState<PendingRecord[]>(pendingRecords);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  function getBalanceWarning(r: PendingRecord): string | null {
+    if (!LEAVE_STATUSES.includes(r.requestedStatus)) return null;
+    const userBalances = balances[r.user.id];
+    if (!userBalances) return null;
+    const matching = userBalances.find((b) => b.leaveTypeName === r.requestedStatus);
+    if (!matching) return null;
+    if (matching.remaining <= 0) {
+      return `Balance would be negative (remaining: ${matching.remaining} day${matching.remaining !== 1 ? "s" : ""})`;
+    }
+    return null;
+  }
 
   async function handleAction(recordId: string, action: "approve" | "reject") {
     setLoadingId(recordId);
@@ -69,62 +93,70 @@ export default function ApproveClient({ pendingRecords }: Props) {
           </tr>
         </thead>
         <tbody>
-          {records.map((r) => (
-            <tr
-              key={r.id}
-              style={{ borderBottom: "1px solid #e5e7eb" }}
-            >
-              <td style={{ padding: "0.5rem" }}>
-                <strong>{r.user.name}</strong>
-                {r.user.department && (
-                  <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-                    {r.user.department}
-                  </div>
-                )}
-              </td>
-              <td style={{ padding: "0.5rem" }}>
-                {new Date(r.date).toLocaleDateString()}
-              </td>
-              <td style={{ padding: "0.5rem" }}>{r.requestedStatus}</td>
-              <td style={{ padding: "0.5rem" }}>
-                {r.signInTime
-                  ? new Date(r.signInTime).toLocaleTimeString()
-                  : "—"}
-              </td>
-              <td style={{ padding: "0.5rem" }}>{r.note || "—"}</td>
-              <td style={{ padding: "0.5rem", whiteSpace: "nowrap" }}>
-                <button
-                  onClick={() => handleAction(r.id, "approve")}
-                  disabled={loadingId === r.id}
-                  style={{
-                    padding: "0.25rem 0.75rem",
-                    marginRight: "0.5rem",
-                    backgroundColor: "#16a34a",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "0.25rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  Approve
-                </button>
-                <button
-                  onClick={() => handleAction(r.id, "reject")}
-                  disabled={loadingId === r.id}
-                  style={{
-                    padding: "0.25rem 0.75rem",
-                    backgroundColor: "#dc2626",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "0.25rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  Reject
-                </button>
-              </td>
-            </tr>
-          ))}
+          {records.map((r) => {
+            const warning = getBalanceWarning(r);
+            return (
+              <tr
+                key={r.id}
+                style={{ borderBottom: "1px solid #e5e7eb" }}
+              >
+                <td style={{ padding: "0.5rem" }}>
+                  <strong>{r.user.name}</strong>
+                  {r.user.department && (
+                    <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
+                      {r.user.department}
+                    </div>
+                  )}
+                </td>
+                <td style={{ padding: "0.5rem" }}>
+                  {new Date(r.date).toLocaleDateString()}
+                </td>
+                <td style={{ padding: "0.5rem" }}>{r.requestedStatus}</td>
+                <td style={{ padding: "0.5rem" }}>
+                  {r.signInTime
+                    ? new Date(r.signInTime).toLocaleTimeString()
+                    : "\u2014"}
+                </td>
+                <td style={{ padding: "0.5rem" }}>{r.note || "\u2014"}</td>
+                <td style={{ padding: "0.5rem", whiteSpace: "nowrap" }}>
+                  {warning && (
+                    <div style={{ fontSize: "0.8rem", color: "#dc2626", marginBottom: "0.25rem" }}>
+                      {"\u26A0"} {warning}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => handleAction(r.id, "approve")}
+                    disabled={loadingId === r.id}
+                    style={{
+                      padding: "0.25rem 0.75rem",
+                      marginRight: "0.5rem",
+                      backgroundColor: "#16a34a",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "0.25rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handleAction(r.id, "reject")}
+                    disabled={loadingId === r.id}
+                    style={{
+                      padding: "0.25rem 0.75rem",
+                      backgroundColor: "#dc2626",
+                      color: "white",
+                      border: "none",
+                      borderRadius: "0.25rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Reject
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

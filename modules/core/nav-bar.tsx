@@ -43,6 +43,16 @@ export default function NavBar() {
             Reports
           </Link>
         )}
+        {(role === "MANAGER" || role === "ADMIN") && (
+          <Link href="/leave-types" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+            Leave Types
+          </Link>
+        )}
+        {(role === "MANAGER" || role === "ADMIN") && (
+          <Link href="/balances" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+            Balances
+          </Link>
+        )}
       </div>
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}

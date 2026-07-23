@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient, Role, AttendanceStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -55,6 +55,46 @@ async function main() {
     create: { id: "singleton", cutoffTime: "09:00" },
   });
   console.log("Settings seeded: cutoffTime = 09:00\n");
+
+  const defaultLeaveTypes: { name: string; isAnnualRecurring: boolean; mappedStatus: AttendanceStatus }[] = [
+    { name: "Annual Leave", isAnnualRecurring: true, mappedStatus: "ANNUAL_LEAVE" },
+    { name: "Permission", isAnnualRecurring: false, mappedStatus: "PERMISSION" },
+    { name: "Other", isAnnualRecurring: false, mappedStatus: "OTHER" },
+  ];
+
+  for (const lt of defaultLeaveTypes) {
+    await prisma.leaveType.upsert({
+      where: { name: lt.name },
+      update: {},
+      create: { name: lt.name, isAnnualRecurring: lt.isAnnualRecurring, mappedStatus: lt.mappedStatus },
+    });
+  }
+  console.log("Leave types seeded: Annual Leave, Permission, Other\n");
+
+  const allUsers = await prisma.user.findMany({ select: { id: true, name: true } });
+  const annualType = await prisma.leaveType.findUnique({ where: { name: "Annual Leave" } });
+
+  if (annualType) {
+    for (const u of allUsers) {
+      const existingGrant = await prisma.leaveGrant.findFirst({
+        where: { userId: u.id, leaveTypeId: annualType.id },
+      });
+      if (!existingGrant) {
+        await prisma.leaveGrant.create({
+          data: {
+            userId: u.id,
+            leaveTypeId: annualType.id,
+            days: 20,
+            grantedDate: new Date(2026, 0, 1),
+            note: "Initial 2026 annual leave",
+            expiresAt: new Date(2028, 0, 1),
+          },
+        });
+        console.log(`  ${u.name}: 20 days Annual Leave granted.`);
+      }
+    }
+    console.log("");
+  }
 }
 
 main()

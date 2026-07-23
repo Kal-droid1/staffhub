@@ -1,10 +1,18 @@
 import { requireAuth } from "@/modules/core/require-auth";
 import { getPendingRecords } from "@/modules/attendance/queries";
+import { getLeaveBalances } from "@/modules/leave/queries";
 import ApproveClient from "./approve-client";
 
 export default async function ApprovePage() {
   const user = await requireAuth("MANAGER");
   const pending = await getPendingRecords();
+
+  const balancesMap: Record<string, ReturnType<typeof getLeaveBalances> extends Promise<infer T> ? T : never> = {};
+  for (const r of pending) {
+    if (!balancesMap[r.userId]) {
+      balancesMap[r.userId] = await getLeaveBalances(r.userId);
+    }
+  }
 
   const serialized = pending.map((r) => ({
     id: r.id,
@@ -20,5 +28,10 @@ export default async function ApprovePage() {
     },
   }));
 
-  return <ApproveClient pendingRecords={serialized} />;
+  return (
+    <ApproveClient
+      pendingRecords={serialized}
+      balances={JSON.parse(JSON.stringify(balancesMap))}
+    />
+  );
 }

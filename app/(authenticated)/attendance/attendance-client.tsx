@@ -17,6 +17,7 @@ interface Props {
   todayRecord: Record | null;
   cutoffTime: string;
   initialSecondsUntil: number;
+  leaveTypes: { id: string; name: string; mappedStatus: string }[];
 }
 
 function formatCountdown(totalSeconds: number): string {
@@ -26,13 +27,13 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-export default function AttendanceClient({ todayRecord, cutoffTime, initialSecondsUntil }: Props) {
+export default function AttendanceClient({ todayRecord, cutoffTime, initialSecondsUntil, leaveTypes }: Props) {
   const router = useRouter();
   const [record, setRecord] = useState<Record | null>(todayRecord);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showLeaveForm, setShowLeaveForm] = useState(false);
-  const [leaveType, setLeaveType] = useState("PERMISSION");
+  const [leaveType, setLeaveType] = useState(leaveTypes[0]?.mappedStatus ?? "PERMISSION");
   const [leaveNote, setLeaveNote] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(initialSecondsUntil);
 
@@ -214,9 +215,11 @@ export default function AttendanceClient({ todayRecord, cutoffTime, initialSecon
               onChange={(e) => setLeaveType(e.target.value)}
               style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
             >
-              <option value="PERMISSION">Permission</option>
-              <option value="ANNUAL_LEAVE">Annual Leave</option>
-              <option value="OTHER">Other</option>
+              {leaveTypes.map((lt) => (
+                <option key={lt.id} value={lt.mappedStatus}>
+                  {lt.name}
+                </option>
+              ))}
             </select>
           </div>
           <div style={{ marginBottom: "1rem" }}>
