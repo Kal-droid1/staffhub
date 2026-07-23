@@ -1,6 +1,6 @@
 import { requireAuth } from "@/modules/core/require-auth";
-import { getTodayRecord, getSettings, getSecondsUntilCutoff } from "@/modules/attendance/queries";
-import { getLeaveTypes } from "@/modules/leave/queries";
+import { getTodayRecord, getSettings, getSecondsUntilCutoff, getPendingRecords } from "@/modules/attendance/queries";
+import { getLeaveTypes, getLeaveBalances } from "@/modules/leave/queries";
 import AttendanceClient from "./attendance-client";
 
 export default async function AttendancePage() {
@@ -24,12 +24,55 @@ export default async function AttendancePage() {
       }
     : null;
 
+  let pending: {
+    id: string;
+    date: string;
+    signInTime: string | null;
+    requestedStatus: string;
+    leaveTypeId: string | null;
+    note: string | null;
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      department: string | null;
+    };
+  }[] = [];
+  let balancesMap: Record<string, { leaveTypeId: string; leaveTypeName: string; isAnnualRecurring: boolean; granted: number; used: number; remaining: number }[]> = {};
+
+  if (user.role === "MANAGER" || user.role === "ADMIN") {
+    const pendingRecords = await getPendingRecords();
+    pending = pendingRecords.map((r) => ({
+      id: r.id,
+      date: r.date.toISOString(),
+      signInTime: r.signInTime?.toISOString() ?? null,
+      requestedStatus: r.requestedStatus,
+      leaveTypeId: r.leaveTypeId,
+      note: r.note,
+      user: {
+        id: r.user.id,
+        name: r.user.name,
+        email: r.user.email,
+        department: r.user.department,
+      },
+    }));
+
+    for (const r of pendingRecords) {
+      if (!balancesMap[r.userId]) {
+        balancesMap[r.userId] = await getLeaveBalances(r.userId);
+      }
+    }
+  }
+
   return (
     <AttendanceClient
+      userRole={user.role}
       todayRecord={serialized}
       cutoffTime={settings.cutoffTime}
       initialSecondsUntil={secondsUntil}
       leaveTypes={JSON.parse(JSON.stringify(leaveTypes))}
+      pendingRecords={pending}
+      balances={JSON.parse(JSON.stringify(balancesMap))}
     />
   );
 }

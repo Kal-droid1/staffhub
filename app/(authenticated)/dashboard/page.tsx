@@ -24,7 +24,6 @@ export default async function DashboardPage() {
   const greeting = getGreeting();
 
   const totalRemaining = balances.reduce((sum, b) => sum + b.remaining, 0);
-  const lowBalanceCount = balances.filter((b) => b.remaining <= 0).length;
 
   return (
     <div className="page-container">
@@ -32,7 +31,7 @@ export default async function DashboardPage() {
         {greeting}, {user.name}
       </h1>
 
-      <div className="card-grid card-grid--3" style={{ marginBottom: "1.5rem" }}>
+      <div className="card-grid" style={{ marginBottom: "1.5rem", gridTemplateColumns: "repeat(2, 1fr)" }}>
         <Card>
           <p className="stat-label">Your Role</p>
           <p className="stat-number" style={{ fontSize: "1.5rem", marginTop: "0.25rem" }}>
@@ -51,24 +50,6 @@ export default async function DashboardPage() {
           </p>
           <p className="text-sm text-muted" style={{ marginTop: "0.15rem" }}>
             across all leave types
-          </p>
-        </Card>
-
-        <Card>
-          <p className="stat-label">Low / Zero Balances</p>
-          <p
-            className="stat-number"
-            style={{
-              marginTop: "0.25rem",
-              color: lowBalanceCount > 0 ? "var(--color-danger)" : "var(--color-accent)",
-            }}
-          >
-            {lowBalanceCount}
-          </p>
-          <p className="text-sm text-muted" style={{ marginTop: "0.15rem" }}>
-            {lowBalanceCount === 0
-              ? "All balances healthy"
-              : `type${lowBalanceCount !== 1 ? "s" : ""} with no remaining days`}
           </p>
         </Card>
       </div>

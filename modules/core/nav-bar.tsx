@@ -39,16 +39,6 @@ export default function NavBar() {
           Attendance
         </Link>
         {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/approve" style={linkStyle}>
-            Approve
-          </Link>
-        )}
-        {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/settings" style={linkStyle}>
-            Settings
-          </Link>
-        )}
-        {(role === "MANAGER" || role === "ADMIN") && (
           <Link href="/reports" style={linkStyle}>
             Reports
           </Link>
