@@ -16,3 +16,11 @@ export async function getUserByEmail(email: string): Promise<SessionUser | null>
   });
   return user;
 }
+
+export async function getUserById(id: string): Promise<SessionUser | null> {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, name: true, email: true, role: true, department: true },
+  });
+  return user;
+}
