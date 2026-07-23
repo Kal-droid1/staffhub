@@ -8,7 +8,7 @@
    - `DATABASE_URL` — your PostgreSQL connection string
    - `NEXTAUTH_SECRET` — a secure random string. **Do not use the placeholder from .env.example in production.**
    - `NEXTAUTH_URL` — your Vercel deployment URL (e.g. `https://staffhub.vercel.app`)
-   - `CRON_SECRET` — a secure random string for authenticating the daily auto-absent cron job. Must match the secret set in Vercel Cron Jobs for `/api/cron/check-attendance`.
+   - `CRON_SECRET` — a secure random string for authenticating the daily auto-absent cron job. Vercel automatically sends this as an `Authorization: Bearer` header on cron requests.
 4. Vercel auto-detects Next.js. No framework override needed — just deploy.
 5. Every push to the main branch triggers an automatic deploy.
 

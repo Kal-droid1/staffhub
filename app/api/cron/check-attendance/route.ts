@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { markAbsentForMissingUsers } from "@/modules/attendance/queries";
 
 export async function GET(req: NextRequest) {
-  const secret = req.headers.get("x-cron-secret");
+  const authHeader = req.headers.get("authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
-  if (!secret || secret !== process.env.CRON_SECRET) {
+  if (!token || token !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
