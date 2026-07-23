@@ -6,6 +6,7 @@ import { getMonthlyReport } from "@/modules/attendance/queries";
 import ExcelJS from "exceljs";
 import AdmZip from "adm-zip";
 import { readFileSync } from "fs";
+import { join } from "path";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -60,7 +61,7 @@ const MONTH_NAMES = [
 ];
 
 function stripCommentsFromTemplate(): Buffer {
-  const raw = readFileSync("staffhub-report-template.xlsx");
+  const raw = readFileSync(join(process.cwd(), "staffhub-report-template.xlsx"));
   const zip = new AdmZip(raw);
 
   const entries = zip.getEntries();
