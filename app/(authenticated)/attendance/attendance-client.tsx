@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Card from "@/modules/core/components/card";
+import StatusPill from "@/modules/core/components/status-pill";
 
 interface Record {
   id: string;
@@ -27,6 +29,14 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+function getStatusVariant(status: string): "present" | "absent" | "pending" | "leave" {
+  const s = status.toLowerCase();
+  if (s === "present" || s === "approved") return "present";
+  if (s === "absent" || s === "rejected") return "absent";
+  if (s === "pending") return "pending";
+  return "leave";
+}
+
 export default function AttendanceClient({ todayRecord, cutoffTime, initialSecondsUntil, leaveTypes }: Props) {
   const router = useRouter();
   const [record, setRecord] = useState<Record | null>(todayRecord);
@@ -41,7 +51,7 @@ export default function AttendanceClient({ todayRecord, cutoffTime, initialSecon
   const cutoffPassed = secondsLeft <= 0;
 
   useEffect(() => {
-    if (record) return; // already recorded, no countdown needed
+    if (record) return;
     if (secondsLeft <= 0) return;
 
     const interval = setInterval(() => {
@@ -115,151 +125,156 @@ export default function AttendanceClient({ todayRecord, cutoffTime, initialSecon
   }
 
   if (record) {
+    const recordStatus = getStatusVariant(record.status);
+
     return (
-      <div style={{ maxWidth: 500, margin: "40px auto", padding: "0 1rem" }}>
-        <h1>Attendance</h1>
-        <p>You have already recorded your attendance for today.</p>
-        <ul style={{ listStyle: "none", padding: 0, lineHeight: 2 }}>
-          <li>
-            <strong>Date:</strong> {new Date(record.date).toLocaleDateString()}
-          </li>
-          {record.signInTime && (
-            <li>
-              <strong>Sign-in time:</strong>{" "}
-              {new Date(record.signInTime).toLocaleTimeString()}
-            </li>
-          )}
-          <li>
-            <strong>Requested:</strong> {record.requestedStatus}
-          </li>
-          {record.note && (
-            <li>
-              <strong>Note:</strong> {record.note}
-            </li>
-          )}
-          <li>
-            <strong>Status:</strong> {record.status}
-          </li>
-          {record.reviewedBy && (
-            <li>
-              <strong>Reviewed by:</strong> {record.reviewedBy.name}
-            </li>
-          )}
-        </ul>
+      <div className="page-container" style={{ maxWidth: 520 }}>
+        <h1 className="page-title">Attendance</h1>
+        <Card>
+          <p className="mb-2" style={{ fontWeight: 500 }}>
+            You have already recorded your attendance for today.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+            <div className="flex-row">
+              <span className="text-muted text-sm" style={{ minWidth: 110 }}>
+                Date
+              </span>
+              <span style={{ fontWeight: 500 }}>
+                {new Date(record.date).toLocaleDateString()}
+              </span>
+            </div>
+            {record.signInTime && (
+              <div className="flex-row">
+                <span className="text-muted text-sm" style={{ minWidth: 110 }}>
+                  Sign-in time
+                </span>
+                <span style={{ fontWeight: 500 }}>
+                  {new Date(record.signInTime).toLocaleTimeString()}
+                </span>
+              </div>
+            )}
+            <div className="flex-row">
+              <span className="text-muted text-sm" style={{ minWidth: 110 }}>
+                Requested
+              </span>
+              <span style={{ fontWeight: 500 }}>{record.requestedStatus}</span>
+            </div>
+            {record.note && (
+              <div className="flex-row">
+                <span className="text-muted text-sm" style={{ minWidth: 110 }}>
+                  Note
+                </span>
+                <span>{record.note}</span>
+              </div>
+            )}
+            <div className="flex-row">
+              <span className="text-muted text-sm" style={{ minWidth: 110 }}>
+                Status
+              </span>
+              <StatusPill status={recordStatus} label={record.status} />
+            </div>
+            {record.reviewedBy && (
+              <div className="flex-row">
+                <span className="text-muted text-sm" style={{ minWidth: 110 }}>
+                  Reviewed by
+                </span>
+                <span style={{ fontWeight: 500 }}>{record.reviewedBy.name}</span>
+              </div>
+            )}
+          </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 500, margin: "40px auto", padding: "0 1rem" }}>
-      <h1>Attendance</h1>
-      <p>You haven&apos;t recorded your attendance today.</p>
-
-      {!cutoffPassed && (
-        <p style={{ fontSize: "1.1rem", fontWeight: 500, color: "#2563eb" }}>
-          Sign-in closes in {formatCountdown(secondsLeft)}
+    <div className="page-container" style={{ maxWidth: 520 }}>
+      <h1 className="page-title">Attendance</h1>
+      <Card>
+        <p className="mb-2" style={{ fontWeight: 500 }}>
+          You haven&apos;t recorded your attendance today.
         </p>
-      )}
 
-      {cutoffPassed && (
-        <p style={{ color: "#dc2626", fontWeight: 500 }}>
-          Sign-in closed for today (cutoff was {cutoffTime}). Use Request leave if needed.
-        </p>
-      )}
-
-      <div style={{ display: "flex", gap: "1rem", marginTop: "1rem" }}>
         {!cutoffPassed && (
-          <button
-            onClick={handleSignIn}
-            disabled={loading}
-            style={{
-              padding: "0.75rem 1.5rem",
-              fontSize: "1rem",
-              backgroundColor: "#16a34a",
-              color: "white",
-              border: "none",
-              borderRadius: "0.375rem",
-              cursor: "pointer",
-            }}
-          >
-            {loading && !showLeaveForm ? "Signing in..." : "Sign in"}
-          </button>
+          <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
+            Sign-in closes in {formatCountdown(secondsLeft)}
+          </p>
         )}
 
-        <button
-          onClick={() => setShowLeaveForm(!showLeaveForm)}
-          disabled={loading}
-          style={{
-            padding: "0.75rem 1.5rem",
-            fontSize: "1rem",
-            backgroundColor: showLeaveForm ? "#9ca3af" : "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: "0.375rem",
-            cursor: "pointer",
-          }}
-        >
-          Request leave
-        </button>
-      </div>
+        {cutoffPassed && (
+          <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
+            Sign-in closed for today (cutoff was {cutoffTime}). Use Request leave if needed.
+          </p>
+        )}
 
-      {showLeaveForm && (
-        <form
-          onSubmit={handleLeaveRequest}
-          style={{ marginTop: "1rem", padding: "1rem", border: "1px solid #e5e7eb", borderRadius: "0.375rem" }}
-        >
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", marginBottom: "0.25rem", fontWeight: 500 }}>
-              Leave type
-            </label>
-            <select
-              value={leaveTypeId}
-              onChange={(e) => {
-                const selected = leaveTypes.find((lt) => lt.id === e.target.value);
-                if (selected) {
-                  setLeaveTypeId(selected.id);
-                  setLeaveType(selected.mappedStatus);
-                }
-              }}
-              style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
+        <div className="flex-row gap-md mt-2">
+          {!cutoffPassed && (
+            <button
+              onClick={handleSignIn}
+              disabled={loading}
+              className="btn btn-success"
             >
-              {leaveTypes.map((lt) => (
-                <option key={lt.id} value={lt.id}>
-                  {lt.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ marginBottom: "1rem" }}>
-            <label style={{ display: "block", marginBottom: "0.25rem", fontWeight: 500 }}>
-              Note (optional)
-            </label>
-            <input
-              type="text"
-              value={leaveNote}
-              onChange={(e) => setLeaveNote(e.target.value)}
-              placeholder="Reason for leave..."
-              style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: "0.5rem 1rem",
-              backgroundColor: "#2563eb",
-              color: "white",
-              border: "none",
-              borderRadius: "0.25rem",
-              cursor: "pointer",
-            }}
-          >
-            {loading ? "Submitting..." : "Submit request"}
-          </button>
-        </form>
-      )}
+              {loading && !showLeaveForm ? "Signing in..." : "Sign in"}
+            </button>
+          )}
 
-      {error && <p style={{ color: "#dc2626", marginTop: "1rem" }}>{error}</p>}
+          <button
+            onClick={() => setShowLeaveForm(!showLeaveForm)}
+            disabled={loading}
+            className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
+          >
+            Request leave
+          </button>
+        </div>
+
+        {showLeaveForm && (
+          <Card
+            style={{ marginTop: "1rem", padding: "1.25rem", border: "1px solid var(--color-border)" }}
+          >
+            <form onSubmit={handleLeaveRequest}>
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="form-label">Leave type</label>
+                <select
+                  value={leaveTypeId}
+                  onChange={(e) => {
+                    const selected = leaveTypes.find((lt) => lt.id === e.target.value);
+                    if (selected) {
+                      setLeaveTypeId(selected.id);
+                      setLeaveType(selected.mappedStatus);
+                    }
+                  }}
+                  className="form-select"
+                >
+                  {leaveTypes.map((lt) => (
+                    <option key={lt.id} value={lt.id}>
+                      {lt.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="form-label">Note (optional)</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={leaveNote}
+                  onChange={(e) => setLeaveNote(e.target.value)}
+                  placeholder="Reason for leave..."
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary"
+              >
+                {loading ? "Submitting..." : "Submit request"}
+              </button>
+            </form>
+          </Card>
+        )}
+
+        {error && <p className="form-error mt-2">{error}</p>}
+      </Card>
     </div>
   );
 }

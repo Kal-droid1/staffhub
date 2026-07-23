@@ -3,6 +3,14 @@
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 
+const linkStyle: React.CSSProperties = {
+  color: "white",
+  textDecoration: "none",
+  fontWeight: 500,
+  fontSize: "0.875rem",
+  padding: "0.3rem 0",
+};
+
 export default function NavBar() {
   const { data: session } = useSession();
 
@@ -16,40 +24,42 @@ export default function NavBar() {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0.75rem 1.5rem",
-        backgroundColor: "#2563eb",
+        padding: "0 1.5rem",
+        height: 52,
+        backgroundColor: "var(--color-brand)",
         color: "white",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
       }}
     >
-      <div style={{ display: "flex", gap: "1.5rem", alignItems: "center" }}>
-        <Link href="/dashboard" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+      <div style={{ display: "flex", gap: "1.75rem", alignItems: "center" }}>
+        <Link href="/dashboard" style={linkStyle}>
           Dashboard
         </Link>
-        <Link href="/attendance" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+        <Link href="/attendance" style={linkStyle}>
           Attendance
         </Link>
         {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/approve" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+          <Link href="/approve" style={linkStyle}>
             Approve
           </Link>
         )}
         {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/settings" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+          <Link href="/settings" style={linkStyle}>
             Settings
           </Link>
         )}
         {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/reports" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+          <Link href="/reports" style={linkStyle}>
             Reports
           </Link>
         )}
         {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/leave-types" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+          <Link href="/leave-types" style={linkStyle}>
             Leave Types
           </Link>
         )}
         {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/balances" style={{ color: "white", textDecoration: "none", fontWeight: 500 }}>
+          <Link href="/balances" style={linkStyle}>
             Balances
           </Link>
         )}
@@ -57,12 +67,15 @@ export default function NavBar() {
       <button
         onClick={() => signOut({ callbackUrl: "/login" })}
         style={{
-          padding: "0.25rem 0.75rem",
-          backgroundColor: "rgba(255,255,255,0.2)",
+          padding: "0.35rem 0.85rem",
+          backgroundColor: "rgba(255,255,255,0.12)",
           color: "white",
-          border: "1px solid rgba(255,255,255,0.3)",
-          borderRadius: "0.25rem",
+          border: "1px solid rgba(255,255,255,0.18)",
+          borderRadius: "var(--radius-sm)",
           cursor: "pointer",
+          fontSize: "0.8rem",
+          fontWeight: 500,
+          fontFamily: "inherit",
         }}
       >
         Log out

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Card from "@/modules/core/components/card";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -34,52 +35,52 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "100px auto", padding: "0 1rem" }}>
-      <h1>StaffHub Login</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "1rem" }}>
-          <label htmlFor="email" style={{ display: "block", marginBottom: "0.25rem" }}>
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
-          />
-        </div>
-        <div style={{ marginBottom: "1rem" }}>
-          <label htmlFor="password" style={{ display: "block", marginBottom: "0.25rem" }}>
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
-          />
-        </div>
-        {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: "100%",
-            padding: "0.5rem",
-            backgroundColor: "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: "0.25rem",
-            cursor: "pointer",
-          }}
-        >
-          {loading ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
+    <div style={{ maxWidth: 420, margin: "120px auto", padding: "0 1.5rem" }}>
+      <Card>
+        <h1 className="page-title" style={{ textAlign: "center" }}>
+          StaffHub
+        </h1>
+        <p className="text-center text-muted mb-2" style={{ fontSize: "0.85rem" }}>
+          Sign in to your account
+        </p>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "1rem" }}>
+            <label htmlFor="email" className="form-label">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className="form-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div style={{ marginBottom: "1rem" }}>
+            <label htmlFor="password" className="form-label">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              className="form-input"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          {error && <p className="form-error" style={{ marginBottom: "1rem" }}>{error}</p>}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={loading}
+            style={{ width: "100%", justifyContent: "center" }}
+          >
+            {loading ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
+      </Card>
     </div>
   );
 }

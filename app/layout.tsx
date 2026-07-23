@@ -5,6 +5,8 @@ export const metadata: Metadata = {
   description: "Staff management platform",
 };
 
+import "./globals.css";
+
 export default function RootLayout({
   children,
 }: {

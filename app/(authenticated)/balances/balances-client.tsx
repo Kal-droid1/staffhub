@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Card from "@/modules/core/components/card";
+import RadialGauge from "@/modules/core/components/radial-gauge";
+import PersonRow from "@/modules/core/components/person-row";
 
 interface LeaveType {
   id: string;
@@ -184,190 +187,297 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto", padding: "0 1rem" }}>
-      <h1>Leave Balances</h1>
+    <div className="page-container">
+      <h1 className="page-title">Leave Balances</h1>
 
-      <div style={{ marginBottom: "1.5rem", display: "flex", gap: "1rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-        <div>
-          <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-            Staff Member
-          </label>
-          <select
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            style={{ padding: "0.5rem", minWidth: 220 }}
-          >
-            {summary.map((s) => (
-              <option key={s.userId} value={s.userId}>
-                {s.userName}
-              </option>
-            ))}
-          </select>
+      <Card style={{ marginBottom: "1.25rem" }}>
+        <div className="flex-row gap-md flex-wrap">
+          <div>
+            <label className="form-label">Staff Member</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="form-select"
+              style={{ minWidth: 220 }}
+            >
+              {summary.map((s) => (
+                <option key={s.userId} value={s.userId}>
+                  {s.userName}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      </Card>
 
       {selectedUser && (
-        <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "1.5rem" }}>
-          <thead>
-            <tr style={{ borderBottom: "2px solid #e5e7eb", textAlign: "left", backgroundColor: "#f9fafb" }}>
-              <th style={{ padding: "0.75rem 0.5rem" }}>Leave Type</th>
-              <th style={{ padding: "0.75rem 0.5rem", textAlign: "center" }}>Granted</th>
-              <th style={{ padding: "0.75rem 0.5rem", textAlign: "center" }}>Used</th>
-              <th style={{ padding: "0.75rem 0.5rem", textAlign: "center" }}>Remaining</th>
-            </tr>
-          </thead>
-          <tbody>
-            {selectedUser.balances.map((b) => (
-              <tr key={b.leaveTypeId} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                <td style={{ padding: "0.5rem" }}>
-                  <strong>{b.leaveTypeName}</strong>
-                  {b.isAnnualRecurring && (
-                    <span style={{ fontSize: "0.8rem", color: "#6b7280", marginLeft: "0.5rem" }}>(annual)</span>
-                  )}
-                </td>
-                <td style={{ padding: "0.5rem", textAlign: "center" }}>{b.granted}</td>
-                <td style={{ padding: "0.5rem", textAlign: "center" }}>{b.used}</td>
-                <td style={{
-                  padding: "0.5rem", textAlign: "center", fontWeight: 600,
-                  color: b.remaining < 0 ? "#dc2626" : b.remaining === 0 ? "#d97706" : "#16a34a",
-                }}>
-                  {b.remaining}
-                </td>
-              </tr>
-            ))}
-            {selectedUser.balances.length === 0 && (
-              <tr>
-                <td colSpan={4} style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
-                  No leave types exist yet.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <>
+          {selectedUser.balances.length === 0 ? (
+            <Card>
+              <p className="text-muted text-center" style={{ padding: "1rem 0", margin: 0 }}>
+                No leave types exist yet.
+              </p>
+            </Card>
+          ) : (
+            <div className="card-grid" style={{ marginBottom: "1.25rem" }}>
+              {selectedUser.balances.map((b) => {
+                const maxVal = Math.max(b.granted, b.remaining + b.used, 1);
+                return (
+                  <Card key={b.leaveTypeId} hover>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 600,
+                          fontSize: "0.95rem",
+                          textAlign: "center",
+                          color: "var(--color-text)",
+                        }}
+                      >
+                        {b.leaveTypeName}
+                        {b.isAnnualRecurring && (
+                          <span className="text-sm text-muted" style={{ marginLeft: "0.35rem" }}>
+                            (annual)
+                          </span>
+                        )}
+                      </div>
+                      <RadialGauge value={b.remaining} max={maxVal} size={120} strokeWidth={9} />
+                      <div className="flex-row gap-lg" style={{ justifyContent: "center" }}>
+                        <div style={{ textAlign: "center" }}>
+                          <div className="text-sm text-muted">Granted</div>
+                          <div style={{ fontWeight: 600 }}>{b.granted}</div>
+                        </div>
+                        <div style={{ textAlign: "center" }}>
+                          <div className="text-sm text-muted">Used</div>
+                          <div style={{ fontWeight: 600 }}>{b.used}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
-      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+      <div className="flex-row gap-sm mb-3 flex-wrap">
         {!showGrantForm && (
-          <button
-            onClick={() => setShowGrantForm(true)}
-            style={{ padding: "0.5rem 1rem", backgroundColor: "#2563eb", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer" }}
-          >
+          <button onClick={() => setShowGrantForm(true)} className="btn btn-primary">
             + Add Grant
           </button>
         )}
         {!showBulk && (
-          <button
-            onClick={() => setShowBulk(true)}
-            style={{ padding: "0.5rem 1rem", backgroundColor: "#7c3aed", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer" }}
-          >
+          <button onClick={() => setShowBulk(true)} className="btn btn-secondary">
             Grant to All Staff
           </button>
         )}
       </div>
 
       {showBulk && (
-        <form onSubmit={handleBulkGrant} style={{ padding: "1rem", border: "1px solid #e5e7eb", borderRadius: "0.375rem", marginBottom: "1rem" }}>
-          <h3 style={{ marginTop: 0 }}>Grant to All Staff</h3>
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>Leave Type</label>
-            <select value={bulkTypeId} onChange={(e) => setBulkTypeId(e.target.value)} style={{ padding: "0.5rem", minWidth: 200 }}>
-              {leaveTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>Days</label>
-            <input type="number" min="0.5" step="0.5" value={bulkDays} onChange={(e) => setBulkDays(Number(e.target.value))} style={{ width: "100px", padding: "0.5rem" }} />
-          </div>
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>Grant Date</label>
-            <input type="date" value={bulkDate} onChange={(e) => setBulkDate(e.target.value)} style={{ padding: "0.5rem" }} />
-          </div>
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>Note (optional)</label>
-            <input type="text" value={bulkNote} onChange={(e) => setBulkNote(e.target.value)} placeholder="e.g. Q2 2026 grant" style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }} />
-          </div>
-          {bulkError && <p style={{ color: "#dc2626", marginBottom: "0.5rem" }}>{bulkError}</p>}
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="submit" disabled={bulkSaving} style={{ padding: "0.5rem 1rem", backgroundColor: "#16a34a", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer" }}>
-              {bulkSaving ? "Granting..." : "Grant to All"}
-            </button>
-            <button type="button" onClick={() => { setShowBulk(false); setBulkError(""); }} style={{ padding: "0.5rem 1rem", backgroundColor: "#9ca3af", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer" }}>
-              Cancel
-            </button>
-          </div>
-        </form>
+        <Card style={{ marginBottom: "1rem" }}>
+          <form onSubmit={handleBulkGrant}>
+            <h3 style={{ marginTop: 0, color: "var(--color-brand)", fontSize: "1rem" }}>
+              Grant to All Staff
+            </h3>
+            <div className="flex-row gap-md flex-wrap mb-2">
+              <div>
+                <label className="form-label">Leave Type</label>
+                <select
+                  value={bulkTypeId}
+                  onChange={(e) => setBulkTypeId(e.target.value)}
+                  className="form-select"
+                  style={{ minWidth: 180 }}
+                >
+                  {leaveTypes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="form-label">Days</label>
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  value={bulkDays}
+                  onChange={(e) => setBulkDays(Number(e.target.value))}
+                  className="form-input"
+                  style={{ width: 100 }}
+                />
+              </div>
+              <div>
+                <label className="form-label">Grant Date</label>
+                <input
+                  type="date"
+                  value={bulkDate}
+                  onChange={(e) => setBulkDate(e.target.value)}
+                  className="form-input"
+                />
+              </div>
+            </div>
+            <div style={{ marginBottom: "0.75rem" }}>
+              <label className="form-label">Note (optional)</label>
+              <input
+                type="text"
+                className="form-input"
+                value={bulkNote}
+                onChange={(e) => setBulkNote(e.target.value)}
+                placeholder="e.g. Q2 2026 grant"
+              />
+            </div>
+            {bulkError && <p className="form-error mb-1">{bulkError}</p>}
+            <div className="flex-row gap-sm">
+              <button type="submit" disabled={bulkSaving} className="btn btn-success">
+                {bulkSaving ? "Granting..." : "Grant to All"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  setShowBulk(false);
+                  setBulkError("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Card>
       )}
 
       {showGrantForm && (
-        <form onSubmit={handleSaveGrant} style={{ padding: "1rem", border: "1px solid #e5e7eb", borderRadius: "0.375rem", marginBottom: "1rem" }}>
-          <h3 style={{ marginTop: 0 }}>{editingGrantId ? "Edit Grant" : `Add Grant for ${selectedUser?.userName}`}</h3>
-          {!editingGrantId && (
-            <div style={{ marginBottom: "0.75rem" }}>
-              <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>Leave Type</label>
-              <select value={grantTypeId} onChange={(e) => setGrantTypeId(e.target.value)} style={{ padding: "0.5rem", minWidth: 200 }}>
-                {leaveTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
+        <Card style={{ marginBottom: "1rem" }}>
+          <form onSubmit={handleSaveGrant}>
+            <h3 style={{ marginTop: 0, color: "var(--color-brand)", fontSize: "1rem" }}>
+              {editingGrantId ? "Edit Grant" : `Add Grant for ${selectedUser?.userName}`}
+            </h3>
+            {!editingGrantId && (
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Leave Type</label>
+                <select
+                  value={grantTypeId}
+                  onChange={(e) => setGrantTypeId(e.target.value)}
+                  className="form-select"
+                  style={{ minWidth: 180 }}
+                >
+                  {leaveTypes.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="flex-row gap-md flex-wrap mb-2">
+              <div>
+                <label className="form-label">Days</label>
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  value={grantDays}
+                  onChange={(e) => setGrantDays(Number(e.target.value))}
+                  className="form-input"
+                  style={{ width: 100 }}
+                />
+              </div>
+              <div>
+                <label className="form-label">Grant Date</label>
+                <input
+                  type="date"
+                  value={grantDate}
+                  onChange={(e) => setGrantDate(e.target.value)}
+                  className="form-input"
+                />
+              </div>
             </div>
-          )}
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>Days</label>
-            <input type="number" min="0.5" step="0.5" value={grantDays} onChange={(e) => setGrantDays(Number(e.target.value))} style={{ width: "100px", padding: "0.5rem" }} />
-          </div>
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>Grant Date</label>
-            <input type="date" value={grantDate} onChange={(e) => setGrantDate(e.target.value)} style={{ padding: "0.5rem" }} />
-          </div>
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>Note (optional)</label>
-            <input type="text" value={grantNote} onChange={(e) => setGrantNote(e.target.value)} placeholder="e.g. Annual leave 2026" style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }} />
-          </div>
-          {error && <p style={{ color: "#dc2626", marginBottom: "0.5rem" }}>{error}</p>}
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button type="submit" disabled={saving} style={{ padding: "0.5rem 1rem", backgroundColor: "#16a34a", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer" }}>
-              {saving ? "Saving..." : editingGrantId ? "Update" : "Add Grant"}
-            </button>
-            <button type="button" onClick={() => { setShowGrantForm(false); setEditingGrantId(null); setError(""); }} style={{ padding: "0.5rem 1rem", backgroundColor: "#9ca3af", color: "white", border: "none", borderRadius: "0.375rem", cursor: "pointer" }}>
-              Cancel
-            </button>
-          </div>
-        </form>
+            <div style={{ marginBottom: "0.75rem" }}>
+              <label className="form-label">Note (optional)</label>
+              <input
+                type="text"
+                className="form-input"
+                value={grantNote}
+                onChange={(e) => setGrantNote(e.target.value)}
+                placeholder="e.g. Annual leave 2026"
+              />
+            </div>
+            {error && <p className="form-error mb-1">{error}</p>}
+            <div className="flex-row gap-sm">
+              <button type="submit" disabled={saving} className="btn btn-success">
+                {saving ? "Saving..." : editingGrantId ? "Update" : "Add Grant"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  setShowGrantForm(false);
+                  setEditingGrantId(null);
+                  setError("");
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Card>
       )}
 
       {userGrants.length > 0 && (
-        <>
-          <h2 style={{ marginTop: "2rem" }}>Grants for {selectedUser?.userName}</h2>
-          <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "0.5rem" }}>
+        <Card style={{ padding: 0, overflow: "hidden" }}>
+          <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--color-border)" }}>
+            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 600, color: "var(--color-brand)" }}>
+              Grants for {selectedUser?.userName}
+            </h2>
+          </div>
+          <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
-              <tr style={{ borderBottom: "2px solid #e5e7eb", textAlign: "left", backgroundColor: "#f9fafb" }}>
-                <th style={{ padding: "0.5rem" }}>Type</th>
-                <th style={{ padding: "0.5rem", textAlign: "center" }}>Days</th>
-                <th style={{ padding: "0.5rem" }}>Granted</th>
-                <th style={{ padding: "0.5rem" }}>Expires</th>
-                <th style={{ padding: "0.5rem" }}>Note</th>
-                <th style={{ padding: "0.5rem" }}>Actions</th>
+              <tr>
+                <th>Type</th>
+                <th style={{ textAlign: "center" }}>Days</th>
+                <th>Granted</th>
+                <th>Expires</th>
+                <th>Note</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {userGrants.map((g) => (
-                <tr key={g.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                  <td style={{ padding: "0.5rem" }}>{getGrantTypeName(g.leaveTypeId)}</td>
-                  <td style={{ padding: "0.5rem", textAlign: "center" }}>{g.days}</td>
-                  <td style={{ padding: "0.5rem" }}>{g.grantedDate.slice(0, 10)}</td>
-                  <td style={{ padding: "0.5rem" }}>{g.expiresAt ? g.expiresAt.slice(0, 10) : "Never"}</td>
-                  <td style={{ padding: "0.5rem", fontSize: "0.9rem", color: "#6b7280" }}>{g.note || "\u2014"}</td>
-                  <td style={{ padding: "0.5rem", whiteSpace: "nowrap" }}>
-                    <button onClick={() => startEdit(g)} style={{ padding: "0.25rem 0.5rem", marginRight: "0.25rem", backgroundColor: "#2563eb", color: "white", border: "none", borderRadius: "0.25rem", cursor: "pointer", fontSize: "0.85rem" }}>
-                      Edit
-                    </button>
-                    <button onClick={() => handleDeleteGrant(g.id)} style={{ padding: "0.25rem 0.5rem", backgroundColor: "#dc2626", color: "white", border: "none", borderRadius: "0.25rem", cursor: "pointer", fontSize: "0.85rem" }}>
-                      Delete
-                    </button>
+                <tr key={g.id}>
+                  <td style={{ fontWeight: 600 }}>{getGrantTypeName(g.leaveTypeId)}</td>
+                  <td style={{ textAlign: "center", fontWeight: 600 }}>{g.days}</td>
+                  <td>{g.grantedDate.slice(0, 10)}</td>
+                  <td>{g.expiresAt ? g.expiresAt.slice(0, 10) : "Never"}</td>
+                  <td className="text-muted">{g.note || "\u2014"}</td>
+                  <td style={{ whiteSpace: "nowrap" }}>
+                    <div className="flex-row gap-sm">
+                      <button
+                        onClick={() => startEdit(g)}
+                        className="btn btn-primary btn-sm"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteGrant(g.id)}
+                        className="btn btn-danger btn-sm"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </>
+        </Card>
       )}
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Card from "@/modules/core/components/card";
 
 interface LeaveType {
   id: string;
@@ -86,163 +87,109 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: "40px auto", padding: "0 1rem" }}>
-      <h1>Leave Types</h1>
+    <div className="page-container" style={{ maxWidth: 860 }}>
+      <h1 className="page-title">Leave Types</h1>
 
       {!showForm && (
-        <button
-          onClick={() => setShowForm(true)}
-          style={{
-            padding: "0.5rem 1rem",
-            backgroundColor: "#2563eb",
-            color: "white",
-            border: "none",
-            borderRadius: "0.375rem",
-            cursor: "pointer",
-            marginBottom: "1.5rem",
-          }}
-        >
+        <button onClick={() => setShowForm(true)} className="btn btn-primary mb-2">
           + Add Leave Type
         </button>
       )}
 
       {showForm && (
-        <form
-          onSubmit={handleSave}
-          style={{
-            padding: "1rem",
-            border: "1px solid #e5e7eb",
-            borderRadius: "0.375rem",
-            marginBottom: "1.5rem",
-          }}
-        >
-          <h3 style={{ marginTop: 0 }}>
-            {editingId ? "Edit Leave Type" : "New Leave Type"}
-          </h3>
+        <Card style={{ marginBottom: "1.5rem" }}>
+          <form onSubmit={handleSave}>
+            <h3 style={{ marginTop: 0, color: "var(--color-brand)", fontSize: "1rem" }}>
+              {editingId ? "Edit Leave Type" : "New Leave Type"}
+            </h3>
 
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-              Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              style={{ width: "100%", padding: "0.5rem", boxSizing: "border-box" }}
-            />
-          </div>
-
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 500 }}>
-              <input
-                type="checkbox"
-                checked={isAnnual}
-                onChange={(e) => setIsAnnual(e.target.checked)}
-              />
-              Annual (grants expire after 2 years)
-            </label>
-          </div>
-
-          {!editingId && (
             <div style={{ marginBottom: "0.75rem" }}>
-              <label style={{ display: "block", fontWeight: 500, marginBottom: "0.25rem" }}>
-                Mapped Status
-              </label>
-              <select
-                value={mappedStatus}
-                onChange={(e) => setMappedStatus(e.target.value)}
-                style={{ padding: "0.5rem" }}
-              >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s === "PERMISSION" ? "Permission" : s === "ANNUAL_LEAVE" ? "Annual Leave" : "Other"}
-                  </option>
-                ))}
-              </select>
+              <label className="form-label">Name</label>
+              <input
+                type="text"
+                className="form-input"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
             </div>
-          )}
 
-          {error && <p style={{ color: "#dc2626", marginBottom: "0.5rem" }}>{error}</p>}
+            <div style={{ marginBottom: "0.75rem" }}>
+              <label className="form-checkbox">
+                <input
+                  type="checkbox"
+                  checked={isAnnual}
+                  onChange={(e) => setIsAnnual(e.target.checked)}
+                />
+                Annual (grants expire after 2 years)
+              </label>
+            </div>
 
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <button
-              type="submit"
-              disabled={saving}
-              style={{
-                padding: "0.5rem 1rem",
-                backgroundColor: "#16a34a",
-                color: "white",
-                border: "none",
-                borderRadius: "0.375rem",
-                cursor: "pointer",
-              }}
-            >
-              {saving ? "Saving..." : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={cancelForm}
-              style={{
-                padding: "0.5rem 1rem",
-                backgroundColor: "#9ca3af",
-                color: "white",
-                border: "none",
-                borderRadius: "0.375rem",
-                cursor: "pointer",
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+            {!editingId && (
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Mapped Status</label>
+                <select
+                  value={mappedStatus}
+                  onChange={(e) => setMappedStatus(e.target.value)}
+                  className="form-select"
+                >
+                  {STATUS_OPTIONS.map((s) => (
+                    <option key={s} value={s}>
+                      {s === "PERMISSION" ? "Permission" : s === "ANNUAL_LEAVE" ? "Annual Leave" : "Other"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {error && <p className="form-error mb-1">{error}</p>}
+
+            <div className="flex-row gap-sm">
+              <button type="submit" disabled={saving} className="btn btn-success">
+                {saving ? "Saving..." : "Save"}
+              </button>
+              <button type="button" onClick={cancelForm} className="btn btn-ghost">
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Card>
       )}
 
-      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1rem" }}>
-        <thead>
-          <tr style={{ borderBottom: "2px solid #e5e7eb", textAlign: "left" }}>
-            <th style={{ padding: "0.75rem 0.5rem" }}>Name</th>
-            <th style={{ padding: "0.75rem 0.5rem", textAlign: "center" }}>Annual</th>
-            <th style={{ padding: "0.75rem 0.5rem" }}>Mapped Status</th>
-            <th style={{ padding: "0.75rem 0.5rem" }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {types.map((t) => (
-            <tr key={t.id} style={{ borderBottom: "1px solid #e5e7eb" }}>
-              <td style={{ padding: "0.5rem" }}>
-                <strong>{t.name}</strong>
-              </td>
-              <td style={{ padding: "0.5rem", textAlign: "center" }}>
-                {t.isAnnualRecurring ? "Yes" : "No"}
-              </td>
-              <td style={{ padding: "0.5rem" }}>{t.mappedStatus}</td>
-              <td style={{ padding: "0.5rem" }}>
-                <button
-                  onClick={() => startEdit(t)}
-                  style={{
-                    padding: "0.25rem 0.75rem",
-                    backgroundColor: "#2563eb",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "0.25rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  Edit
-                </button>
-              </td>
-            </tr>
-          ))}
-          {types.length === 0 && (
-            <tr>
-              <td colSpan={4} style={{ padding: "1rem", textAlign: "center", color: "#6b7280" }}>
-                No leave types yet. Add one to get started.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+      {types.length === 0 ? (
+        <Card>
+          <p className="text-muted text-center" style={{ padding: "1rem 0", margin: 0 }}>
+            No leave types yet. Add one to get started.
+          </p>
+        </Card>
+      ) : (
+        <Card style={{ padding: 0, overflow: "hidden" }}>
+          <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th style={{ textAlign: "center" }}>Annual</th>
+                <th>Mapped Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {types.map((t) => (
+                <tr key={t.id}>
+                  <td style={{ fontWeight: 600 }}>{t.name}</td>
+                  <td style={{ textAlign: "center" }}>{t.isAnnualRecurring ? "Yes" : "No"}</td>
+                  <td>{t.mappedStatus}</td>
+                  <td>
+                    <button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      )}
     </div>
   );
 }
