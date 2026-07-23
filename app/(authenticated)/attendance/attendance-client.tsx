@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 import StatusPill from "@/modules/core/components/status-pill";
 import PersonRow from "@/modules/core/components/person-row";
+import RadialGauge from "@/modules/core/components/radial-gauge";
 
 interface TodayRecord {
   id: string;
@@ -46,14 +47,31 @@ interface LeaveType {
   mappedStatus: string;
 }
 
+interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  department: string | null;
+}
+
+interface SummaryRow {
+  userName: string;
+  presentCount: number;
+  absentCount: number;
+  leaveCount: number;
+  pendingCount: number;
+}
+
 interface Props {
   userRole: string;
+  currentUserId: string;
   todayRecord: TodayRecord | null;
   cutoffTime: string;
   initialSecondsUntil: number;
   leaveTypes: LeaveType[];
   pendingRecords: PendingRecord[];
   balances: Record<string, Balance[]>;
+  ownBalances: Balance[];
 }
 
 function formatCountdown(totalSeconds: number): string {
@@ -73,14 +91,32 @@ function getStatusVariant(status: string): "present" | "absent" | "pending" | "l
 
 const isManager = (role: string) => role === "MANAGER" || role === "ADMIN";
 
+function getCurrentMonthDefault(): { month: number; year: number } {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Addis_Ababa",
+    year: "numeric",
+    month: "2-digit",
+  });
+  const [year, month] = formatter.format(now).split("-").map(Number);
+  return { month, year };
+}
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 export default function AttendanceClient({
   userRole,
+  currentUserId,
   todayRecord,
   cutoffTime,
   initialSecondsUntil,
   leaveTypes,
   pendingRecords,
   balances,
+  ownBalances,
 }: Props) {
   const router = useRouter();
   const [record, setRecord] = useState<TodayRecord | null>(todayRecord);
@@ -100,7 +136,20 @@ export default function AttendanceClient({
   const [settingsSuccess, setSettingsSuccess] = useState("");
   const [settingsLoading, setSettingsLoading] = useState(false);
 
+  const defaultMonth = getCurrentMonthDefault();
+  const [reportMonth, setReportMonth] = useState(defaultMonth.month);
+  const [reportYear, setReportYear] = useState(defaultMonth.year);
+  const [reportStaffId, setReportStaffId] = useState("");
+  const [reportSummary, setReportSummary] = useState<SummaryRow[]>([]);
+  const [reportStaff, setReportStaff] = useState<StaffMember[]>([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportLoaded, setReportLoaded] = useState(false);
+  const [reportError, setReportError] = useState("");
+
   const cutoffPassed = secondsLeft <= 0;
+
+  const totalOwnRemaining = ownBalances.reduce((sum, b) => sum + b.remaining, 0);
+  const maxOwnGranted = Math.max(ownBalances.reduce((sum, b) => sum + b.granted, 0), totalOwnRemaining, 1);
 
   useEffect(() => {
     if (record) return;
@@ -230,6 +279,41 @@ export default function AttendanceClient({
     return null;
   }
 
+  const fetchReport = useCallback(async () => {
+    setReportLoading(true);
+    setReportError("");
+    setReportStaffId("");
+
+    const params = new URLSearchParams();
+    params.set("month", String(reportMonth));
+    params.set("year", String(reportYear));
+
+    const res = await fetch(`/api/reports/monthly?${params.toString()}`);
+    const data = await res.json();
+
+    if (!res.ok) {
+      setReportError(data.error || "Failed to load report.");
+      setReportLoading(false);
+      return;
+    }
+
+    setReportSummary(data.summary);
+    setReportStaff(data.staff);
+    setReportLoaded(true);
+    setReportLoading(false);
+  }, [reportMonth, reportYear]);
+
+  const staffMap: Record<string, string> = {};
+  for (const s of reportStaff) {
+    staffMap[s.id] = s.name;
+  }
+
+  const filteredSummary = reportStaffId
+    ? reportSummary.filter((s) => s.userName === staffMap[reportStaffId])
+    : reportSummary;
+
+  const xlsxUrl = `/api/reports/monthly?month=${reportMonth}&year=${reportYear}&format=xlsx${reportStaffId ? `&userId=${reportStaffId}` : ""}`;
+
   function renderAttendance() {
     if (record) {
       const recordStatus = getStatusVariant(record.status);
@@ -283,7 +367,7 @@ export default function AttendanceClient({
                 <span className="text-muted text-sm" style={{ minWidth: 110 }}>
                   Reviewed by
                 </span>
-                <span style={{ fontWeight: 500 }}>{record.reviewedBy.name}</span>
+                <PersonRow name={record.reviewedBy.name} size="sm" />
               </div>
             )}
           </div>
@@ -434,6 +518,35 @@ export default function AttendanceClient({
             </form>
           </Card>
         </div>
+
+        <div>
+          <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
+            Your Leave
+          </h2>
+          <Card hover>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+              <RadialGauge
+                value={totalOwnRemaining}
+                max={maxOwnGranted}
+                size={130}
+                strokeWidth={10}
+                label="Remaining"
+              />
+              {ownBalances.length > 0 && (
+                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
+                  {ownBalances.slice(0, 3).map((b) => (
+                    <div key={b.leaveTypeId} style={{ textAlign: "center" }}>
+                      <div className="text-sm text-muted">{b.leaveTypeName}</div>
+                      <div style={{ fontWeight: 600, color: b.remaining <= 0 ? "var(--color-danger)" : "var(--color-success)" }}>
+                        {b.remaining}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </Card>
+        </div>
       </div>
 
       <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
@@ -515,6 +628,144 @@ export default function AttendanceClient({
                   </tr>
                 );
               })}
+            </tbody>
+          </table>
+        </Card>
+      )}
+
+      <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "2rem 0 0.75rem" }}>
+        Monthly Attendance Report
+      </h2>
+
+      <Card style={{ marginBottom: "1.25rem" }}>
+        <div className="flex-row gap-lg flex-wrap">
+          <div>
+            <label className="form-label">Month</label>
+            <select
+              value={reportMonth}
+              onChange={(e) => { setReportMonth(Number(e.target.value)); setReportLoaded(false); }}
+              className="form-select"
+              style={{ minWidth: 150 }}
+            >
+              {MONTH_NAMES.map((name, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="form-label">Year</label>
+            <select
+              value={reportYear}
+              onChange={(e) => { setReportYear(Number(e.target.value)); setReportLoaded(false); }}
+              className="form-select"
+              style={{ minWidth: 110 }}
+            >
+              {Array.from({ length: 6 }, (_, i) => reportYear - 2 + i).map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {reportLoaded && reportStaff.length > 0 && (
+            <div>
+              <label className="form-label">Staff (optional)</label>
+              <select
+                value={reportStaffId}
+                onChange={(e) => setReportStaffId(e.target.value)}
+                className="form-select"
+                style={{ minWidth: 180 }}
+              >
+                <option value="">All staff</option>
+                {reportStaff.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-row gap-md mt-2">
+          <button
+            onClick={fetchReport}
+            disabled={reportLoading}
+            className="btn btn-primary"
+          >
+            {reportLoading ? "Loading..." : "View Report"}
+          </button>
+
+          {reportLoaded && (
+            <a href={xlsxUrl} className="btn btn-success">
+              Download report
+            </a>
+          )}
+        </div>
+      </Card>
+
+      {reportError && (
+        <p className="form-error mb-2">{reportError}</p>
+      )}
+
+      {reportLoaded && filteredSummary.length === 0 && !reportLoading && (
+        <Card>
+          <p className="text-muted text-center" style={{ padding: "1rem 0", margin: 0 }}>
+            No attendance records for this month.
+          </p>
+        </Card>
+      )}
+
+      {reportLoaded && filteredSummary.length > 0 && (
+        <Card style={{ padding: 0, overflow: "hidden" }}>
+          <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th style={{ textAlign: "center" }}>Present</th>
+                <th style={{ textAlign: "center" }}>Absent</th>
+                <th style={{ textAlign: "center" }}>Leave</th>
+                <th style={{ textAlign: "center" }}>Pending</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredSummary.map((row) => (
+                <tr key={row.userName}>
+                  <td style={{ fontWeight: 600 }}>{row.userName}</td>
+                  <td style={{ textAlign: "center" }}>
+                    {row.presentCount > 0 ? (
+                      <StatusPill status="present" label={String(row.presentCount)} />
+                    ) : (
+                      row.presentCount
+                    )}
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    {row.absentCount > 0 ? (
+                      <StatusPill status="absent" label={String(row.absentCount)} />
+                    ) : (
+                      row.absentCount
+                    )}
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    {row.leaveCount > 0 ? (
+                      <StatusPill status="leave" label={String(row.leaveCount)} />
+                    ) : (
+                      row.leaveCount
+                    )}
+                  </td>
+                  <td style={{ textAlign: "center" }}>
+                    {row.pendingCount > 0 ? (
+                      <StatusPill status="pending" label={String(row.pendingCount)} />
+                    ) : (
+                      row.pendingCount
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </Card>

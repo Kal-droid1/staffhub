@@ -64,15 +64,19 @@ export default async function AttendancePage() {
     }
   }
 
+  const ownBalances = await getLeaveBalances(user.id);
+
   return (
     <AttendanceClient
       userRole={user.role}
+      currentUserId={user.id}
       todayRecord={serialized}
       cutoffTime={settings.cutoffTime}
       initialSecondsUntil={secondsUntil}
       leaveTypes={JSON.parse(JSON.stringify(leaveTypes))}
       pendingRecords={pending}
       balances={JSON.parse(JSON.stringify(balancesMap))}
+      ownBalances={JSON.parse(JSON.stringify(ownBalances))}
     />
   );
 }
