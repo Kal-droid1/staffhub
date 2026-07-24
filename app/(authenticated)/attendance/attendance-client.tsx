@@ -134,6 +134,7 @@ export default function AttendanceClient({
 
   const [pending, setPending] = useState<PendingRecord[]>(pendingRecords);
   const [approveLoadingId, setApproveLoadingId] = useState<string | null>(null);
+  const [approveError, setApproveError] = useState("");
 
   const [cutoff, setCutoff] = useState(cutoffTime);
   const [settingsError, setSettingsError] = useState("");
@@ -245,6 +246,7 @@ export default function AttendanceClient({
 
   async function handleApproveAction(recordId: string, action: "approve" | "reject") {
     setApproveLoadingId(recordId);
+    setApproveError("");
     const res = await fetch("/api/attendance/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -257,6 +259,9 @@ export default function AttendanceClient({
       } else {
         setPending((prev) => prev.filter((r) => r.id !== recordId));
       }
+    } else {
+      const data = await res.json().catch(() => ({}));
+      setApproveError(data.error || "Failed to " + action + ".");
     }
     setApproveLoadingId(null);
     router.refresh();
@@ -656,7 +661,9 @@ export default function AttendanceClient({
           </p>
         </Card>
       ) : (
-        <Card style={{ padding: 0, overflow: "hidden" }}>
+        <>
+          {approveError && <p className="form-error mb-1">{approveError}</p>}
+          <Card style={{ padding: 0, overflow: "hidden" }}>
           <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
               <tr>
@@ -726,6 +733,7 @@ export default function AttendanceClient({
             </tbody>
           </table>
         </Card>
+        </>
       )}
 
       <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "2rem 0 0.75rem" }}>
