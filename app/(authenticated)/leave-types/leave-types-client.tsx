@@ -10,6 +10,7 @@ interface LeaveType {
   isAnnualRecurring: boolean;
   mappedStatus: string;
   defaultDays: number;
+  requiresAttachment: boolean;
 }
 
 interface Props {
@@ -27,6 +28,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
   const [isAnnual, setIsAnnual] = useState(false);
   const [mappedStatus, setMappedStatus] = useState("PERMISSION");
   const [defaultDays, setDefaultDays] = useState(20);
+  const [requiresAttachment, setRequiresAttachment] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -37,7 +39,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setSaving(true);
     setError("");
 
-    const body: Record<string, unknown> = { name: name.trim(), isAnnualRecurring: isAnnual, defaultDays };
+    const body: Record<string, unknown> = { name: name.trim(), isAnnualRecurring: isAnnual, defaultDays, requiresAttachment };
     if (editingId) {
       body.id = editingId;
     } else {
@@ -79,6 +81,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setIsAnnual(t.isAnnualRecurring);
     setMappedStatus(t.mappedStatus);
     setDefaultDays(t.defaultDays);
+    setRequiresAttachment(t.requiresAttachment);
     setShowForm(true);
   }
 
@@ -89,6 +92,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setIsAnnual(false);
     setMappedStatus("PERMISSION");
     setDefaultDays(20);
+    setRequiresAttachment(false);
     setError("");
   }
 
@@ -175,6 +179,17 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
               </div>
             )}
 
+            <div style={{ marginBottom: "0.75rem" }}>
+              <label className="form-checkbox">
+                <input
+                  type="checkbox"
+                  checked={requiresAttachment}
+                  onChange={(e) => setRequiresAttachment(e.target.checked)}
+                />
+                Requires signed attachment (e.g., signed form)
+              </label>
+            </div>
+
             {error && <p className="form-error mb-1">{error}</p>}
 
             <div className="flex-row gap-sm">
@@ -204,6 +219,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
                 <th style={{ textAlign: "center" }}>Annual</th>
                 <th style={{ textAlign: "center" }}>Default Days</th>
                 <th>Mapped Status</th>
+                <th style={{ textAlign: "center" }}>Attachment</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -214,6 +230,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
                   <td style={{ textAlign: "center" }}>{t.isAnnualRecurring ? "Yes" : "No"}</td>
                   <td style={{ textAlign: "center" }}>{t.defaultDays}</td>
                   <td>{t.mappedStatus}</td>
+                  <td style={{ textAlign: "center" }}>{t.requiresAttachment ? "Yes" : "No"}</td>
                   <td style={{ whiteSpace: "nowrap" }}>
                     <div className="flex-row gap-sm">
                       <button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">

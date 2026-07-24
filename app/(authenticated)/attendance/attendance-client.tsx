@@ -26,6 +26,7 @@ interface PendingRecord {
   leaveTypeId: string | null;
   batchId: string | null;
   note: string | null;
+  attachmentUrl: string | null;
   user: {
     id: string;
     name: string;
@@ -47,6 +48,7 @@ interface LeaveType {
   id: string;
   name: string;
   mappedStatus: string;
+  requiresAttachment: boolean;
 }
 
 interface StaffMember {
@@ -130,6 +132,7 @@ export default function AttendanceClient({
   const [leaveNote, setLeaveNote] = useState("");
   const [leaveStartDate, setLeaveStartDate] = useState("");
   const [leaveEndDate, setLeaveEndDate] = useState("");
+  const [leaveFile, setLeaveFile] = useState<File | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(initialSecondsUntil);
 
   const [pending, setPending] = useState<PendingRecord[]>(pendingRecords);
@@ -152,6 +155,8 @@ export default function AttendanceClient({
   const [reportError, setReportError] = useState("");
 
   const cutoffPassed = secondsLeft <= 0;
+
+  const selectedLeaveType = leaveTypes.find((lt) => lt.id === leaveTypeId) ?? leaveTypes[0];
 
   const totalOwnRemaining = ownBalances.reduce((sum, b) => sum + b.remaining, 0);
   const maxOwnGranted = Math.max(ownBalances.reduce((sum, b) => sum + b.granted, 0), totalOwnRemaining);
@@ -206,18 +211,38 @@ export default function AttendanceClient({
 
     const isMultiDay = leaveStartDate && leaveEndDate && leaveStartDate !== leaveEndDate && leaveTypeId;
 
-    const res = await fetch("/api/attendance/sign-in", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "leave",
-        requestedStatus: leaveType,
-        leaveTypeId: leaveTypeId,
-        startDate: isMultiDay ? leaveStartDate : undefined,
-        endDate: isMultiDay ? leaveEndDate : undefined,
-        note: leaveNote || undefined,
-      }),
-    });
+    const useFormData = leaveFile !== null;
+
+    let res;
+    if (useFormData) {
+      const formData = new FormData();
+      formData.append("action", "leave");
+      formData.append("requestedStatus", leaveType);
+      formData.append("leaveTypeId", leaveTypeId);
+      if (isMultiDay) {
+        formData.append("startDate", leaveStartDate);
+        formData.append("endDate", leaveEndDate);
+      }
+      if (leaveNote) formData.append("note", leaveNote);
+      formData.append("file", leaveFile!);
+      res = await fetch("/api/attendance/sign-in", {
+        method: "POST",
+        body: formData,
+      });
+    } else {
+      res = await fetch("/api/attendance/sign-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "leave",
+          requestedStatus: leaveType,
+          leaveTypeId: leaveTypeId,
+          startDate: isMultiDay ? leaveStartDate : undefined,
+          endDate: isMultiDay ? leaveEndDate : undefined,
+          note: leaveNote || undefined,
+        }),
+      });
+    }
     const data = await res.json();
 
     if (!res.ok) {
@@ -228,6 +253,7 @@ export default function AttendanceClient({
         setError(data.error || "Something went wrong.");
       }
     } else {
+      setLeaveFile(null);
       if (data.multiDayBatch) {
         setShowLeaveForm(false);
         setLeaveStartDate("");
@@ -549,9 +575,25 @@ export default function AttendanceClient({
                   placeholder="Reason for leave..."
                 />
               </div>
+
+              {selectedLeaveType?.requiresAttachment && (
+                <div style={{ marginBottom: "1rem" }}>
+                  <label className="form-label">Signed attachment (required)</label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => setLeaveFile(e.target.files?.[0] || null)}
+                    className="form-input"
+                  />
+                  {leaveFile && (
+                    <p className="form-hint">{leaveFile.name}</p>
+                  )}
+                </div>
+              )}
+
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || (selectedLeaveType?.requiresAttachment && !leaveFile)}
                 className="btn btn-primary"
               >
                 {loading ? "Submitting..." : "Submit request"}
@@ -703,6 +745,18 @@ export default function AttendanceClient({
                     </td>
                     <td className="text-muted">{g.note || "\u2014"}</td>
                     <td style={{ whiteSpace: "nowrap" }}>
+                      {firstRecord.attachmentUrl && (
+                        <div className="mb-1">
+                          <a
+                            href={firstRecord.attachmentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-ghost btn-sm"
+                          >
+                            View attachment
+                          </a>
+                        </div>
+                      )}
                       {warning && (
                         <div className="mb-1">
                           <span className="status-pill status-pill--danger" style={{ fontSize: "0.7rem" }}>

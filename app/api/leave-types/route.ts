@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { name, isAnnualRecurring, mappedStatus, defaultDays } = body;
+  const { name, isAnnualRecurring, mappedStatus, defaultDays, requiresAttachment } = body;
 
   if (!name || typeof name !== "string" || name.trim().length === 0) {
     return NextResponse.json({ error: "Name is required." }, { status: 400 });
@@ -35,7 +35,8 @@ export async function POST(req: NextRequest) {
       name.trim(),
       isAnnualRecurring,
       mappedStatus as AttendanceStatus,
-      typeof defaultDays === "number" ? defaultDays : undefined
+      typeof defaultDays === "number" ? defaultDays : undefined,
+      requiresAttachment === true
     );
     return NextResponse.json(leaveType, { status: 201 });
   } catch (e: unknown) {
@@ -51,16 +52,17 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { id, name, isAnnualRecurring, defaultDays } = body;
+  const { id, name, isAnnualRecurring, defaultDays, requiresAttachment } = body;
 
   if (!id) {
     return NextResponse.json({ error: "id is required." }, { status: 400 });
   }
 
-  const data: { name?: string; isAnnualRecurring?: boolean; defaultDays?: number } = {};
+  const data: { name?: string; isAnnualRecurring?: boolean; defaultDays?: number; requiresAttachment?: boolean } = {};
   if (typeof name === "string" && name.trim().length > 0) data.name = name.trim();
   if (typeof isAnnualRecurring === "boolean") data.isAnnualRecurring = isAnnualRecurring;
   if (typeof defaultDays === "number") data.defaultDays = defaultDays;
+  if (typeof requiresAttachment === "boolean") data.requiresAttachment = requiresAttachment;
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "No fields to update." }, { status: 400 });

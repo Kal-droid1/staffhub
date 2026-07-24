@@ -53,6 +53,7 @@ model AttendanceRecord {
   signInTime      DateTime?
   requestedStatus AttendanceStatus @default(PRESENT)
   note            String?
+  attachmentUrl   String?
   status          AttendanceStatus @default(PENDING)
   leaveTypeId     String?
   leaveType       LeaveType?       @relation(fields: [leaveTypeId], references: [id])
@@ -71,6 +72,7 @@ model LeaveType {
   isAnnualRecurring Boolean           @default(false)
   mappedStatus     AttendanceStatus
   defaultDays      Float              @default(20)
+  requiresAttachment Boolean          @default(false)
   createdAt        DateTime           @default(now())
   grants           LeaveGrant[]
   attendance       AttendanceRecord[]

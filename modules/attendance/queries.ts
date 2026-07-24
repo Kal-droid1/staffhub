@@ -89,7 +89,8 @@ export async function createLeaveRequest(
   note?: string,
   leaveTypeId?: string,
   startDate?: Date,
-  endDate?: Date
+  endDate?: Date,
+  attachmentUrl?: string
 ) {
   const effectiveEnd = endDate ?? startDate ?? todayDate();
 
@@ -99,6 +100,7 @@ export async function createLeaveRequest(
       date: effectiveEnd,
       requestedStatus,
       note: note || null,
+      attachmentUrl: attachmentUrl || null,
       status: "PENDING",
       leaveTypeId: leaveTypeId || null,
     },
@@ -111,7 +113,8 @@ export async function createLeaveRequestBatch(
   leaveTypeId: string,
   startDate: Date,
   endDate: Date,
-  note?: string
+  note?: string,
+  attachmentUrl?: string
 ) {
   const batchId = crypto.randomUUID();
   const records: {
@@ -119,6 +122,7 @@ export async function createLeaveRequestBatch(
     date: Date;
     requestedStatus: AttendanceStatus;
     note: string | null;
+    attachmentUrl: string | null;
     status: AttendanceStatus;
     leaveTypeId: string;
     batchId: string;
@@ -135,6 +139,7 @@ export async function createLeaveRequestBatch(
         date: new Date(cursor),
         requestedStatus,
         note: note || null,
+        attachmentUrl: attachmentUrl || null,
         status: "PENDING",
         leaveTypeId,
         batchId,

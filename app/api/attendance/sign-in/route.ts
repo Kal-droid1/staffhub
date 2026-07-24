@@ -10,6 +10,7 @@ import {
   isPastCutoff,
 } from "@/modules/attendance/queries";
 import type { AttendanceStatus } from "@prisma/client";
+import { put } from "@vercel/blob";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -68,29 +69,56 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "leave") {
-    const requestedStatus = (body.requestedStatus as AttendanceStatus) || "PERMISSION";
-    const leaveTypeId = body.leaveTypeId || undefined;
-    const startDate = body.startDate || undefined;
-    const endDate = body.endDate || undefined;
+    const contentType = req.headers.get("content-type") || "";
+    const isMultipart = contentType.includes("multipart/form-data");
+
+    let requestedStatus: AttendanceStatus;
+    let leaveTypeId: string | undefined;
+    let startDate: string | undefined;
+    let endDate: string | undefined;
+    let note: string | undefined;
+    let attachmentUrl: string | undefined;
+
+    if (isMultipart) {
+      const formData = await req.formData();
+      requestedStatus = (formData.get("requestedStatus") as AttendanceStatus) || "PERMISSION";
+      leaveTypeId = (formData.get("leaveTypeId") as string) || undefined;
+      startDate = (formData.get("startDate") as string) || undefined;
+      endDate = (formData.get("endDate") as string) || undefined;
+      note = (formData.get("note") as string) || undefined;
+      const file = formData.get("file") as File | null;
+      if (file && file.size > 0) {
+        const blob = await put(`leave-attachments/${file.name}`, file, { access: "private", addRandomSuffix: true });
+        attachmentUrl = blob.url;
+      }
+    } else {
+      const json = await req.json().catch(() => ({}));
+      requestedStatus = (json.requestedStatus as AttendanceStatus) || "PERMISSION";
+      leaveTypeId = json.leaveTypeId || undefined;
+      startDate = json.startDate || undefined;
+      endDate = json.endDate || undefined;
+      note = json.note || undefined;
+    }
 
     const isMultiDay = startDate && endDate && startDate !== endDate && leaveTypeId;
 
     if (isMultiDay) {
-      const batchRecord = await createLeaveRequestBatch(
+      await createLeaveRequestBatch(
         session.user.id,
         requestedStatus,
-        leaveTypeId,
-        new Date(startDate),
-        new Date(endDate),
-        body.note
+        leaveTypeId!,
+        new Date(startDate!),
+        new Date(endDate!),
+        note,
+        attachmentUrl
       );
       return NextResponse.json(
-        { multiDayBatch: true, count: body._count, record: null },
+        { multiDayBatch: true, count: 0, record: null },
         { status: 201 }
       );
     }
 
-    const record = await createLeaveRequest(session.user.id, requestedStatus, body.note, leaveTypeId);
+    const record = await createLeaveRequest(session.user.id, requestedStatus, note, leaveTypeId, undefined, undefined, attachmentUrl);
     return NextResponse.json(
       {
         record: {

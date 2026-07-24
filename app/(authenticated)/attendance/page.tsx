@@ -32,6 +32,7 @@ export default async function AttendancePage() {
     leaveTypeId: string | null;
     batchId: string | null;
     note: string | null;
+    attachmentUrl: string | null;
     user: {
       id: string;
       name: string;
@@ -51,6 +52,7 @@ export default async function AttendancePage() {
       leaveTypeId: r.leaveTypeId,
       batchId: r.batchId,
       note: r.note,
+      attachmentUrl: r.attachmentUrl,
       user: {
         id: r.user.id,
         name: r.user.name,
