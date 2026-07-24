@@ -77,6 +77,9 @@ export default async function AttendancePage() {
       currentUserId={user.id}
       todayRecord={serialized}
       cutoffTime={settings.cutoffTime}
+      initialOfficeLatitude={settings.officeLatitude ?? null}
+      initialOfficeLongitude={settings.officeLongitude ?? null}
+      initialAllowedRadiusMeters={settings.allowedRadiusMeters}
       initialSecondsUntil={secondsUntil}
       initialSecondsUntilTomorrow={secondsUntilTomorrow}
       leaveTypes={JSON.parse(JSON.stringify(leaveTypes))}

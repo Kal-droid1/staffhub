@@ -71,6 +71,9 @@ interface Props {
   currentUserId: string;
   todayRecord: TodayRecord | null;
   cutoffTime: string;
+  initialOfficeLatitude: number | null;
+  initialOfficeLongitude: number | null;
+  initialAllowedRadiusMeters: number;
   initialSecondsUntil: number;
   initialSecondsUntilTomorrow: number;
   leaveTypes: LeaveType[];
@@ -117,6 +120,9 @@ export default function AttendanceClient({
   currentUserId,
   todayRecord,
   cutoffTime,
+  initialOfficeLatitude,
+  initialOfficeLongitude,
+  initialAllowedRadiusMeters,
   initialSecondsUntil,
   initialSecondsUntilTomorrow,
   leaveTypes,
@@ -143,9 +149,9 @@ export default function AttendanceClient({
   const [approveError, setApproveError] = useState("");
 
   const [cutoff, setCutoff] = useState(cutoffTime);
-  const [officeLat, setOfficeLat] = useState("");
-  const [officeLng, setOfficeLng] = useState("");
-  const [radiusM, setRadiusM] = useState("200");
+  const [officeLat, setOfficeLat] = useState(initialOfficeLatitude != null ? String(initialOfficeLatitude) : "");
+  const [officeLng, setOfficeLng] = useState(initialOfficeLongitude != null ? String(initialOfficeLongitude) : "");
+  const [radiusM, setRadiusM] = useState(String(initialAllowedRadiusMeters));
   const [settingsError, setSettingsError] = useState("");
   const [settingsSuccess, setSettingsSuccess] = useState("");
   const [settingsLoading, setSettingsLoading] = useState(false);
