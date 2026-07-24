@@ -41,8 +41,11 @@ model User {
 }
 
 model Settings {
-  id         String @id @default("singleton")
-  cutoffTime String @default("09:00")
+  id                 String  @id @default("singleton")
+  cutoffTime         String  @default("09:00")
+  officeLatitude     Float?
+  officeLongitude    Float?
+  allowedRadiusMeters Int    @default(200)
 }
 
 model AttendanceRecord {

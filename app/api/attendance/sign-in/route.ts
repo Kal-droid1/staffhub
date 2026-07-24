@@ -43,13 +43,14 @@ export async function POST(req: NextRequest) {
   const isMultipart = contentType.includes("multipart/form-data");
 
   let action: string;
+  let body: Record<string, unknown> = {};
   let formData: FormData | undefined;
   if (isMultipart) {
     formData = await req.formData();
     action = (formData.get("action") as string) || "signin";
   } else {
-    const body = await req.json().catch(() => ({}));
-    action = body.action || "signin";
+    body = await req.json().catch(() => ({}));
+    action = (body.action as string) || "signin";
   }
 
   if (action === "signin") {
@@ -59,6 +60,25 @@ export async function POST(req: NextRequest) {
         { error: `Sign-in closed — cutoff was at ${settings.cutoffTime}. Use Request leave instead.` },
         { status: 403 }
       );
+    }
+
+    if (settings.officeLatitude != null && settings.officeLongitude != null) {
+      const latitude = body.latitude as number | undefined;
+      const longitude = body.longitude as number | undefined;
+      if (latitude === undefined || longitude === undefined) {
+        return NextResponse.json(
+          { error: "You must be at the office to sign in. Contact your manager if this is incorrect." },
+          { status: 403 }
+        );
+      }
+      const { haversineDistance } = await import("@/modules/attendance/queries");
+      const dist = haversineDistance(latitude, longitude, settings.officeLatitude, settings.officeLongitude);
+      if (dist > settings.allowedRadiusMeters) {
+        return NextResponse.json(
+          { error: "You must be at the office to sign in. Contact your manager if this is incorrect." },
+          { status: 403 }
+        );
+      }
     }
 
     const record = await createSignIn(session.user.id);

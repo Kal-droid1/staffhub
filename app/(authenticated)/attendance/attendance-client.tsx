@@ -140,6 +140,9 @@ export default function AttendanceClient({
   const [approveError, setApproveError] = useState("");
 
   const [cutoff, setCutoff] = useState(cutoffTime);
+  const [officeLat, setOfficeLat] = useState("");
+  const [officeLng, setOfficeLng] = useState("");
+  const [radiusM, setRadiusM] = useState("200");
   const [settingsError, setSettingsError] = useState("");
   const [settingsSuccess, setSettingsSuccess] = useState("");
   const [settingsLoading, setSettingsLoading] = useState(false);
@@ -183,10 +186,31 @@ export default function AttendanceClient({
     setError("");
     setShowLeaveForm(false);
 
+    let latitude: number | undefined;
+    let longitude: number | undefined;
+
+    if (navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 60000 });
+        });
+        latitude = pos.coords.latitude;
+        longitude = pos.coords.longitude;
+      } catch {
+        setError("You must be at the office to sign in. Contact your manager if this is incorrect.");
+        setLoading(false);
+        return;
+      }
+    } else {
+      setError("You must be at the office to sign in. Contact your manager if this is incorrect.");
+      setLoading(false);
+      return;
+    }
+
     const res = await fetch("/api/attendance/sign-in", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "signin" }),
+      body: JSON.stringify({ action: "signin", latitude, longitude }),
     });
     const data = await res.json();
 
@@ -299,10 +323,15 @@ export default function AttendanceClient({
     setSettingsSuccess("");
     setSettingsLoading(true);
 
+    const body: Record<string, unknown> = { cutoffTime: cutoff };
+    if (officeLat) body.officeLatitude = parseFloat(officeLat);
+    if (officeLng) body.officeLongitude = parseFloat(officeLng);
+    if (radiusM) body.allowedRadiusMeters = parseInt(radiusM, 10);
+
     const res = await fetch("/api/attendance/settings", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cutoffTime: cutoff }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
 
@@ -310,6 +339,9 @@ export default function AttendanceClient({
       setSettingsError(data.error || "Failed to update.");
     } else {
       setCutoff(data.cutoffTime);
+      if (data.officeLatitude !== undefined) setOfficeLat(String(data.officeLatitude));
+      if (data.officeLongitude !== undefined) setOfficeLng(String(data.officeLongitude));
+      if (data.allowedRadiusMeters !== undefined) setRadiusM(String(data.allowedRadiusMeters));
       setSettingsSuccess("Settings updated.");
       router.refresh();
     }
@@ -649,6 +681,45 @@ export default function AttendanceClient({
                 <p className="form-hint">
                   The daily auto-absent check runs at 11:00 AM Addis Ababa time.
                   Cutoff must be no later than 10:30.
+                </p>
+              </div>
+
+              <div className="flex-row gap-md mb-2">
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Office Latitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-input"
+                    value={officeLat}
+                    onChange={(e) => setOfficeLat(e.target.value)}
+                    placeholder="e.g. 9.0320"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Office Longitude</label>
+                  <input
+                    type="number"
+                    step="any"
+                    className="form-input"
+                    value={officeLng}
+                    onChange={(e) => setOfficeLng(e.target.value)}
+                    placeholder="e.g. 38.7520"
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="form-label">Allowed Radius (meters)</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={radiusM}
+                  onChange={(e) => setRadiusM(e.target.value)}
+                  style={{ maxWidth: 150 }}
+                />
+                <p className="form-hint">
+                  Staff must be within this distance from the office to sign in.
                 </p>
               </div>
 

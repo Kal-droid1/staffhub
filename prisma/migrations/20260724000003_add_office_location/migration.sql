@@ -1,0 +1,3 @@
+ALTER TABLE "Settings" ADD COLUMN "officeLatitude" DOUBLE PRECISION;
+ALTER TABLE "Settings" ADD COLUMN "officeLongitude" DOUBLE PRECISION;
+ALTER TABLE "Settings" ADD COLUMN "allowedRadiusMeters" INTEGER NOT NULL DEFAULT 200;

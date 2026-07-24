@@ -10,7 +10,12 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   const settings = await getSettings();
-  return NextResponse.json({ cutoffTime: settings.cutoffTime });
+  return NextResponse.json({
+    cutoffTime: settings.cutoffTime,
+    officeLatitude: settings.officeLatitude,
+    officeLongitude: settings.officeLongitude,
+    allowedRadiusMeters: settings.allowedRadiusMeters,
+  });
 }
 
 export async function PUT(req: NextRequest) {
@@ -20,15 +25,25 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}));
-  const { cutoffTime } = body;
+  const { cutoffTime, officeLatitude, officeLongitude, allowedRadiusMeters } = body;
 
   if (!cutoffTime) {
     return NextResponse.json({ error: "Missing cutoffTime" }, { status: 400 });
   }
 
   try {
-    const settings = await updateSettings(cutoffTime);
-    return NextResponse.json({ cutoffTime: settings.cutoffTime });
+    const settings = await updateSettings(
+      cutoffTime,
+      typeof officeLatitude === "number" ? officeLatitude : undefined,
+      typeof officeLongitude === "number" ? officeLongitude : undefined,
+      typeof allowedRadiusMeters === "number" ? allowedRadiusMeters : undefined
+    );
+    return NextResponse.json({
+      cutoffTime: settings.cutoffTime,
+      officeLatitude: settings.officeLatitude,
+      officeLongitude: settings.officeLongitude,
+      allowedRadiusMeters: settings.allowedRadiusMeters,
+    });
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Invalid time";
     return NextResponse.json({ error: msg }, { status: 400 });
