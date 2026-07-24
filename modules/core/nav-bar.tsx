@@ -49,12 +49,21 @@ export default function NavBar() {
           </Link>
         )}
         {(role === "MANAGER" || role === "ADMIN") && (
+          <Link href="/staff" style={linkStyle}>
+            Staff
+          </Link>
+        )}
+        {(role === "MANAGER" || role === "ADMIN") && (
           <Link href="/balances" style={linkStyle}>
             Balances
           </Link>
         )}
       </div>
-      <button
+      <div style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
+        <Link href="/change-password" style={linkStyle}>
+          Change Password
+        </Link>
+        <button
         onClick={() => signOut({ callbackUrl: "/login" })}
         style={{
           padding: "0.35rem 0.85rem",
@@ -70,6 +79,7 @@ export default function NavBar() {
       >
         Log out
       </button>
+      </div>
     </nav>
   );
 }

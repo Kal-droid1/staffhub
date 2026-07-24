@@ -110,7 +110,7 @@ export async function createBulkLeaveGrants(
   const leaveType = await prisma.leaveType.findUnique({ where: { id: leaveTypeId } });
   if (!leaveType) throw new Error("Leave type not found");
 
-  const allUsers = await prisma.user.findMany({ select: { id: true } });
+  const allUsers = await prisma.user.findMany({ where: { isActive: true }, select: { id: true } });
 
   let expiresAt: Date | null = null;
   if (leaveType.isAnnualRecurring) {
@@ -221,6 +221,7 @@ export async function getLeaveBalances(userId: string): Promise<LeaveBalance[]> 
 
 export async function getLeaveBalanceSummary(): Promise<LeaveBalanceSummary[]> {
   const users = await prisma.user.findMany({
+    where: { isActive: true },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

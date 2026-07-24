@@ -233,6 +233,7 @@ export async function markAbsentForMissingUsers() {
   const date = addisTodayDate();
 
   const allUsers = await prisma.user.findMany({
+    where: { isActive: true },
     select: { id: true },
   });
 
