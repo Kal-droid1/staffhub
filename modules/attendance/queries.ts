@@ -52,6 +52,16 @@ export function getSecondsUntilCutoff(cutoffTime: string): number {
   return Math.max(0, Math.floor(diff / 1000));
 }
 
+export function getSecondsUntilTomorrowCutoff(cutoffTime: string): number {
+  const [hours, minutes] = cutoffTime.split(":").map(Number);
+  const now = getAddisTime();
+  const cutoff = new Date(now);
+  cutoff.setDate(cutoff.getDate() + 1);
+  cutoff.setHours(hours, minutes, 0, 0);
+  const diff = cutoff.getTime() - now.getTime();
+  return Math.max(0, Math.floor(diff / 1000));
+}
+
 function addisTodayDate(): Date {
   const now = getAddisTime();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());

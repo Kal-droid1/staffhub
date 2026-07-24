@@ -72,6 +72,7 @@ interface Props {
   todayRecord: TodayRecord | null;
   cutoffTime: string;
   initialSecondsUntil: number;
+  initialSecondsUntilTomorrow: number;
   leaveTypes: LeaveType[];
   pendingRecords: PendingRecord[];
   balances: Record<string, Balance[]>;
@@ -117,6 +118,7 @@ export default function AttendanceClient({
   todayRecord,
   cutoffTime,
   initialSecondsUntil,
+  initialSecondsUntilTomorrow,
   leaveTypes,
   pendingRecords,
   balances,
@@ -134,6 +136,7 @@ export default function AttendanceClient({
   const [leaveEndDate, setLeaveEndDate] = useState("");
   const [leaveFile, setLeaveFile] = useState<File | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(initialSecondsUntil);
+  const [secondsUntilTomorrow, setSecondsUntilTomorrow] = useState(initialSecondsUntilTomorrow);
 
   const [pending, setPending] = useState<PendingRecord[]>(pendingRecords);
   const [approveLoadingId, setApproveLoadingId] = useState<string | null>(null);
@@ -165,7 +168,13 @@ export default function AttendanceClient({
   const maxOwnGranted = Math.max(ownBalances.reduce((sum, b) => sum + b.granted, 0), totalOwnRemaining);
 
   useEffect(() => {
-    if (record) return;
+    if (record) {
+      if (secondsUntilTomorrow <= 0) return;
+      const interval = setInterval(() => {
+        setSecondsUntilTomorrow((prev) => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
     if (secondsLeft <= 0) return;
 
     const interval = setInterval(() => {
@@ -459,6 +468,11 @@ export default function AttendanceClient({
           <p className="mb-2" style={{ fontWeight: 500 }}>
             You have already recorded your attendance for today.
           </p>
+          {secondsUntilTomorrow > 0 && (
+            <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
+              Next sign-in window closes in {formatCountdown(secondsUntilTomorrow)}
+            </p>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             <div className="flex-row">
               <span className="text-muted text-sm" style={{ minWidth: 110 }}>
