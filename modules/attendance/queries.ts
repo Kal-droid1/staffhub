@@ -57,9 +57,19 @@ export function getSecondsUntilTomorrowCutoff(cutoffTime: string): number {
   const now = getAddisTime();
   const cutoff = new Date(now);
   cutoff.setDate(cutoff.getDate() + 1);
+  // skip to Monday if tomorrow is Saturday (6) or Sunday (0)
+  const dow = cutoff.getDay();
+  if (dow === 6) cutoff.setDate(cutoff.getDate() + 2);
+  else if (dow === 0) cutoff.setDate(cutoff.getDate() + 1);
   cutoff.setHours(hours, minutes, 0, 0);
   const diff = cutoff.getTime() - now.getTime();
   return Math.max(0, Math.floor(diff / 1000));
+}
+
+export function isWeekend(): boolean {
+  const now = getAddisTime();
+  const dow = now.getDay();
+  return dow === 0 || dow === 6;
 }
 
 function addisTodayDate(): Date {
@@ -260,6 +270,8 @@ export function haversineDistance(lat1: number, lon1: number, lat2: number, lon2
 
 export async function markAbsentForMissingUsers() {
   const date = addisTodayDate();
+  const dow = date.getDay();
+  if (dow === 0 || dow === 6) return 0;
 
   const allUsers = await prisma.user.findMany({
     where: { isActive: true, hideFromReports: false, deletedAt: null },

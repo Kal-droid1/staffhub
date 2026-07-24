@@ -1,5 +1,5 @@
 import { requireAuth } from "@/modules/core/require-auth";
-import { getTodayRecord, getSettings, getSecondsUntilCutoff, getSecondsUntilTomorrowCutoff, getPendingRecords } from "@/modules/attendance/queries";
+import { getTodayRecord, getSettings, getSecondsUntilCutoff, getSecondsUntilTomorrowCutoff, getPendingRecords, isWeekend } from "@/modules/attendance/queries";
 import { getLeaveTypes, getLeaveBalances } from "@/modules/leave/queries";
 import AttendanceClient from "./attendance-client";
 
@@ -80,6 +80,7 @@ export default async function AttendancePage() {
       initialOfficeLatitude={settings.officeLatitude ?? null}
       initialOfficeLongitude={settings.officeLongitude ?? null}
       initialAllowedRadiusMeters={settings.allowedRadiusMeters}
+      isWeekend={isWeekend()}
       initialSecondsUntil={secondsUntil}
       initialSecondsUntilTomorrow={secondsUntilTomorrow}
       leaveTypes={JSON.parse(JSON.stringify(leaveTypes))}

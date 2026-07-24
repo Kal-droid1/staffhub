@@ -74,6 +74,7 @@ interface Props {
   initialOfficeLatitude: number | null;
   initialOfficeLongitude: number | null;
   initialAllowedRadiusMeters: number;
+  isWeekend: boolean;
   initialSecondsUntil: number;
   initialSecondsUntilTomorrow: number;
   leaveTypes: LeaveType[];
@@ -123,6 +124,7 @@ export default function AttendanceClient({
   initialOfficeLatitude,
   initialOfficeLongitude,
   initialAllowedRadiusMeters,
+  isWeekend,
   initialSecondsUntil,
   initialSecondsUntilTomorrow,
   leaveTypes,
@@ -466,6 +468,16 @@ export default function AttendanceClient({
   const xlsxUrl = `/api/reports/monthly?month=${reportMonth}&year=${reportYear}&format=xlsx${reportStaffId ? `&userId=${reportStaffId}` : ""}`;
 
   function renderAttendance() {
+    if (isWeekend) {
+      return (
+        <Card>
+          <p className="mb-2" style={{ fontWeight: 500 }}>
+            It&apos;s the weekend — no attendance needed today.
+          </p>
+        </Card>
+      );
+    }
+
     if (record) {
       const recordStatus = getStatusVariant(record.status);
 
