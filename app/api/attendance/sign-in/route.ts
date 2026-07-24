@@ -39,8 +39,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const body = await req.json().catch(() => ({}));
-  const action = body.action || "signin";
+  const contentType = req.headers.get("content-type") || "";
+  const isMultipart = contentType.includes("multipart/form-data");
+
+  let action: string;
+  let formData: FormData | undefined;
+  if (isMultipart) {
+    formData = await req.formData();
+    action = (formData.get("action") as string) || "signin";
+  } else {
+    const body = await req.json().catch(() => ({}));
+    action = body.action || "signin";
+  }
 
   if (action === "signin") {
     const settings = await getSettings();
@@ -69,9 +79,6 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "leave") {
-    const contentType = req.headers.get("content-type") || "";
-    const isMultipart = contentType.includes("multipart/form-data");
-
     let requestedStatus: AttendanceStatus;
     let leaveTypeId: string | undefined;
     let startDate: string | undefined;
@@ -79,8 +86,7 @@ export async function POST(req: NextRequest) {
     let note: string | undefined;
     let attachmentUrl: string | undefined;
 
-    if (isMultipart) {
-      const formData = await req.formData();
+    if (isMultipart && formData) {
       requestedStatus = (formData.get("requestedStatus") as AttendanceStatus) || "PERMISSION";
       leaveTypeId = (formData.get("leaveTypeId") as string) || undefined;
       startDate = (formData.get("startDate") as string) || undefined;
@@ -92,12 +98,12 @@ export async function POST(req: NextRequest) {
         attachmentUrl = blob.url;
       }
     } else {
-      const json = await req.json().catch(() => ({}));
-      requestedStatus = (json.requestedStatus as AttendanceStatus) || "PERMISSION";
-      leaveTypeId = json.leaveTypeId || undefined;
-      startDate = json.startDate || undefined;
-      endDate = json.endDate || undefined;
-      note = json.note || undefined;
+      const body = await req.json().catch(() => ({}));
+      requestedStatus = (body.requestedStatus as AttendanceStatus) || "PERMISSION";
+      leaveTypeId = body.leaveTypeId || undefined;
+      startDate = body.startDate || undefined;
+      endDate = body.endDate || undefined;
+      note = body.note || undefined;
     }
 
     const isMultiDay = startDate && endDate && startDate !== endDate && leaveTypeId;
