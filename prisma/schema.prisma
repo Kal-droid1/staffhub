@@ -31,6 +31,7 @@ model User {
   department      String?
   isActive        Boolean            @default(true)
   hideFromReports Boolean            @default(false)
+  deactivatedAt   DateTime?
   deletedAt       DateTime?
   createdAt       DateTime           @default(now())
   updatedAt       DateTime           @updatedAt

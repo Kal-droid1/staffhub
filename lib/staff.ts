@@ -9,6 +9,7 @@ export interface StaffRow {
   department: string | null;
   isActive: boolean;
   hideFromReports: boolean;
+  deactivatedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
 }
@@ -24,6 +25,7 @@ export async function getAllStaff(): Promise<StaffRow[]> {
       department: true,
       isActive: true,
       hideFromReports: true,
+      deactivatedAt: true,
       deletedAt: true,
       createdAt: true,
     },
@@ -43,6 +45,7 @@ export async function getTrashedStaff(): Promise<StaffRow[]> {
       department: true,
       isActive: true,
       hideFromReports: true,
+      deactivatedAt: true,
       deletedAt: true,
       createdAt: true,
     },
@@ -75,6 +78,7 @@ export async function createStaffAccount(data: {
       department: true,
       isActive: true,
       hideFromReports: true,
+      deactivatedAt: true,
       deletedAt: true,
       createdAt: true,
     },
@@ -107,6 +111,7 @@ export async function updateStaffAccount(
       department: true,
       isActive: true,
       hideFromReports: true,
+      deactivatedAt: true,
       deletedAt: true,
       createdAt: true,
     },
@@ -116,7 +121,7 @@ export async function updateStaffAccount(
 export async function deactivateUser(id: string, hideFromReports: boolean) {
   return prisma.user.update({
     where: { id },
-    data: { isActive: false, hideFromReports },
+    data: { isActive: false, hideFromReports, deactivatedAt: new Date() },
     select: {
       id: true,
       name: true,
@@ -125,6 +130,7 @@ export async function deactivateUser(id: string, hideFromReports: boolean) {
       department: true,
       isActive: true,
       hideFromReports: true,
+      deactivatedAt: true,
       deletedAt: true,
       createdAt: true,
     },
@@ -134,7 +140,7 @@ export async function deactivateUser(id: string, hideFromReports: boolean) {
 export async function reactivateUser(id: string) {
   return prisma.user.update({
     where: { id },
-    data: { isActive: true, hideFromReports: false },
+    data: { isActive: true, hideFromReports: false, deactivatedAt: null },
     select: {
       id: true,
       name: true,
@@ -143,6 +149,7 @@ export async function reactivateUser(id: string) {
       department: true,
       isActive: true,
       hideFromReports: true,
+      deactivatedAt: true,
       deletedAt: true,
       createdAt: true,
     },
@@ -161,6 +168,7 @@ export async function deleteUser(id: string) {
       department: true,
       isActive: true,
       hideFromReports: true,
+      deactivatedAt: true,
       deletedAt: true,
       createdAt: true,
     },
@@ -170,7 +178,7 @@ export async function deleteUser(id: string) {
 export async function restoreUser(id: string) {
   return prisma.user.update({
     where: { id },
-    data: { isActive: true, hideFromReports: false, deletedAt: null },
+    data: { isActive: true, hideFromReports: false, deactivatedAt: null, deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -179,6 +187,7 @@ export async function restoreUser(id: string) {
       department: true,
       isActive: true,
       hideFromReports: true,
+      deactivatedAt: true,
       deletedAt: true,
       createdAt: true,
     },

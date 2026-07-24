@@ -291,7 +291,16 @@ export async function getMonthlyReport(
   const records = await prisma.attendanceRecord.findMany({
     where,
     include: {
-      user: { select: { id: true, name: true, email: true, department: true } },
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          department: true,
+          hideFromReports: true,
+          deactivatedAt: true,
+        },
+      },
     },
     orderBy: { date: "asc" },
   });
@@ -315,6 +324,8 @@ export async function getMonthlyReport(
   >();
 
   for (const r of records) {
+    if (r.user.hideFromReports) continue;
+
     const uid = r.userId;
     if (!byUser.has(uid)) {
       byUser.set(uid, {
@@ -370,7 +381,14 @@ export async function getMonthlyReport(
     }
   } else if (!userId) {
     const allUsers = await prisma.user.findMany({
-      where: { hideFromReports: false, deletedAt: null },
+      where: {
+        hideFromReports: false,
+        deletedAt: null,
+        OR: [
+          { deactivatedAt: null },
+          { deactivatedAt: { gte: monthStart } },
+        ],
+      },
       select: { id: true, name: true, email: true, department: true },
     });
     for (const u of allUsers) {

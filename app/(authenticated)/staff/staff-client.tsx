@@ -13,6 +13,7 @@ interface StaffMember {
   department: string | null;
   isActive: boolean;
   hideFromReports: boolean;
+  deactivatedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
 }
