@@ -44,11 +44,6 @@ export default function NavBar() {
           </Link>
         )}
         {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/holidays" style={linkStyle}>
-            Holidays
-          </Link>
-        )}
-        {(role === "MANAGER" || role === "ADMIN") && (
           <Link href="/staff" style={linkStyle}>
             Staff
           </Link>
