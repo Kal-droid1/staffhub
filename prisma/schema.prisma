@@ -23,18 +23,20 @@ enum AttendanceStatus {
 }
 
 model User {
-  id          String             @id @default(uuid())
-  name        String
-  email       String             @unique
-  password    String
-  role        Role               @default(STAFF)
-  department  String?
-  isActive    Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  attendance  AttendanceRecord[] @relation("UserAttendance")
-  reviewed    AttendanceRecord[] @relation("ReviewedBy")
-  leaveGrants LeaveGrant[]
+  id              String             @id @default(uuid())
+  name            String
+  email           String             @unique
+  password        String
+  role            Role               @default(STAFF)
+  department      String?
+  isActive        Boolean            @default(true)
+  hideFromReports Boolean            @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  attendance      AttendanceRecord[] @relation("UserAttendance")
+  reviewed        AttendanceRecord[] @relation("ReviewedBy")
+  leaveGrants     LeaveGrant[]
 }
 
 model Settings {

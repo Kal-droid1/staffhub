@@ -1,12 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
+import type { Session } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
-import { getAllStaff, createStaffAccount, updateStaffAccount, setUserActive } from "@/lib/staff";
+import {
+  getAllStaff,
+  createStaffAccount,
+  updateStaffAccount,
+  deactivateUser,
+  reactivateUser,
+  deleteUser,
+  restoreUser,
+  permanentlyDeleteUser,
+} from "@/lib/staff";
+
+function managerGuard(session: Session | null) {
+  if (!session?.user?.role) return false;
+  return hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER");
+}
 
 export async function GET() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
+  if (!managerGuard(session)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -16,7 +31,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
+  if (!managerGuard(session)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -44,7 +59,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
+  if (!managerGuard(session)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -71,17 +86,50 @@ export async function PUT(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
+  if (!managerGuard(session)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await req.json();
-  const { id, isActive } = body;
+  const { id, action, hideFromReports, confirmation } = body;
 
-  if (!id || typeof isActive !== "boolean") {
-    return NextResponse.json({ error: "id and isActive (boolean) are required." }, { status: 400 });
+  if (!id || !action) {
+    return NextResponse.json({ error: "id and action are required." }, { status: 400 });
   }
 
-  const user = await setUserActive(id, isActive);
-  return NextResponse.json(user);
+  try {
+    switch (action) {
+      case "deactivate": {
+        const hide = hideFromReports === true;
+        const user = await deactivateUser(id, hide);
+        return NextResponse.json(user);
+      }
+      case "reactivate": {
+        const user = await reactivateUser(id);
+        return NextResponse.json(user);
+      }
+      case "delete": {
+        const user = await deleteUser(id);
+        return NextResponse.json(user);
+      }
+      case "restore": {
+        const user = await restoreUser(id);
+        return NextResponse.json(user);
+      }
+      case "permanent-delete": {
+        if (confirmation !== "DELETE") {
+          return NextResponse.json({ error: "Type DELETE to confirm permanent removal." }, { status: 400 });
+        }
+        await permanentlyDeleteUser(id);
+        return NextResponse.json({ success: true });
+      }
+      default:
+        return NextResponse.json({ error: "Invalid action." }, { status: 400 });
+    }
+  } catch (e: unknown) {
+    if ((e as { code?: string }).code === "P2025") {
+      return NextResponse.json({ error: "User not found." }, { status: 404 });
+    }
+    throw e;
+  }
 }

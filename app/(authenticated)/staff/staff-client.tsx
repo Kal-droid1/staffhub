@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Card from "@/modules/core/components/card";
 
 interface StaffMember {
@@ -11,6 +12,8 @@ interface StaffMember {
   role: string;
   department: string | null;
   isActive: boolean;
+  hideFromReports: boolean;
+  deletedAt: string | null;
   createdAt: string;
 }
 
@@ -32,7 +35,9 @@ export default function StaffClient({ initialStaff }: Props) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<string | null>(null);
+  const [hideFromReports, setHideFromReports] = useState(false);
 
   function resetForm() {
     setShowForm(false);
@@ -95,18 +100,50 @@ export default function StaffClient({ initialStaff }: Props) {
     router.refresh();
   }
 
-  async function handleToggleActive(id: string, current: boolean) {
-    setTogglingId(id);
+  async function handleDeactivate(id: string) {
+    setActingId(id);
     const res = await fetch("/api/staff", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, isActive: !current }),
+      body: JSON.stringify({ id, action: "deactivate", hideFromReports }),
     });
     if (res.ok) {
       const updated = await res.json();
       setStaff((prev) => prev.map((s) => (s.id === id ? updated : s)));
     }
-    setTogglingId(null);
+    setActingId(null);
+    setDeactivateTarget(null);
+    setHideFromReports(false);
+    router.refresh();
+  }
+
+  async function handleReactivate(id: string) {
+    setActingId(id);
+    const res = await fetch("/api/staff", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "reactivate" }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setStaff((prev) => prev.map((s) => (s.id === id ? updated : s)));
+    }
+    setActingId(null);
+    router.refresh();
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete will fully hide this account from all reports and move it to Trash. Continue?")) return;
+    setActingId(id);
+    const res = await fetch("/api/staff", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "delete" }),
+    });
+    if (res.ok) {
+      setStaff((prev) => prev.filter((s) => s.id !== id));
+    }
+    setActingId(null);
     router.refresh();
   }
 
@@ -114,11 +151,16 @@ export default function StaffClient({ initialStaff }: Props) {
     <div className="page-container" style={{ maxWidth: 960 }}>
       <h1 className="page-title">Staff</h1>
 
-      {!showForm && (
-        <button onClick={() => setShowForm(true)} className="btn btn-primary mb-2">
-          + Add Staff
-        </button>
-      )}
+      <div className="flex-row gap-sm mb-2" style={{ alignItems: "center" }}>
+        {!showForm && (
+          <button onClick={() => setShowForm(true)} className="btn btn-primary">
+            + Add Staff
+          </button>
+        )}
+        <Link href="/staff/trash" className="btn btn-ghost">
+          🗑 Trash
+        </Link>
+      </div>
 
       {showForm && (
         <Card style={{ marginBottom: "1.5rem" }}>
@@ -255,18 +297,77 @@ export default function StaffClient({ initialStaff }: Props) {
                   </span>
                 </td>
                 <td style={{ whiteSpace: "nowrap" }}>
-                  <div className="flex-row gap-sm">
-                    <button onClick={() => startEdit(s)} className="btn btn-primary btn-sm">
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleToggleActive(s.id, s.isActive)}
-                      disabled={togglingId === s.id}
-                      className={s.isActive ? "btn btn-danger btn-sm" : "btn btn-success btn-sm"}
-                    >
-                      {togglingId === s.id ? "…" : s.isActive ? "Deactivate" : "Activate"}
-                    </button>
-                  </div>
+                  {deactivateTarget === s.id ? (
+                    <div style={{ padding: "0.25rem 0" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem", fontSize: "0.85rem", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={hideFromReports}
+                          onChange={(e) => setHideFromReports(e.target.checked)}
+                        />
+                        Also hide from historical reports?
+                      </label>
+                      <div className="flex-row gap-sm">
+                        <button
+                          onClick={() => handleDeactivate(s.id)}
+                          disabled={actingId === s.id}
+                          className="btn btn-danger btn-sm"
+                        >
+                          {actingId === s.id ? "…" : "Confirm Deactivate"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeactivateTarget(null);
+                            setHideFromReports(false);
+                          }}
+                          className="btn btn-ghost btn-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex-row gap-sm">
+                      <button onClick={() => startEdit(s)} className="btn btn-primary btn-sm">
+                        Edit
+                      </button>
+                      {s.isActive ? (
+                        <>
+                          <button
+                            onClick={() => setDeactivateTarget(s.id)}
+                            disabled={actingId === s.id}
+                            className="btn btn-danger btn-sm"
+                          >
+                            {actingId === s.id ? "…" : "Deactivate"}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(s.id)}
+                            disabled={actingId === s.id}
+                            className="btn btn-danger btn-sm"
+                          >
+                            {actingId === s.id ? "…" : "Delete"}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleReactivate(s.id)}
+                            disabled={actingId === s.id}
+                            className="btn btn-success btn-sm"
+                          >
+                            {actingId === s.id ? "…" : "Reactivate"}
+                          </button>
+                          <button
+                            onClick={() => handleDelete(s.id)}
+                            disabled={actingId === s.id}
+                            className="btn btn-danger btn-sm"
+                          >
+                            {actingId === s.id ? "…" : "Delete"}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

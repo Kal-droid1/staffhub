@@ -233,7 +233,7 @@ export async function markAbsentForMissingUsers() {
   const date = addisTodayDate();
 
   const allUsers = await prisma.user.findMany({
-    where: { isActive: true },
+    where: { isActive: true, hideFromReports: false, deletedAt: null },
     select: { id: true },
   });
 
@@ -370,6 +370,7 @@ export async function getMonthlyReport(
     }
   } else if (!userId) {
     const allUsers = await prisma.user.findMany({
+      where: { hideFromReports: false, deletedAt: null },
       select: { id: true, name: true, email: true, department: true },
     });
     for (const u of allUsers) {

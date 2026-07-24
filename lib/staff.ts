@@ -1,8 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-export async function getAllStaff() {
-  return prisma.user.findMany({
+export interface StaffRow {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department: string | null;
+  isActive: boolean;
+  hideFromReports: boolean;
+  deletedAt: string | null;
+  createdAt: string;
+}
+
+export async function getAllStaff(): Promise<StaffRow[]> {
+  const rows = await prisma.user.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -10,10 +23,32 @@ export async function getAllStaff() {
       role: true,
       department: true,
       isActive: true,
+      hideFromReports: true,
+      deletedAt: true,
       createdAt: true,
     },
     orderBy: { name: "asc" },
   });
+  return rows as unknown as StaffRow[];
+}
+
+export async function getTrashedStaff(): Promise<StaffRow[]> {
+  const rows = await prisma.user.findMany({
+    where: { deletedAt: { not: null } },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      department: true,
+      isActive: true,
+      hideFromReports: true,
+      deletedAt: true,
+      createdAt: true,
+    },
+    orderBy: { deletedAt: "desc" },
+  });
+  return rows as unknown as StaffRow[];
 }
 
 export async function createStaffAccount(data: {
@@ -39,6 +74,8 @@ export async function createStaffAccount(data: {
       role: true,
       department: true,
       isActive: true,
+      hideFromReports: true,
+      deletedAt: true,
       createdAt: true,
     },
   });
@@ -69,15 +106,17 @@ export async function updateStaffAccount(
       role: true,
       department: true,
       isActive: true,
+      hideFromReports: true,
+      deletedAt: true,
       createdAt: true,
     },
   });
 }
 
-export async function setUserActive(id: string, isActive: boolean) {
+export async function deactivateUser(id: string, hideFromReports: boolean) {
   return prisma.user.update({
     where: { id },
-    data: { isActive },
+    data: { isActive: false, hideFromReports },
     select: {
       id: true,
       name: true,
@@ -85,7 +124,69 @@ export async function setUserActive(id: string, isActive: boolean) {
       role: true,
       department: true,
       isActive: true,
+      hideFromReports: true,
+      deletedAt: true,
       createdAt: true,
     },
   });
+}
+
+export async function reactivateUser(id: string) {
+  return prisma.user.update({
+    where: { id },
+    data: { isActive: true, hideFromReports: false },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      department: true,
+      isActive: true,
+      hideFromReports: true,
+      deletedAt: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function deleteUser(id: string) {
+  return prisma.user.update({
+    where: { id },
+    data: { isActive: false, hideFromReports: true, deletedAt: new Date() },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      department: true,
+      isActive: true,
+      hideFromReports: true,
+      deletedAt: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function restoreUser(id: string) {
+  return prisma.user.update({
+    where: { id },
+    data: { isActive: true, hideFromReports: false, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      department: true,
+      isActive: true,
+      hideFromReports: true,
+      deletedAt: true,
+      createdAt: true,
+    },
+  });
+}
+
+export async function permanentlyDeleteUser(id: string) {
+  await prisma.attendanceRecord.deleteMany({ where: { userId: id } });
+  await prisma.leaveGrant.deleteMany({ where: { userId: id } });
+  return prisma.user.delete({ where: { id } });
 }
