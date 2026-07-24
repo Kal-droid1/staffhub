@@ -748,7 +748,7 @@ export default function AttendanceClient({
                       {firstRecord.attachmentUrl && (
                         <div className="mb-1">
                           <a
-                            href={firstRecord.attachmentUrl}
+                            href={`/api/attachments?url=${encodeURIComponent(firstRecord.attachmentUrl)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="btn btn-ghost btn-sm"
