@@ -174,7 +174,7 @@ export default function AttendanceClient({
   const maxOwnGranted = Math.max(ownBalances.reduce((sum, b) => sum + b.granted, 0), totalOwnRemaining);
 
   useEffect(() => {
-    if (record) {
+    if (record || secondsLeft <= 0) {
       if (secondsUntilTomorrow <= 0) return;
       const interval = setInterval(() => {
         setSecondsUntilTomorrow((prev) => Math.max(0, prev - 1));
@@ -544,9 +544,16 @@ export default function AttendanceClient({
         )}
 
         {cutoffPassed && (
-          <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
-            Sign-in closed for today (cutoff was {cutoffTime}). Use Request leave if needed.
-          </p>
+          <>
+            <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
+              Sign-in closed for today (cutoff was {cutoffTime}). Use Request leave if needed.
+            </p>
+            {secondsUntilTomorrow > 0 && (
+              <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
+                Next sign-in window closes in {formatCountdown(secondsUntilTomorrow)}
+              </p>
+            )}
+          </>
         )}
 
         <div className="flex-row gap-md mt-2">
