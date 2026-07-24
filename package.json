@@ -15,6 +15,7 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "db:seed-reports": "npx tsx prisma/seed-reports.ts",
     "db:seed-reports-cleanup": "npx tsx prisma/seed-reports-cleanup.ts",
+    "db:seed-holidays": "npx tsx prisma/seed-holidays.ts",
     "db:seed-feb-2026": "npx tsx prisma/seed-feb-2026.ts",
     "db:seed-feb-2026-cleanup": "npx tsx prisma/seed-feb-2026-cleanup.ts"
   },

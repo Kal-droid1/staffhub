@@ -84,3 +84,15 @@ model LeaveGrant {
   expiresAt   DateTime? @db.Date
   createdAt   DateTime  @default(now())
 }
+
+model Holiday {
+  id        String   @id @default(uuid())
+  date      DateTime @db.Date
+  name      String
+  year      Int
+  isDefault Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@unique([date, name])
+  @@index([year])
+}
