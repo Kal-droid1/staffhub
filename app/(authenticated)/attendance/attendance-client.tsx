@@ -486,11 +486,15 @@ export default function AttendanceClient({
           <p className="mb-2" style={{ fontWeight: 500 }}>
             You have already recorded your attendance for today.
           </p>
-          {secondsUntilTomorrow > 0 && (
+          {secondsUntilTomorrow > 86400 ? (
+            <p className="mb-2" style={{ fontSize: "1rem", fontWeight: 500, color: "var(--color-muted)" }}>
+              Enjoy your rest — you&apos;re all set for today. The next sign-in countdown will appear closer to your return.
+            </p>
+          ) : secondsUntilTomorrow > 0 ? (
             <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
               Next sign-in window closes in {formatCountdown(secondsUntilTomorrow)}
             </p>
-          )}
+          ) : null}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             <div className="flex-row">
               <span className="text-muted text-sm" style={{ minWidth: 110 }}>
@@ -560,11 +564,15 @@ export default function AttendanceClient({
             <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
               Sign-in closed for today (cutoff was {cutoffTime}). Use Request leave if needed.
             </p>
-            {secondsUntilTomorrow > 0 && (
+            {secondsUntilTomorrow > 86400 ? (
+              <p className="mb-2" style={{ fontSize: "1rem", fontWeight: 500, color: "var(--color-muted)" }}>
+                Enjoy your rest — you&apos;re all set for today. The next sign-in countdown will appear closer to your return.
+              </p>
+            ) : secondsUntilTomorrow > 0 ? (
               <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
                 Next sign-in window closes in {formatCountdown(secondsUntilTomorrow)}
               </p>
-            )}
+            ) : null}
           </>
         )}
 
