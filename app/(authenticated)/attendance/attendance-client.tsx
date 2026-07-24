@@ -285,12 +285,12 @@ export default function AttendanceClient({
       } else {
         setPending((prev) => prev.filter((r) => r.id !== recordId));
       }
+      router.refresh();
     } else {
       const data = await res.json().catch(() => ({}));
       setApproveError(data.error || "Failed to " + action + ".");
     }
     setApproveLoadingId(null);
-    router.refresh();
   }
 
   async function handleSettingsSave(e: React.FormEvent) {
