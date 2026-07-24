@@ -1,6 +1,7 @@
 import { requireAuth } from "@/modules/core/require-auth";
 import { getTodayRecord, getSettings, getSecondsUntilCutoff, getSecondsUntilTomorrowCutoff, getPendingRecords, isWeekend } from "@/modules/attendance/queries";
 import { getLeaveTypes, getLeaveBalances } from "@/modules/leave/queries";
+import { prisma } from "@/lib/prisma";
 import AttendanceClient from "./attendance-client";
 
 export default async function AttendancePage() {
@@ -10,6 +11,24 @@ export default async function AttendancePage() {
   const secondsUntil = getSecondsUntilCutoff(settings.cutoffTime);
   const secondsUntilTomorrow = getSecondsUntilTomorrowCutoff(settings.cutoffTime);
   const leaveTypes = await getLeaveTypes();
+
+  // check for active approved leave spanning future dates
+  let ongoingLeaveUntil: string | null = null;
+  const now = new Date();
+  const futureApproved = await prisma.attendanceRecord.findMany({
+    where: {
+      userId: user.id,
+      date: { gte: now },
+      status: { notIn: ["PENDING", "ABSENT"] },
+      leaveTypeId: { not: null },
+    },
+    orderBy: { date: "asc" },
+    select: { date: true },
+  });
+  if (futureApproved.length > 0) {
+    const lastDate = futureApproved[futureApproved.length - 1].date;
+    ongoingLeaveUntil = lastDate.toISOString();
+  }
 
   const serialized = todayRecord
     ? {
@@ -83,6 +102,7 @@ export default async function AttendancePage() {
       isWeekend={isWeekend()}
       initialSecondsUntil={secondsUntil}
       initialSecondsUntilTomorrow={secondsUntilTomorrow}
+      ongoingLeaveUntil={ongoingLeaveUntil}
       leaveTypes={JSON.parse(JSON.stringify(leaveTypes))}
       pendingRecords={pending}
       balances={JSON.parse(JSON.stringify(balancesMap))}

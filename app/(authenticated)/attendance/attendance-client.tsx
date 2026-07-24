@@ -77,6 +77,7 @@ interface Props {
   isWeekend: boolean;
   initialSecondsUntil: number;
   initialSecondsUntilTomorrow: number;
+  ongoingLeaveUntil: string | null;
   leaveTypes: LeaveType[];
   pendingRecords: PendingRecord[];
   balances: Record<string, Balance[]>;
@@ -127,6 +128,7 @@ export default function AttendanceClient({
   isWeekend,
   initialSecondsUntil,
   initialSecondsUntilTomorrow,
+  ongoingLeaveUntil,
   leaveTypes,
   pendingRecords,
   balances,
@@ -486,9 +488,9 @@ export default function AttendanceClient({
           <p className="mb-2" style={{ fontWeight: 500 }}>
             You have already recorded your attendance for today.
           </p>
-          {secondsUntilTomorrow > 86400 ? (
+          {ongoingLeaveUntil ? (
             <p className="mb-2" style={{ fontSize: "1rem", fontWeight: 500, color: "var(--color-muted)" }}>
-              Enjoy your rest — you&apos;re all set for today. The next sign-in countdown will appear closer to your return.
+              You&apos;re on leave until {new Date(ongoingLeaveUntil).toLocaleDateString()}. Enjoy your rest — the countdown will begin 24 hours before your return.
             </p>
           ) : secondsUntilTomorrow > 0 ? (
             <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
@@ -564,9 +566,9 @@ export default function AttendanceClient({
             <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
               Sign-in closed for today (cutoff was {cutoffTime}). Use Request leave if needed.
             </p>
-            {secondsUntilTomorrow > 86400 ? (
+            {ongoingLeaveUntil ? (
               <p className="mb-2" style={{ fontSize: "1rem", fontWeight: 500, color: "var(--color-muted)" }}>
-                Enjoy your rest — you&apos;re all set for today. The next sign-in countdown will appear closer to your return.
+                You&apos;re on leave until {new Date(ongoingLeaveUntil).toLocaleDateString()}. Enjoy your rest — the countdown will begin 24 hours before your return.
               </p>
             ) : secondsUntilTomorrow > 0 ? (
               <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
