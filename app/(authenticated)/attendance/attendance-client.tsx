@@ -637,7 +637,7 @@ export default function AttendanceClient({
         {cutoffPassed && (
           <>
             <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
-              Sign-in closed for today (cutoff was {cutoffTime}). Use Request leave if needed.
+              Sign-in closed for today (cutoff was {cutoffTime}).
             </p>
             {ongoingLeaveUntil ? (
               <p className="mb-2" style={{ fontSize: "1rem", fontWeight: 500, color: "var(--color-muted)" }}>
@@ -661,15 +661,23 @@ export default function AttendanceClient({
               {loading && !showLeaveForm ? "Signing in..." : "Sign in"}
             </button>
           )}
-
-          <button
-            onClick={() => setShowLeaveForm(!showLeaveForm)}
-            disabled={loading}
-            className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
-          >
-            Request leave
-          </button>
         </div>
+
+        {error && <p className="form-error mt-2">{error}</p>}
+      </Card>
+    );
+  }
+
+  function renderLeaveRequest() {
+    return (
+      <Card style={{ marginTop: "1.25rem" }}>
+        <button
+          onClick={() => setShowLeaveForm(!showLeaveForm)}
+          disabled={loading}
+          className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
+        >
+          Request leave
+        </button>
 
         {showLeaveForm && (
           <Card
@@ -755,8 +763,6 @@ export default function AttendanceClient({
             </form>
           </Card>
         )}
-
-        {error && <p className="form-error mt-2">{error}</p>}
       </Card>
     );
   }
@@ -766,6 +772,7 @@ export default function AttendanceClient({
       <div className="page-container" style={{ maxWidth: 520 }}>
         <h1 className="page-title">Attendance</h1>
         {renderAttendance()}
+        {renderLeaveRequest()}
       </div>
     );
   }
@@ -780,6 +787,7 @@ export default function AttendanceClient({
             Attendance
           </h2>
           {renderAttendance()}
+          {renderLeaveRequest()}
         </div>
 
         <div>
