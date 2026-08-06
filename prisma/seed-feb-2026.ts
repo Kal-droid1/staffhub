@@ -2,10 +2,11 @@ import { PrismaClient, AttendanceStatus } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-const existingAccounts = [
+const knownEmails = [
   "alice@staffhub.test",
   "bob@staffhub.test",
-  "carol@staffhub.test",
+  "Beka@gmail.com",
+  "kal@gmail.com",
 ];
 
 const YEAR = 2026;
@@ -28,50 +29,74 @@ interface Scenario {
   email: string;
   presentDays: number[];
   absentDays: number[];
-  leaveDays: { day: number; type: AttendanceStatus; note: string }[];
+  leaveDays: { day: number; type: AttendanceStatus; note: string; leaveTypeId: string }[];
+  pendingDays: { day: number; type: AttendanceStatus; note: string }[];
 }
 
 async function main() {
   const weekdays = getWeekdaysInFeb();
 
   const users = await prisma.user.findMany({
-    where: { email: { in: existingAccounts } },
+    where: {
+      deletedAt: null,
+      deactivatedAt: null,
+    },
   });
   const userMap = new Map(users.map((u) => [u.email, u]));
 
-  for (const email of existingAccounts) {
+  const leaveType = await prisma.leaveType.findFirst();
+  if (!leaveType) {
+    console.error("No leave types found. Run db:seed first.");
+    process.exit(1);
+  }
+
+  for (const email of knownEmails) {
     if (!userMap.has(email)) {
       console.error(`  ERROR: ${email} not found. Run db:seed first.`);
       process.exit(1);
     }
   }
 
-  const userId = (email: string) => userMap.get(email)!.id;
-  const userName = (email: string) => userMap.get(email)!.name;
-
   const scenarios: Scenario[] = [
     {
       email: "alice@staffhub.test",
-      presentDays: weekdays.filter((d) => d <= 23),
-      absentDays: [24, 25],
+      presentDays: weekdays.filter((d) => d <= 17),
+      absentDays: [18, 23],
       leaveDays: [
-        { day: 26, type: "PERMISSION", note: "Doctor appointment" },
-        { day: 27, type: "ANNUAL_LEAVE", note: "Annual leave day" },
+        { day: 24, type: "PERMISSION", note: "Doctor appointment", leaveTypeId: leaveType.id },
+        { day: 25, type: "ANNUAL_LEAVE", note: "Annual leave", leaveTypeId: leaveType.id },
+      ],
+      pendingDays: [
+        { day: 26, type: "PERMISSION", note: "Pending - personal" },
       ],
     },
     {
       email: "bob@staffhub.test",
-      presentDays: weekdays,
-      absentDays: [],
-      leaveDays: [],
+      presentDays: weekdays.filter((d) => d !== 10 && d !== 20),
+      absentDays: [20],
+      leaveDays: [
+        { day: 10, type: "PERMISSION", note: "Personal day", leaveTypeId: leaveType.id },
+      ],
+      pendingDays: [],
     },
     {
-      email: "carol@staffhub.test",
-      presentDays: weekdays.filter((d) => d !== 17 && d !== 26 && d !== 27),
-      absentDays: [17],
+      email: "Beka@gmail.com",
+      presentDays: weekdays.filter((d) => d !== 5 && d !== 13 && d !== 19),
+      absentDays: [5, 19],
       leaveDays: [
-        { day: 26, type: "OTHER", note: "Conference" },
-        { day: 27, type: "OTHER", note: "Conference day 2" },
+        { day: 13, type: "ANNUAL_LEAVE", note: "Short trip", leaveTypeId: leaveType.id },
+      ],
+      pendingDays: [],
+    },
+    {
+      email: "kal@gmail.com",
+      presentDays: weekdays.filter((d) => d !== 9 && d !== 16 && d !== 27),
+      absentDays: [9],
+      leaveDays: [
+        { day: 16, type: "PERMISSION", note: "Errand", leaveTypeId: leaveType.id },
+      ],
+      pendingDays: [
+        { day: 27, type: "PERMISSION", note: "Pending - sick note" },
       ],
     },
   ];
@@ -79,43 +104,73 @@ async function main() {
   let total = 0;
 
   for (const s of scenarios) {
-    const id = userId(s.email);
+    const user = userMap.get(s.email)!;
+
     const records: {
       userId: string;
       date: Date;
       requestedStatus: AttendanceStatus;
       status: AttendanceStatus;
       note: string | null;
+      leaveTypeId: string | null;
     }[] = [];
 
     for (const day of s.presentDays) {
-      records.push({ userId: id, date: makeDate(day), requestedStatus: "PRESENT", status: "PRESENT", note: null });
+      records.push({
+        userId: user.id,
+        date: makeDate(day),
+        requestedStatus: "PRESENT",
+        status: "PRESENT",
+        note: null,
+        leaveTypeId: null,
+      });
     }
     for (const day of s.absentDays) {
-      records.push({ userId: id, date: makeDate(day), requestedStatus: "ABSENT", status: "ABSENT", note: "Auto-marked: no attendance record by cutoff." });
+      records.push({
+        userId: user.id,
+        date: makeDate(day),
+        requestedStatus: "ABSENT",
+        status: "ABSENT",
+        note: "Auto-marked: no attendance record by cutoff.",
+        leaveTypeId: null,
+      });
     }
     for (const ld of s.leaveDays) {
-      records.push({ userId: id, date: makeDate(ld.day), requestedStatus: ld.type, status: ld.type, note: ld.note });
+      records.push({
+        userId: user.id,
+        date: makeDate(ld.day),
+        requestedStatus: ld.type,
+        status: ld.type,
+        note: ld.note,
+        leaveTypeId: ld.leaveTypeId,
+      });
+    }
+    for (const pd of s.pendingDays) {
+      records.push({
+        userId: user.id,
+        date: makeDate(pd.day),
+        requestedStatus: pd.type,
+        status: "PENDING",
+        note: pd.note,
+        leaveTypeId: null,
+      });
     }
 
     if (records.length > 0) {
-      await prisma.attendanceRecord.createMany({ data: records });
+      await prisma.attendanceRecord.createMany({ data: records, skipDuplicates: true });
     }
     total += records.length;
 
     const p = s.presentDays.length;
     const a = s.absentDays.length;
     const l = s.leaveDays.length;
-    console.log(`  ${userName(s.email).padEnd(12)} - Present: ${String(p).padStart(2)},  Absent: ${a},  Leave: ${l}  (${p + a + l} total)`);
+    const pd = s.pendingDays.length;
+    console.log(`  ${user.name.padEnd(14)} - Present: ${String(p).padStart(2)},  Absent: ${a},  Leave: ${l},  Pending: ${pd}  (${p + a + l + pd} total)`);
   }
 
   console.log(`\n  Inserted ${total} records for February ${YEAR} (${weekdays.length} weekdays in month).`);
-  console.log(`\n  Expected report (sorted most-absent-first):`);
-  console.log(`    Alice Staff  - Present: ${scenarios[0].presentDays.length}, Absent: ${scenarios[0].absentDays.length}, Leave: ${scenarios[0].leaveDays.length}`);
-  console.log(`    Carol Admin  - Present: ${scenarios[2].presentDays.length}, Absent: ${scenarios[2].absentDays.length}, Leave: ${scenarios[2].leaveDays.length}`);
-  console.log(`    Bob Manager  - Present: ${scenarios[1].presentDays.length}, Absent: ${scenarios[1].absentDays.length}, Leave: ${scenarios[1].leaveDays.length}\n`);
+  console.log("  (This is the exact boundary case — 20 weekdays = template column count.)\n");
   console.log("  Run `npm run db:seed-feb-2026-cleanup` to delete these records.\n");
-  console.log("  (These accounts themselves are NOT deleted - only their Feb 2026 records.)\n");
 
   await prisma.$disconnect();
 }
