@@ -879,6 +879,7 @@ export default function AttendanceClient({
         <>
           {approveError && <p className="form-error mb-1">{approveError}</p>}
           <Card style={{ padding: 0, overflow: "hidden" }}>
+          <div className="table-responsive">
           <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
               <tr>
@@ -959,6 +960,7 @@ export default function AttendanceClient({
               })}
             </tbody>
           </table>
+          </div>
         </Card>
         </>
       )}
@@ -1052,6 +1054,7 @@ export default function AttendanceClient({
 
       {reportLoaded && filteredSummary.length > 0 && (
         <Card style={{ padding: 0, overflow: "hidden" }}>
+          <div className="table-responsive">
           <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
               <tr>
@@ -1098,6 +1101,7 @@ export default function AttendanceClient({
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>

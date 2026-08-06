@@ -81,6 +81,7 @@ export default function TrashClient({ initialTrash }: Props) {
             Trash is empty.
           </div>
         ) : (
+          <div className="table-responsive">
           <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
               <tr>
@@ -172,6 +173,7 @@ export default function TrashClient({ initialTrash }: Props) {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

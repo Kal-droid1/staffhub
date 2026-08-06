@@ -11,8 +11,10 @@ export default async function AuthenticatedLayout({
 
   return (
     <SessionProvider session={session}>
-      <NavBar />
-      {children}
+      <div style={{ position: "relative" }}>
+        <NavBar />
+        {children}
+      </div>
     </SessionProvider>
   );
 }

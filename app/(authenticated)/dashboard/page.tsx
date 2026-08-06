@@ -32,7 +32,7 @@ export default async function DashboardPage() {
         {greeting}, {user.name}
       </h1>
 
-      <div className="card-grid" style={{ marginBottom: "1.5rem", gridTemplateColumns: "repeat(2, 1fr)" }}>
+      <div className="card-grid card-grid--2" style={{ marginBottom: "1.5rem" }}>
         <Card>
           <p className="stat-label">Your Role</p>
           <p className="stat-number" style={{ fontSize: "1.5rem", marginTop: "0.25rem" }}>
@@ -67,6 +67,7 @@ export default async function DashboardPage() {
             No leave types configured yet.
           </p>
         ) : (
+          <div className="table-responsive">
           <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
               <tr>
@@ -104,6 +105,7 @@ export default async function DashboardPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

@@ -1,79 +1,85 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 
-const linkStyle: React.CSSProperties = {
-  color: "white",
-  textDecoration: "none",
-  fontWeight: 500,
-  fontSize: "0.875rem",
-  padding: "0.3rem 0",
-};
-
 export default function NavBar() {
   const { data: session } = useSession();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   if (!session) return null;
 
   const role = session.user?.role as string;
+  const isManager = role === "MANAGER" || role === "ADMIN";
+
+  const linkStyle: React.CSSProperties = {
+    color: "white",
+    textDecoration: "none",
+    fontWeight: 500,
+    fontSize: "0.875rem",
+    padding: "0.3rem 0",
+  };
 
   return (
-    <nav
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0 1.5rem",
-        height: 52,
-        backgroundColor: "var(--color-brand)",
-        color: "white",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.12)",
-      }}
-    >
-      <div style={{ display: "flex", gap: "1.75rem", alignItems: "center" }}>
-        <Link href="/dashboard" style={linkStyle}>
-          Dashboard
-        </Link>
-        <Link href="/attendance" style={linkStyle}>
-          Attendance
-        </Link>
-        {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/leave-types" style={linkStyle}>
-            Leave Types
-          </Link>
-        )}
-        {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/staff" style={linkStyle}>
-            Staff
-          </Link>
-        )}
-        {(role === "MANAGER" || role === "ADMIN") && (
-          <Link href="/balances" style={linkStyle}>
-            Balances
-          </Link>
-        )}
-      </div>
-      <div style={{ display: "flex", gap: "1.25rem", alignItems: "center" }}>
-        <Link href="/change-password" style={linkStyle}>
-          Change Password
-        </Link>
+    <nav className="navbar">
+      <div className="navbar-inner">
         <button
-        onClick={() => signOut({ callbackUrl: "/login" })}
-        style={{
-          padding: "0.35rem 0.85rem",
-          backgroundColor: "rgba(255,255,255,0.12)",
-          color: "white",
-          border: "1px solid rgba(255,255,255,0.18)",
-          borderRadius: "var(--radius-sm)",
-          cursor: "pointer",
-          fontSize: "0.8rem",
-          fontWeight: 500,
-          fontFamily: "inherit",
-        }}
-      >
-        Log out
-      </button>
+          className="navbar-hamburger"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-label="Toggle menu"
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <div className={`navbar-menu${menuOpen ? " navbar-menu--open" : ""}`}>
+          <div className="navbar-links">
+            <Link href="/dashboard" style={linkStyle} onClick={() => setMenuOpen(false)}>
+              Dashboard
+            </Link>
+            <Link href="/attendance" style={linkStyle} onClick={() => setMenuOpen(false)}>
+              Attendance
+            </Link>
+            {isManager && (
+              <Link href="/leave-types" style={linkStyle} onClick={() => setMenuOpen(false)}>
+                Leave Types
+              </Link>
+            )}
+            {isManager && (
+              <Link href="/staff" style={linkStyle} onClick={() => setMenuOpen(false)}>
+                Staff
+              </Link>
+            )}
+            {isManager && (
+              <Link href="/balances" style={linkStyle} onClick={() => setMenuOpen(false)}>
+                Balances
+              </Link>
+            )}
+          </div>
+          <div className="navbar-links">
+            <Link href="/change-password" style={linkStyle} onClick={() => setMenuOpen(false)}>
+              Change Password
+            </Link>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              style={{
+                padding: "0.35rem 0.85rem",
+                backgroundColor: "rgba(255,255,255,0.12)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: "var(--radius-sm)",
+                cursor: "pointer",
+                fontSize: "0.8rem",
+                fontWeight: 500,
+                fontFamily: "inherit",
+              }}
+            >
+              Log out
+            </button>
+          </div>
+        </div>
       </div>
     </nav>
   );

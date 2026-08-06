@@ -183,6 +183,7 @@ export default function HolidaysClient({ initialHolidays: initialData, initialYe
 
       {!loading && holidays.length > 0 && (
         <Card style={{ padding: 0, overflow: "hidden" }}>
+          <div className="table-responsive">
           <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
               <tr>
@@ -215,6 +216,7 @@ export default function HolidaysClient({ initialHolidays: initialData, initialYe
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>

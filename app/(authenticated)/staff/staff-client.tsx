@@ -245,6 +245,7 @@ export default function StaffClient({ initialStaff }: Props) {
       )}
 
       <Card style={{ padding: 0, overflow: "hidden" }}>
+        <div className="table-responsive">
         <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
           <thead>
             <tr>
@@ -374,6 +375,7 @@ export default function StaffClient({ initialStaff }: Props) {
             ))}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

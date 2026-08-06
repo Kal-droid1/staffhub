@@ -212,6 +212,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
         </Card>
       ) : (
         <Card style={{ padding: 0, overflow: "hidden" }}>
+          <div className="table-responsive">
           <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
               <tr>
@@ -249,6 +250,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>

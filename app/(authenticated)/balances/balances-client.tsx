@@ -458,6 +458,7 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
               Grants for {selectedUser?.userName}
             </h2>
           </div>
+          <div className="table-responsive">
           <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
             <thead>
               <tr>
@@ -497,6 +498,7 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
               ))}
             </tbody>
           </table>
+          </div>
         </Card>
       )}
     </div>
