@@ -180,7 +180,8 @@ export default function AttendanceClient({
   const [reportLoaded, setReportLoaded] = useState(false);
   const [reportError, setReportError] = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
-  const [filterDate, setFilterDate] = useState("");
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
 
   const cutoffPassed = secondsLeft <= 0;
 
@@ -491,7 +492,8 @@ export default function AttendanceClient({
       setExpandedUser(null);
     } else {
       setExpandedUser(userName);
-      setFilterDate("");
+      setFilterStartDate("");
+      setFilterEndDate("");
     }
   }
 
@@ -1126,29 +1128,52 @@ export default function AttendanceClient({
                       </td>
                     </tr>
                     {isExpanded && row.records.length > 0 && (() => {
-                      const filteredRecords = filterDate
+                      const hasRange = !!(filterStartDate || filterEndDate);
+                      const filteredRecords = hasRange
                         ? row.records.filter((r) => {
-                            const d = new Date(r.date);
-                            const y = d.getFullYear();
-                            const m = String(d.getMonth() + 1).padStart(2, "0");
-                            const day = String(d.getDate()).padStart(2, "0");
-                            return `${y}-${m}-${day}` === filterDate;
+                            const rd = r.date.slice(0, 10);
+                            if (filterStartDate && rd < filterStartDate) return false;
+                            if (filterEndDate && rd > filterEndDate) return false;
+                            return true;
                           })
                         : row.records;
                       return (
                       <tr key={`${row.userName}-detail`}>
-                        <td colSpan={5} style={{ padding: 0, background: "var(--color-bg)" }}>
-                          <div style={{ padding: "0.6rem 0.75rem 0.4rem" }}>
-                            <input
-                              type="date"
-                              className="form-input"
-                              value={filterDate}
-                              onChange={(e) => setFilterDate(e.target.value)}
-                              placeholder="Filter by date"
-                              style={{ maxWidth: 200, fontSize: "0.8125rem" }}
-                            />
+                        <td colSpan={5} style={{ padding: 0 }}>
+                          <div style={{ padding: "1rem 1.5rem 0.75rem", background: "var(--color-surface-hover)", borderTop: "2px solid var(--color-brand)", margin: "0 0.5rem" }}>
+                            <div className="flex-row gap-sm flex-wrap" style={{ alignItems: "flex-end" }}>
+                              <div>
+                                <label className="form-label" style={{ fontSize: "0.75rem" }}>Start date</label>
+                                <input
+                                  type="date"
+                                  className="form-input"
+                                  value={filterStartDate}
+                                  onChange={(e) => setFilterStartDate(e.target.value)}
+                                  style={{ maxWidth: 155, fontSize: "0.8125rem" }}
+                                />
+                              </div>
+                              <div>
+                                <label className="form-label" style={{ fontSize: "0.75rem" }}>End date</label>
+                                <input
+                                  type="date"
+                                  className="form-input"
+                                  value={filterEndDate}
+                                  onChange={(e) => setFilterEndDate(e.target.value)}
+                                  style={{ maxWidth: 155, fontSize: "0.8125rem" }}
+                                />
+                              </div>
+                              {hasRange && (
+                                <button
+                                  type="button"
+                                  className="btn btn-ghost btn-sm"
+                                  onClick={() => { setFilterStartDate(""); setFilterEndDate(""); }}
+                                >
+                                  Clear filter
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="detail-scroll" style={{ maxHeight: 260, overflowY: "auto" }}>
+                          <div className="detail-scroll" style={{ maxHeight: 260, overflowY: "auto", margin: "0 0.5rem" }}>
                           <table style={{ width: "100%", borderCollapse: "collapse" }}>
                             <thead>
                               <tr>
@@ -1161,7 +1186,7 @@ export default function AttendanceClient({
                               {filteredRecords.length === 0 ? (
                                 <tr>
                                   <td colSpan={3} style={{ padding: "0.75rem", textAlign: "center", color: "var(--color-text-muted)", fontSize: "0.8125rem" }}>
-                                    No records for this date.
+                                    No records in this range.
                                   </td>
                                 </tr>
                               ) : (
