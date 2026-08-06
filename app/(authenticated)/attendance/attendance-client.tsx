@@ -911,22 +911,22 @@ export default function AttendanceClient({
                 const isLoading = approveLoadingId === g.firstId;
                 return (
                   <tr key={g.firstId}>
-                    <td>
+                    <td data-label="Staff">
                       <PersonRow
                         name={g.user.name}
                         department={g.user.department ?? undefined}
                         size="sm"
                       />
                     </td>
-                    <td style={{ whiteSpace: "nowrap" }}>{g.dateRange}</td>
-                    <td>
+                    <td data-label="Date" style={{ whiteSpace: "nowrap" }}>{g.dateRange}</td>
+                    <td data-label="Requested">
                       <StatusPill
                         status={g.requestedStatus.toLowerCase() === "present" ? "present" : "pending"}
                         label={label}
                       />
                     </td>
-                    <td className="text-muted">{g.note || "\u2014"}</td>
-                    <td style={{ whiteSpace: "nowrap" }}>
+                    <td data-label="Note" className="text-muted">{g.note || "\u2014"}</td>
+                    <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                       {firstRecord.attachmentUrl && (
                         <div className="mb-1">
                           <a
@@ -1083,31 +1083,31 @@ export default function AttendanceClient({
                       onClick={() => setExpandedUser(isExpanded ? null : row.userName)}
                       style={{ cursor: "pointer" }}
                     >
-                      <td style={{ fontWeight: 600 }}>
+                      <td data-label="Staff" style={{ fontWeight: 600 }}>
                         {isExpanded ? "▼" : "▶"} {row.userName}
                       </td>
-                      <td style={{ textAlign: "center" }}>
+                      <td data-label="Present" style={{ textAlign: "center" }}>
                         {row.presentCount > 0 ? (
                           <StatusPill status="present" label={String(row.presentCount)} />
                         ) : (
                           row.presentCount
                         )}
                       </td>
-                      <td style={{ textAlign: "center" }}>
+                      <td data-label="Absent" style={{ textAlign: "center" }}>
                         {row.absentCount > 0 ? (
                           <StatusPill status="absent" label={String(row.absentCount)} />
                         ) : (
                           row.absentCount
                         )}
                       </td>
-                      <td style={{ textAlign: "center" }}>
+                      <td data-label="Leave" style={{ textAlign: "center" }}>
                         {row.leaveCount > 0 ? (
                           <StatusPill status="leave" label={String(row.leaveCount)} />
                         ) : (
                           row.leaveCount
                         )}
                       </td>
-                      <td style={{ textAlign: "center" }}>
+                      <td data-label="Pending" style={{ textAlign: "center" }}>
                         {row.pendingCount > 0 ? (
                           <StatusPill status="pending" label={String(row.pendingCount)} />
                         ) : (
@@ -1129,8 +1129,8 @@ export default function AttendanceClient({
                             <tbody>
                               {row.records.map((r, i) => (
                                 <tr key={i}>
-                                  <td style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>{new Date(r.date).toLocaleDateString()}</td>
-                                  <td style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>
+                                  <td data-label="Date" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>{new Date(r.date).toLocaleDateString()}</td>
+                                  <td data-label="Status" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>
                                     <StatusPill
                                       status={
                                         r.status === "PRESENT" || r.status === "APPROVED" ? "present" :
@@ -1140,7 +1140,7 @@ export default function AttendanceClient({
                                       label={r.status}
                                     />
                                   </td>
-                                  <td style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)", color: "var(--color-text-muted)" }}>{r.note || "\u2014"}</td>
+                                  <td data-label="Note" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)", color: "var(--color-text-muted)" }}>{r.note || "\u2014"}</td>
                                 </tr>
                               ))}
                             </tbody>

@@ -227,12 +227,12 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
             <tbody>
               {types.map((t) => (
                 <tr key={t.id}>
-                  <td style={{ fontWeight: 600 }}>{t.name}</td>
-                  <td style={{ textAlign: "center" }}>{t.isAnnualRecurring ? "Yes" : "No"}</td>
-                  <td style={{ textAlign: "center" }}>{t.defaultDays}</td>
-                  <td>{t.mappedStatus}</td>
-                  <td style={{ textAlign: "center" }}>{t.requiresAttachment ? "Yes" : "No"}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                  <td data-label="Name" style={{ fontWeight: 600 }}>{t.name}</td>
+                  <td data-label="Annual" style={{ textAlign: "center" }}>{t.isAnnualRecurring ? "Yes" : "No"}</td>
+                  <td data-label="Default Days" style={{ textAlign: "center" }}>{t.defaultDays}</td>
+                  <td data-label="Mapped Status">{t.mappedStatus}</td>
+                  <td data-label="Attachment" style={{ textAlign: "center" }}>{t.requiresAttachment ? "Yes" : "No"}</td>
+                  <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                     <div className="flex-row gap-sm">
                       <button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">
                         Edit

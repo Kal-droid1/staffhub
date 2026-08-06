@@ -196,14 +196,14 @@ export default function HolidaysClient({ initialHolidays: initialData, initialYe
             <tbody>
               {holidays.map((h) => (
                 <tr key={h.id}>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                  <td data-label="Date" style={{ whiteSpace: "nowrap" }}>
                     {new Date(h.date).toLocaleDateString()}
                   </td>
-                  <td style={{ fontWeight: 600 }}>{h.name}</td>
-                  <td style={{ textAlign: "center" }}>
+                  <td data-label="Name" style={{ fontWeight: 600 }}>{h.name}</td>
+                  <td data-label="Type" style={{ textAlign: "center" }}>
                     {h.isDefault ? "Default" : "Custom"}
                   </td>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                  <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                     <button
                       onClick={() => handleDelete(h.id)}
                       disabled={deletingId === h.id}

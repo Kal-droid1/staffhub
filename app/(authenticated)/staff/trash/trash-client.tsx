@@ -96,9 +96,9 @@ export default function TrashClient({ initialTrash }: Props) {
             <tbody>
               {trash.map((s) => (
                 <tr key={s.id}>
-                  <td style={{ fontWeight: 600 }}>{s.name}</td>
-                  <td>{s.email}</td>
-                  <td style={{ textAlign: "center" }}>
+                  <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
+                  <td data-label="Email">{s.email}</td>
+                  <td data-label="Role" style={{ textAlign: "center" }}>
                     <span
                       style={{
                         display: "inline-block",
@@ -118,11 +118,11 @@ export default function TrashClient({ initialTrash }: Props) {
                       {s.role}
                     </span>
                   </td>
-                  <td>{s.department || "\u2014"}</td>
-                  <td style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
+                  <td data-label="Department">{s.department || "\u2014"}</td>
+                  <td data-label="Deleted" style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
                     {formatDeletedDate(s.deletedAt)}
                   </td>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                  <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                     <div className="flex-row gap-sm">
                       <button
                         onClick={() => handleRestore(s.id)}

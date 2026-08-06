@@ -260,9 +260,9 @@ export default function StaffClient({ initialStaff }: Props) {
           <tbody>
             {staff.map((s) => (
               <tr key={s.id} style={{ opacity: s.isActive ? 1 : 0.55 }}>
-                <td style={{ fontWeight: 600 }}>{s.name}</td>
-                <td>{s.email}</td>
-                <td style={{ textAlign: "center" }}>
+                <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
+                <td data-label="Email">{s.email}</td>
+                <td data-label="Role" style={{ textAlign: "center" }}>
                   <span
                     style={{
                       display: "inline-block",
@@ -282,8 +282,8 @@ export default function StaffClient({ initialStaff }: Props) {
                     {s.role}
                   </span>
                 </td>
-                <td>{s.department || "\u2014"}</td>
-                <td style={{ textAlign: "center" }}>
+                <td data-label="Department">{s.department || "\u2014"}</td>
+                <td data-label="Active" style={{ textAlign: "center" }}>
                   <span
                     style={{
                       display: "inline-block",
@@ -298,7 +298,7 @@ export default function StaffClient({ initialStaff }: Props) {
                     {s.isActive ? "Active" : "Inactive"}
                   </span>
                 </td>
-                <td style={{ whiteSpace: "nowrap" }}>
+                <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                   {deactivateTarget === s.id ? (
                     <div style={{ padding: "0.25rem 0" }}>
                       <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem", fontSize: "0.85rem", cursor: "pointer" }}>

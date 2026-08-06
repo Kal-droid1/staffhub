@@ -544,6 +544,58 @@ body {
     white-space: nowrap;
   }
 
+  /* ---- Stacked-card tables (mobile) ---- */
+
+  .table-responsive .table-card,
+  .table-responsive .table-card thead,
+  .table-responsive .table-card tbody,
+  .table-responsive .table-card th,
+  .table-responsive .table-card td,
+  .table-responsive .table-card tr {
+    display: block;
+  }
+
+  .table-responsive .table-card thead {
+    display: none;
+  }
+
+  .table-responsive .table-card tbody tr {
+    margin-bottom: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .table-responsive .table-card tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .table-responsive .table-card tbody td {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-bottom: 1px solid var(--color-border-light);
+    white-space: normal;
+    text-align: left !important;
+  }
+
+  .table-responsive .table-card tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .table-responsive .table-card tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    min-width: 90px;
+    flex-shrink: 0;
+  }
+
   /* ---- Navbar mobile ---- */
 
   .navbar-inner {

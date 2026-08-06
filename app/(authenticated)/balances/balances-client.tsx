@@ -473,12 +473,12 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
             <tbody>
               {userGrants.map((g) => (
                 <tr key={g.id}>
-                  <td style={{ fontWeight: 600 }}>{getGrantTypeName(g.leaveTypeId)}</td>
-                  <td style={{ textAlign: "center", fontWeight: 600 }}>{formatDays(g.days)}</td>
-                  <td>{g.grantedDate.slice(0, 10)}</td>
-                  <td>{g.expiresAt ? g.expiresAt.slice(0, 10) : "Never"}</td>
-                  <td className="text-muted">{g.note || "\u2014"}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>
+                  <td data-label="Type" style={{ fontWeight: 600 }}>{getGrantTypeName(g.leaveTypeId)}</td>
+                  <td data-label="Days" style={{ textAlign: "center", fontWeight: 600 }}>{formatDays(g.days)}</td>
+                  <td data-label="Granted">{g.grantedDate.slice(0, 10)}</td>
+                  <td data-label="Expires">{g.expiresAt ? g.expiresAt.slice(0, 10) : "Never"}</td>
+                  <td data-label="Note" className="text-muted">{g.note || "\u2014"}</td>
+                  <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                     <div className="flex-row gap-sm">
                       <button
                         onClick={() => startEdit(g)}

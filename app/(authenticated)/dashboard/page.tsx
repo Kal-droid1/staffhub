@@ -80,7 +80,7 @@ export default async function DashboardPage() {
             <tbody>
               {balances.map((b) => (
                 <tr key={b.leaveTypeId}>
-                  <td>
+                  <td data-label="Type">
                     {b.leaveTypeName}
                     {b.isAnnualRecurring && (
                       <span className="text-sm text-muted" style={{ marginLeft: "0.35rem" }}>
@@ -88,9 +88,9 @@ export default async function DashboardPage() {
                       </span>
                     )}
                   </td>
-                  <td style={{ textAlign: "center" }}>{formatDays(b.granted)}</td>
-                  <td style={{ textAlign: "center" }}>{formatDays(b.used)}</td>
-                  <td style={{ textAlign: "center", fontWeight: 600 }}>
+                  <td data-label="Granted" style={{ textAlign: "center" }}>{formatDays(b.granted)}</td>
+                  <td data-label="Used" style={{ textAlign: "center" }}>{formatDays(b.used)}</td>
+                  <td data-label="Remaining" style={{ textAlign: "center", fontWeight: 600 }}>
                     <span
                       className={
                         b.remaining <= 0
