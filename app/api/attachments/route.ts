@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const url = searchParams.get("url");
+  const download = searchParams.get("download");
 
   if (!url) {
     return NextResponse.json({ error: "url is required" }, { status: 400 });
@@ -23,10 +24,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "File not found" }, { status: 404 });
     }
 
+    const disposition = download === "1" ? "attachment" : "inline";
+
     return new NextResponse(result.stream, {
       headers: {
         "Content-Type": result.blob.contentType,
-        "Content-Disposition": "inline",
+        "Content-Disposition": disposition,
         "Cache-Control": "private, max-age=300",
       },
     });

@@ -90,6 +90,16 @@ interface Props {
   pendingRecords: PendingRecord[];
   balances: Record<string, Balance[]>;
   ownBalances: Balance[];
+  myPendingRecords: MyPendingRecord[];
+}
+
+interface MyPendingRecord {
+  id: string;
+  date: string;
+  requestedStatus: string;
+  leaveTypeId: string | null;
+  note: string | null;
+  status: string;
 }
 
 function formatCountdown(totalSeconds: number): string {
@@ -141,11 +151,13 @@ export default function AttendanceClient({
   pendingRecords,
   balances,
   ownBalances,
+  myPendingRecords,
 }: Props) {
   const router = useRouter();
   const [record, setRecord] = useState<TodayRecord | null>(todayRecord);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [showLeaveForm, setShowLeaveForm] = useState(false);
   const [leaveType, setLeaveType] = useState(leaveTypes[0]?.mappedStatus ?? "PERMISSION");
   const [leaveTypeId, setLeaveTypeId] = useState(leaveTypes[0]?.id ?? "");
@@ -304,8 +316,16 @@ export default function AttendanceClient({
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
 
     const isMultiDay = leaveStartDate && leaveEndDate && leaveStartDate !== leaveEndDate && leaveTypeId;
+
+    const matchingBalance = ownBalances.find((b) => b.leaveTypeId === leaveTypeId);
+    if (matchingBalance && matchingBalance.remaining <= 0) {
+      setError("You have no remaining balance for this leave type.");
+      setLoading(false);
+      return;
+    }
 
     const useFormData = leaveFile !== null;
 
@@ -350,11 +370,11 @@ export default function AttendanceClient({
       }
     } else {
       setLeaveFile(null);
+      setSuccess("Leave request submitted, awaiting approval.");
       if (data.multiDayBatch) {
         setShowLeaveForm(false);
         setLeaveStartDate("");
         setLeaveEndDate("");
-        setError("");
         setRecord(null);
         router.refresh();
         setLoading(false);
@@ -704,6 +724,11 @@ export default function AttendanceClient({
                   ))}
                 </select>
               </div>
+              {ownBalances.find((b) => b.leaveTypeId === leaveTypeId && b.remaining <= 0) && (
+                <p className="form-error mb-2" style={{ fontSize: "0.8rem" }}>
+                  You have no remaining balance for this leave type.
+                </p>
+              )}
               <div className="flex-row gap-md mb-2 flex-wrap">
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <label className="form-label">Start date</label>
@@ -760,9 +785,49 @@ export default function AttendanceClient({
               >
                 {loading ? "Submitting..." : "Submit request"}
               </button>
+
+              {error && <p className="form-error mt-1">{error}</p>}
+              {success && <p className="form-success mt-1">{success}</p>}
             </form>
           </Card>
         )}
+      </Card>
+    );
+  }
+
+  function renderMyPendingRequests() {
+    if (myPendingRecords.length === 0) return null;
+    return (
+      <Card style={{ marginTop: "1.25rem" }}>
+        <h2 style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
+          My Pending Requests
+        </h2>
+        <div className="table-responsive">
+        <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Note</th>
+              <th style={{ textAlign: "center" }}>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {myPendingRecords.map((r) => (
+              <tr key={r.id}>
+                <td data-label="Date">{new Date(r.date).toLocaleDateString()}</td>
+                <td data-label="Type">
+                  {r.leaveTypeId ? leaveTypes.find((lt) => lt.id === r.leaveTypeId)?.name ?? r.requestedStatus : r.requestedStatus}
+                </td>
+                <td data-label="Note" className="text-muted">{r.note || "\u2014"}</td>
+                <td data-label="Status" style={{ textAlign: "center" }}>
+                  <StatusPill status="pending" label={r.status} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        </div>
       </Card>
     );
   }
@@ -773,6 +838,7 @@ export default function AttendanceClient({
         <h1 className="page-title">Attendance</h1>
         {renderAttendance()}
         {renderLeaveRequest()}
+        {renderMyPendingRequests()}
       </div>
     );
   }
@@ -788,6 +854,7 @@ export default function AttendanceClient({
           </h2>
           {renderAttendance()}
           {renderLeaveRequest()}
+          {renderMyPendingRequests()}
         </div>
 
         <div>
@@ -948,14 +1015,20 @@ export default function AttendanceClient({
                     <td data-label="Note" className="text-muted">{g.note || "\u2014"}</td>
                     <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                       {firstRecord.attachmentUrl && (
-                        <div className="mb-1">
+                        <div className="mb-1 flex-row gap-sm">
                           <a
                             href={`/api/attachments?url=${encodeURIComponent(firstRecord.attachmentUrl)}`}
                             target="_blank"
                             rel="noreferrer"
                             className="btn btn-ghost btn-sm"
                           >
-                            View attachment
+                            View
+                          </a>
+                          <a
+                            href={`/api/attachments?url=${encodeURIComponent(firstRecord.attachmentUrl)}&download=1`}
+                            className="btn btn-ghost btn-sm"
+                          >
+                            Download
                           </a>
                         </div>
                       )}

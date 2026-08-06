@@ -1,5 +1,5 @@
 import { requireAuth } from "@/modules/core/require-auth";
-import { getTodayRecord, getSettings, getSecondsUntilCutoff, getSecondsUntilTomorrowCutoff, getPendingRecords, isWeekend } from "@/modules/attendance/queries";
+import { getTodayRecord, getSettings, getSecondsUntilCutoff, getSecondsUntilTomorrowCutoff, getPendingRecords, getMyPendingRecords, isWeekend } from "@/modules/attendance/queries";
 import { getLeaveTypes, getLeaveBalances } from "@/modules/leave/queries";
 import { prisma } from "@/lib/prisma";
 import AttendanceClient from "./attendance-client";
@@ -90,6 +90,16 @@ export default async function AttendancePage() {
 
   const ownBalances = await getLeaveBalances(user.id);
 
+  const myPendingRecordsRaw = await getMyPendingRecords(user.id);
+  const myPendingRecords = myPendingRecordsRaw.map((r) => ({
+    id: r.id,
+    date: r.date.toISOString(),
+    requestedStatus: r.requestedStatus,
+    leaveTypeId: r.leaveTypeId,
+    note: r.note,
+    status: r.status,
+  }));
+
   return (
     <AttendanceClient
       userRole={user.role}
@@ -107,6 +117,7 @@ export default async function AttendancePage() {
       pendingRecords={pending}
       balances={JSON.parse(JSON.stringify(balancesMap))}
       ownBalances={JSON.parse(JSON.stringify(ownBalances))}
+      myPendingRecords={JSON.parse(JSON.stringify(myPendingRecords))}
     />
   );
 }

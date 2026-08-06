@@ -190,6 +190,13 @@ export async function getPendingRecords() {
   });
 }
 
+export async function getMyPendingRecords(userId: string) {
+  return prisma.attendanceRecord.findMany({
+    where: { userId, status: "PENDING" },
+    orderBy: { date: "asc" },
+  });
+}
+
 export async function approveRecord(recordId: string, reviewerId: string) {
   const record = await prisma.attendanceRecord.findUnique({ where: { id: recordId } });
   if (!record) return null;
