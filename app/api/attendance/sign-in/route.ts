@@ -19,26 +19,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const existing = await getTodayRecord(session.user.id);
-
-  if (existing) {
-    return NextResponse.json(
-      {
-        error: "Already recorded today",
-        record: {
-          id: existing.id,
-          signInTime: existing.signInTime?.toISOString() ?? null,
-          requestedStatus: existing.requestedStatus,
-          note: existing.note,
-          status: existing.status,
-          date: existing.date.toISOString(),
-          reviewedBy: existing.reviewedBy,
-        },
-      },
-      { status: 409 }
-    );
-  }
-
   const contentType = req.headers.get("content-type") || "";
   const isMultipart = contentType.includes("multipart/form-data");
 
@@ -54,6 +34,25 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "signin") {
+    const existing = await getTodayRecord(session.user.id);
+
+    if (existing) {
+      return NextResponse.json(
+        {
+          error: "Already recorded today",
+          record: {
+            id: existing.id,
+            signInTime: existing.signInTime?.toISOString() ?? null,
+            requestedStatus: existing.requestedStatus,
+            note: existing.note,
+            status: existing.status,
+            date: existing.date.toISOString(),
+            reviewedBy: existing.reviewedBy,
+          },
+        },
+        { status: 409 }
+      );
+    }
     const settings = await getSettings();
     if (isPastCutoff(settings.cutoffTime)) {
       return NextResponse.json(
