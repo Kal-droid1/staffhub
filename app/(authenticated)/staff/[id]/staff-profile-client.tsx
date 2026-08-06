@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Card from "@/modules/core/components/card";
@@ -52,24 +52,24 @@ interface GrantRow {
   expiresAt: string | null;
 }
 
-interface MonthSummary {
-  present: number;
-  absent: number;
-  leave: number;
-  pending: number;
-}
-
 interface Props {
   staff: StaffMember;
   balances: Balance[];
   records: RecordRow[];
   grants: GrantRow[];
-  monthSummary: MonthSummary;
 }
 
 const ROLE_OPTIONS = ["STAFF", "MANAGER", "ADMIN"];
+const PAGE_SIZE = 12;
 
-export default function StaffProfileClient({ staff, balances, records, grants, monthSummary }: Props) {
+const NON_ROUTINE_STATUSES = new Set(["ABSENT", "PENDING", "PERMISSION", "ANNUAL_LEAVE", "OTHER", "APPROVED", "REJECTED"]);
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+export default function StaffProfileClient({ staff, balances, records, grants }: Props) {
   const router = useRouter();
 
   const [showEdit, setShowEdit] = useState(false);
@@ -81,19 +81,46 @@ export default function StaffProfileClient({ staff, balances, records, grants, m
   const [error, setError] = useState("");
 
   const [actingId, setActingId] = useState<string | null>(null);
-  const [deactivateTarget, setDeactivateTarget] = useState(false);
   const [hideFromReports, setHideFromReports] = useState(staff.hideFromReports);
   const [showConfirmation, setShowConfirmation] = useState<"deactivate" | "delete" | null>(null);
 
-  const [filterStatus, setFilterStatus] = useState("all");
+  const now = new Date();
+  const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1);
+  const [summaryYear, setSummaryYear] = useState(now.getFullYear());
 
-  const totalRemaining = balances.reduce((sum, b) => sum + b.remaining, 0);
-  const maxGranted = Math.max(balances.reduce((sum, b) => sum + b.granted, 0), totalRemaining);
-  const todayStr = new Date().toISOString().slice(0, 7);
+  const [filterStatus, setFilterStatus] = useState("notable");
+  const [page, setPage] = useState(0);
 
-  const filteredRecords = filterStatus === "all"
-    ? records
-    : records.filter((r) => r.status === filterStatus);
+  const monthSummary = useMemo(() => {
+    const start = new Date(summaryYear, summaryMonth - 1, 1);
+    const end = new Date(summaryYear, summaryMonth, 1);
+    let present = 0, absent = 0, leave = 0, pending = 0;
+    for (const r of records) {
+      const d = new Date(r.date);
+      if (d < start || d >= end) continue;
+      switch (r.status) {
+        case "PRESENT": present++; break;
+        case "ABSENT": absent++; break;
+        case "PERMISSION": case "ANNUAL_LEAVE": case "OTHER": leave++; break;
+        case "PENDING": pending++; break;
+      }
+    }
+    return { present, absent, leave, pending };
+  }, [records, summaryMonth, summaryYear]);
+
+  const filteredRecords = useMemo(() => {
+    if (filterStatus === "all") return records;
+    if (filterStatus === "notable") return records.filter((r) => NON_ROUTINE_STATUSES.has(r.status));
+    return records.filter((r) => r.status === filterStatus);
+  }, [records, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
+  const clampedPage = Math.min(page, totalPages - 1);
+  const pagedRecords = filteredRecords.slice(clampedPage * PAGE_SIZE, (clampedPage + 1) * PAGE_SIZE);
+
+  if (clampedPage !== page) {
+    setTimeout(() => setPage(clampedPage), 0);
+  }
 
   async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault();
@@ -134,7 +161,6 @@ export default function StaffProfileClient({ staff, balances, records, grants, m
     });
     if (res.ok) router.refresh();
     setActingId(null);
-    setDeactivateTarget(false);
     setShowConfirmation(null);
   }
 
@@ -169,8 +195,11 @@ export default function StaffProfileClient({ staff, balances, records, grants, m
     return "leave";
   }
 
+  const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
+  const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
+
   return (
-    <div className="page-container" style={{ maxWidth: 860 }}>
+    <div className="page-container" style={{ maxWidth: "100%" }}>
       <Link href="/staff" className="btn btn-ghost mb-2">
         ← Back to Staff
       </Link>
@@ -275,8 +304,22 @@ export default function StaffProfileClient({ staff, balances, records, grants, m
 
         <Card>
           <h2 style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
-            This Month
+            Attendance
           </h2>
+          <div className="flex-row gap-sm flex-wrap" style={{ marginBottom: "0.75rem" }}>
+            <div>
+              <label className="form-label" style={{ fontSize: "0.75rem" }}>Month</label>
+              <select value={summaryMonth} onChange={(e) => { setSummaryMonth(Number(e.target.value)); setPage(0); }} className="form-select" style={{ minWidth: 130, fontSize: "0.8125rem" }}>
+                {monthOptions.map((m) => (<option key={m} value={m}>{MONTH_NAMES[m - 1]}</option>))}
+              </select>
+            </div>
+            <div>
+              <label className="form-label" style={{ fontSize: "0.75rem" }}>Year</label>
+              <select value={summaryYear} onChange={(e) => { setSummaryYear(Number(e.target.value)); setPage(0); }} className="form-select" style={{ minWidth: 90, fontSize: "0.8125rem" }}>
+                {yearOptions.map((y) => (<option key={y} value={y}>{y}</option>))}
+              </select>
+            </div>
+          </div>
           <div className="flex-row" style={{ justifyContent: "space-around" }}>
             <div style={{ textAlign: "center" }}>
               <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--color-success)" }}>{monthSummary.present}</div>
@@ -360,18 +403,18 @@ export default function StaffProfileClient({ staff, balances, records, grants, m
       {balances.length === 0 ? (
         <Card><p className="text-muted text-center" style={{ padding: "1rem 0", margin: 0 }}>No leave types configured.</p></Card>
       ) : (
-        <div className="card-grid" style={{ marginBottom: "1.25rem" }}>
+        <div className="card-grid" style={{ marginBottom: "1.25rem", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
           {balances.map((b) => {
             const maxVal = Math.max(b.granted, b.remaining + b.used);
             return (
-              <Card key={b.leaveTypeId} hover>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
-                  <div style={{ fontWeight: 600, fontSize: "0.95rem", textAlign: "center" }}>
+              <Card key={b.leaveTypeId} hover style={{ padding: "1rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+                  <div style={{ fontWeight: 600, fontSize: "0.9rem", textAlign: "center" }}>
                     {b.leaveTypeName}
                     {b.isAnnualRecurring && <span className="text-sm text-muted" style={{ marginLeft: "0.35rem" }}>(annual)</span>}
                   </div>
-                  <RadialGauge value={b.remaining} max={maxVal} size={120} strokeWidth={9} />
-                  <div className="flex-row gap-lg" style={{ justifyContent: "center" }}>
+                  <RadialGauge value={b.remaining} max={maxVal} size={100} strokeWidth={8} />
+                  <div className="flex-row gap-md" style={{ justifyContent: "center" }}>
                     <div style={{ textAlign: "center" }}>
                       <div className="text-sm text-muted">Granted</div>
                       <div style={{ fontWeight: 600 }}>{formatDays(b.granted)}</div>
@@ -388,26 +431,29 @@ export default function StaffProfileClient({ staff, balances, records, grants, m
         </div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
         <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: 0 }}>
           Request History
         </h2>
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="form-select"
-          style={{ maxWidth: 160, fontSize: "0.8125rem" }}
-        >
-          <option value="all">All</option>
-          <option value="PRESENT">Present</option>
-          <option value="ABSENT">Absent</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="PERMISSION">Permission</option>
-          <option value="ANNUAL_LEAVE">Annual Leave</option>
-          <option value="OTHER">Other</option>
-        </select>
+        <div className="flex-row gap-sm">
+          <select
+            value={filterStatus}
+            onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
+            className="form-select"
+            style={{ maxWidth: 180, fontSize: "0.8125rem" }}
+          >
+            <option value="notable">Notable events</option>
+            <option value="all">All records</option>
+            <option value="PRESENT">Present</option>
+            <option value="ABSENT">Absent</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="PERMISSION">Permission</option>
+            <option value="ANNUAL_LEAVE">Annual Leave</option>
+            <option value="OTHER">Other</option>
+          </select>
+        </div>
       </div>
 
       {filteredRecords.length === 0 ? (
@@ -426,7 +472,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, m
               </tr>
             </thead>
             <tbody>
-              {filteredRecords.map((r) => (
+              {pagedRecords.map((r) => (
                 <tr key={r.id}>
                   <td data-label="Date" style={{ whiteSpace: "nowrap" }}>{new Date(r.date).toLocaleDateString()}</td>
                   <td data-label="Type">
@@ -463,6 +509,27 @@ export default function StaffProfileClient({ staff, balances, records, grants, m
             </tbody>
           </table>
           </div>
+          {totalPages > 1 && (
+            <div className="flex-row" style={{ justifyContent: "center", gap: "0.5rem", padding: "0.75rem", borderTop: "1px solid var(--color-border)" }}>
+              <button
+                onClick={() => setPage(Math.max(0, clampedPage - 1))}
+                disabled={clampedPage === 0}
+                className="btn btn-ghost btn-sm"
+              >
+                ← Prev
+              </button>
+              <span className="text-sm text-muted">
+                Page {clampedPage + 1} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(Math.min(totalPages - 1, clampedPage + 1))}
+                disabled={clampedPage >= totalPages - 1}
+                className="btn btn-ghost btn-sm"
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </Card>
       )}
     </div>

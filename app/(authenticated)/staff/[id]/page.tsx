@@ -45,33 +45,9 @@ export default async function StaffProfilePage({ params }: PageProps) {
       reviewedBy: { select: { id: true, name: true } },
     },
     orderBy: { date: "desc" },
-    take: 200,
   });
 
   const grants = await getLeaveGrants(id);
-
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth();
-  const startOfMonth = new Date(currentYear, currentMonth, 1);
-  const endOfMonth = new Date(currentYear, currentMonth + 1, 1);
-
-  let presentThisMonth = 0;
-  let absentThisMonth = 0;
-  let leaveThisMonth = 0;
-  let pendingThisMonth = 0;
-
-  for (const r of records) {
-    if (r.date < startOfMonth || r.date >= endOfMonth) continue;
-    switch (r.status) {
-      case "PRESENT": presentThisMonth++; break;
-      case "ABSENT": absentThisMonth++; break;
-      case "PERMISSION":
-      case "ANNUAL_LEAVE":
-      case "OTHER": leaveThisMonth++; break;
-      case "PENDING": pendingThisMonth++; break;
-    }
-  }
 
   const userJson = {
     id: user.id,
@@ -114,7 +90,6 @@ export default async function StaffProfilePage({ params }: PageProps) {
       balances={JSON.parse(JSON.stringify(balances))}
       records={JSON.parse(JSON.stringify(recordsJson))}
       grants={JSON.parse(JSON.stringify(grantsJson))}
-      monthSummary={{ present: presentThisMonth, absent: absentThisMonth, leave: leaveThisMonth, pending: pendingThisMonth }}
     />
   );
 }
