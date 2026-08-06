@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 import StatusPill from "@/modules/core/components/status-pill";
 import PersonRow from "@/modules/core/components/person-row";
 import RadialGauge from "@/modules/core/components/radial-gauge";
 import { formatDays, formatDaysLabel } from "@/lib/format";
+import { haversineDistance } from "@/lib/geo";
 
 interface TodayRecord {
   id: string;
@@ -147,6 +148,8 @@ export default function AttendanceClient({
   const [leaveFile, setLeaveFile] = useState<File | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(initialSecondsUntil);
   const [secondsUntilTomorrow, setSecondsUntilTomorrow] = useState(initialSecondsUntilTomorrow);
+  const locationRef = useRef<{ latitude: number; longitude: number } | null>(null);
+  const [locationStatus, setLocationStatus] = useState<"idle" | "checking" | "in-range" | "out-of-range" | "unavailable">("idle");
 
   const [pending, setPending] = useState<PendingRecord[]>(pendingRecords);
   const [approveLoadingId, setApproveLoadingId] = useState<string | null>(null);
@@ -200,6 +203,37 @@ export default function AttendanceClient({
     return () => clearInterval(interval);
   }, [record, secondsLeft]);
 
+  useEffect(() => {
+    if (record || cutoffPassed || isWeekend) return;
+    const hasOfficeCoords = initialOfficeLatitude != null && initialOfficeLongitude != null;
+    if (!hasOfficeCoords) {
+      setLocationStatus("unavailable");
+      return;
+    }
+    if (!navigator.geolocation) {
+      setLocationStatus("unavailable");
+      return;
+    }
+
+    setLocationStatus("checking");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const dist = haversineDistance(
+          pos.coords.latitude,
+          pos.coords.longitude,
+          initialOfficeLatitude!,
+          initialOfficeLongitude!
+        );
+        locationRef.current = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setLocationStatus(dist <= initialAllowedRadiusMeters ? "in-range" : "out-of-range");
+      },
+      () => {
+        setLocationStatus("unavailable");
+      },
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  }, [record, cutoffPassed, isWeekend, initialOfficeLatitude, initialOfficeLongitude, initialAllowedRadiusMeters]);
+
   async function handleSignIn() {
     setLoading(true);
     setError("");
@@ -208,22 +242,31 @@ export default function AttendanceClient({
     let latitude: number | undefined;
     let longitude: number | undefined;
 
-    if (navigator.geolocation) {
-      try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 60000 });
-        });
-        latitude = pos.coords.latitude;
-        longitude = pos.coords.longitude;
-      } catch {
-        setError("You must be at the office to sign in. Contact your manager if this is incorrect.");
-        setLoading(false);
-        return;
+    const hasOfficeCoords = initialOfficeLatitude != null && initialOfficeLongitude != null;
+
+    if (hasOfficeCoords) {
+      if (locationRef.current) {
+        latitude = locationRef.current.latitude;
+        longitude = locationRef.current.longitude;
+      } else {
+        if (navigator.geolocation) {
+          try {
+            const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 60000 });
+            });
+            latitude = pos.coords.latitude;
+            longitude = pos.coords.longitude;
+          } catch {
+            setError("You must be at the office to sign in. Contact your manager if this is incorrect.");
+            setLoading(false);
+            return;
+          }
+        } else {
+          setError("You must be at the office to sign in. Contact your manager if this is incorrect.");
+          setLoading(false);
+          return;
+        }
       }
-    } else {
-      setError("You must be at the office to sign in. Contact your manager if this is incorrect.");
-      setLoading(false);
-      return;
     }
 
     const res = await fetch("/api/attendance/sign-in", {
@@ -561,6 +604,16 @@ export default function AttendanceClient({
           </p>
         )}
 
+        {!cutoffPassed && locationStatus === "checking" && (
+          <p className="mb-2 text-muted">Checking your location…</p>
+        )}
+
+        {!cutoffPassed && locationStatus === "out-of-range" && (
+          <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
+            You must be at the office to sign in. Contact your manager if this is incorrect.
+          </p>
+        )}
+
         {cutoffPassed && (
           <>
             <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
@@ -582,7 +635,7 @@ export default function AttendanceClient({
           {!cutoffPassed && (
             <button
               onClick={handleSignIn}
-              disabled={loading}
+              disabled={loading || locationStatus === "checking" || locationStatus === "idle" || locationStatus === "out-of-range"}
               className="btn btn-success"
             >
               {loading && !showLeaveForm ? "Signing in..." : "Sign in"}
