@@ -199,6 +199,16 @@ function copyRowStyle(src: ExcelJS.Row, dst: ExcelJS.Row) {
   }
 }
 
+function copyCellStyle(srcCell: ExcelJS.Cell, dstCell: ExcelJS.Cell) {
+  const srcStyle = srcCell.style as Record<string, unknown>;
+  const dstStyle = dstCell.style as Record<string, unknown>;
+  dstStyle.font = srcStyle.font;
+  dstStyle.fill = srcStyle.fill;
+  dstStyle.border = srcStyle.border;
+  dstStyle.alignment = srcStyle.alignment;
+  dstStyle.numFmt = srcStyle.numFmt;
+}
+
 function __unused_fillDetailData(
   sheet: ExcelJS.Worksheet,
   summary: Awaited<ReturnType<typeof getMonthlyReport>>["summary"]
@@ -306,8 +316,14 @@ function fillGridData(
   const templateLastDateCol = 22;
 
   if (lastDateCol > templateLastDateCol) {
+    const srcHeaderCell = sheet.getCell(5, templateLastDateCol);
+    const srcDataCell = sheet.getCell(DATA_START, templateLastDateCol);
     for (let c = templateLastDateCol + 1; c <= lastDateCol; c++) {
       sheet.getColumn(c).width = 8;
+      copyCellStyle(srcHeaderCell, sheet.getCell(5, c));
+      for (let r = DATA_START; r <= TEMPLATE_DATA_END; r++) {
+        copyCellStyle(srcDataCell, sheet.getCell(r, c));
+      }
     }
   }
 
@@ -334,6 +350,13 @@ function fillGridData(
       copyRowStyle(srcSignInRow, sheet.getRow(insertPos));
       sheet.insertRow(insertPos + 1, []);
       copyRowStyle(srcSignOutRow, sheet.getRow(insertPos + 1));
+      if (lastDateCol > templateLastDateCol) {
+        const srcDataCell = sheet.getCell(DATA_START, templateLastDateCol);
+        for (let c = templateLastDateCol + 1; c <= lastDateCol; c++) {
+          copyCellStyle(srcDataCell, sheet.getCell(insertPos, c));
+          copyCellStyle(srcDataCell, sheet.getCell(insertPos + 1, c));
+        }
+      }
     }
   }
 
