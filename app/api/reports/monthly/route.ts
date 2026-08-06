@@ -51,6 +51,11 @@ export async function GET(req: NextRequest) {
     absentCount: s.absent,
     leaveCount: s.leave,
     pendingCount: s.pending,
+    records: s.records.map((r) => ({
+      date: r.date.toISOString(),
+      status: r.status,
+      note: r.note,
+    })),
   }));
 
   return NextResponse.json({ summary: summaryJson, staff });

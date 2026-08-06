@@ -59,12 +59,19 @@ interface StaffMember {
   department: string | null;
 }
 
+interface DailyRecord {
+  date: string;
+  status: string;
+  note: string | null;
+}
+
 interface SummaryRow {
   userName: string;
   presentCount: number;
   absentCount: number;
   leaveCount: number;
   pendingCount: number;
+  records: DailyRecord[];
 }
 
 interface Props {
@@ -172,6 +179,7 @@ export default function AttendanceClient({
   const [reportLoading, setReportLoading] = useState(false);
   const [reportLoaded, setReportLoaded] = useState(false);
   const [reportError, setReportError] = useState("");
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
   const cutoffPassed = secondsLeft <= 0;
 
@@ -1066,39 +1074,90 @@ export default function AttendanceClient({
               </tr>
             </thead>
             <tbody>
-              {filteredSummary.map((row) => (
-                <tr key={row.userName}>
-                  <td style={{ fontWeight: 600 }}>{row.userName}</td>
-                  <td style={{ textAlign: "center" }}>
-                    {row.presentCount > 0 ? (
-                      <StatusPill status="present" label={String(row.presentCount)} />
-                    ) : (
-                      row.presentCount
+              {filteredSummary.map((row) => {
+                const isExpanded = expandedUser === row.userName;
+                return (
+                  <>
+                    <tr
+                      key={row.userName}
+                      onClick={() => setExpandedUser(isExpanded ? null : row.userName)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <td style={{ fontWeight: 600 }}>
+                        {isExpanded ? "▼" : "▶"} {row.userName}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        {row.presentCount > 0 ? (
+                          <StatusPill status="present" label={String(row.presentCount)} />
+                        ) : (
+                          row.presentCount
+                        )}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        {row.absentCount > 0 ? (
+                          <StatusPill status="absent" label={String(row.absentCount)} />
+                        ) : (
+                          row.absentCount
+                        )}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        {row.leaveCount > 0 ? (
+                          <StatusPill status="leave" label={String(row.leaveCount)} />
+                        ) : (
+                          row.leaveCount
+                        )}
+                      </td>
+                      <td style={{ textAlign: "center" }}>
+                        {row.pendingCount > 0 ? (
+                          <StatusPill status="pending" label={String(row.pendingCount)} />
+                        ) : (
+                          row.pendingCount
+                        )}
+                      </td>
+                    </tr>
+                    {isExpanded && row.records.length > 0 && (
+                      <tr key={`${row.userName}-detail`}>
+                        <td colSpan={5} style={{ padding: 0, background: "var(--color-bg)" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                            <thead>
+                              <tr>
+                                <th style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem", textAlign: "left", color: "var(--color-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--color-border)" }}>Date</th>
+                                <th style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem", textAlign: "left", color: "var(--color-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--color-border)" }}>Status</th>
+                                <th style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem", textAlign: "left", color: "var(--color-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--color-border)" }}>Note</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {row.records.map((r, i) => (
+                                <tr key={i}>
+                                  <td style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>{new Date(r.date).toLocaleDateString()}</td>
+                                  <td style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>
+                                    <StatusPill
+                                      status={
+                                        r.status === "PRESENT" || r.status === "APPROVED" ? "present" :
+                                        r.status === "ABSENT" || r.status === "REJECTED" ? "absent" :
+                                        r.status === "PENDING" ? "pending" : "leave"
+                                      }
+                                      label={r.status}
+                                    />
+                                  </td>
+                                  <td style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)", color: "var(--color-text-muted)" }}>{r.note || "\u2014"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td style={{ textAlign: "center" }}>
-                    {row.absentCount > 0 ? (
-                      <StatusPill status="absent" label={String(row.absentCount)} />
-                    ) : (
-                      row.absentCount
+                    {isExpanded && row.records.length === 0 && (
+                      <tr key={`${row.userName}-empty`}>
+                        <td colSpan={5} style={{ padding: "0.75rem 1.5rem", color: "var(--color-text-muted)", fontSize: "0.8125rem", background: "var(--color-bg)" }}>
+                          No daily records for this month.
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                  <td style={{ textAlign: "center" }}>
-                    {row.leaveCount > 0 ? (
-                      <StatusPill status="leave" label={String(row.leaveCount)} />
-                    ) : (
-                      row.leaveCount
-                    )}
-                  </td>
-                  <td style={{ textAlign: "center" }}>
-                    {row.pendingCount > 0 ? (
-                      <StatusPill status="pending" label={String(row.pendingCount)} />
-                    ) : (
-                      row.pendingCount
-                    )}
-                  </td>
-                </tr>
-              ))}
+                  </>
+                );
+              })}
             </tbody>
           </table>
           </div>
