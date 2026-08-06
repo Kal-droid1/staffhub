@@ -127,6 +127,8 @@ async function buildXlsxResponse(
   fillSummaryData(summarySheet, summary);
   fillGridData(detailSheet, summary, month, year, holidaySet);
 
+  detailSheet.getColumn(2).width = 42;
+
   const buffer = await workbook.xlsx.writeBuffer();
 
   const monthLabel = String(month).padStart(2, "0");
