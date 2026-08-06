@@ -230,7 +230,7 @@ export default function AttendanceClient({
       () => {
         setLocationStatus("unavailable");
       },
-      { timeout: 10000, maximumAge: 60000 }
+      { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true }
     );
   }, [record, cutoffPassed, isWeekend, initialOfficeLatitude, initialOfficeLongitude, initialAllowedRadiusMeters]);
 
@@ -252,7 +252,7 @@ export default function AttendanceClient({
         if (navigator.geolocation) {
           try {
             const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 60000 });
+              navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, maximumAge: 60000, enableHighAccuracy: true });
             });
             latitude = pos.coords.latitude;
             longitude = pos.coords.longitude;
