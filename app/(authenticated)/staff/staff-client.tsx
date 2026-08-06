@@ -260,7 +260,11 @@ export default function StaffClient({ initialStaff }: Props) {
           <tbody>
             {staff.map((s) => (
               <tr key={s.id} style={{ opacity: s.isActive ? 1 : 0.55 }}>
-                <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
+                <td data-label="Name" style={{ fontWeight: 600 }}>
+                  <Link href={`/staff/${s.id}`} style={{ color: "var(--color-brand)", textDecoration: "none" }}>
+                    {s.name}
+                  </Link>
+                </td>
                 <td data-label="Email">{s.email}</td>
                 <td data-label="Role" style={{ textAlign: "center" }}>
                   <span
