@@ -180,6 +180,7 @@ export default function AttendanceClient({
   const [reportLoaded, setReportLoaded] = useState(false);
   const [reportError, setReportError] = useState("");
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [filterDate, setFilterDate] = useState("");
 
   const cutoffPassed = secondsLeft <= 0;
 
@@ -484,6 +485,15 @@ export default function AttendanceClient({
   }
 
   const batchGroups = groupPendingIntoBatches(pending);
+
+  function handleRowClick(userName: string) {
+    if (expandedUser === userName) {
+      setExpandedUser(null);
+    } else {
+      setExpandedUser(userName);
+      setFilterDate("");
+    }
+  }
 
   const fetchReport = useCallback(async () => {
     setReportLoading(true);
@@ -1080,7 +1090,7 @@ export default function AttendanceClient({
                   <>
                     <tr
                       key={row.userName}
-                      onClick={() => setExpandedUser(isExpanded ? null : row.userName)}
+                      onClick={() => handleRowClick(row.userName)}
                       style={{ cursor: "pointer" }}
                     >
                       <td data-label="Staff" style={{ fontWeight: 600 }}>
@@ -1115,19 +1125,47 @@ export default function AttendanceClient({
                         )}
                       </td>
                     </tr>
-                    {isExpanded && row.records.length > 0 && (
+                    {isExpanded && row.records.length > 0 && (() => {
+                      const filteredRecords = filterDate
+                        ? row.records.filter((r) => {
+                            const d = new Date(r.date);
+                            const y = d.getFullYear();
+                            const m = String(d.getMonth() + 1).padStart(2, "0");
+                            const day = String(d.getDate()).padStart(2, "0");
+                            return `${y}-${m}-${day}` === filterDate;
+                          })
+                        : row.records;
+                      return (
                       <tr key={`${row.userName}-detail`}>
                         <td colSpan={5} style={{ padding: 0, background: "var(--color-bg)" }}>
+                          <div style={{ padding: "0.6rem 0.75rem 0.4rem" }}>
+                            <input
+                              type="date"
+                              className="form-input"
+                              value={filterDate}
+                              onChange={(e) => setFilterDate(e.target.value)}
+                              placeholder="Filter by date"
+                              style={{ maxWidth: 200, fontSize: "0.8125rem" }}
+                            />
+                          </div>
+                          <div className="detail-scroll" style={{ maxHeight: 260, overflowY: "auto" }}>
                           <table style={{ width: "100%", borderCollapse: "collapse" }}>
                             <thead>
                               <tr>
-                                <th style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem", textAlign: "left", color: "var(--color-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--color-border)" }}>Date</th>
-                                <th style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem", textAlign: "left", color: "var(--color-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--color-border)" }}>Status</th>
-                                <th style={{ padding: "0.4rem 0.75rem", fontSize: "0.75rem", textAlign: "left", color: "var(--color-text-muted)", fontWeight: 600, borderBottom: "1px solid var(--color-border)" }}>Note</th>
+                                <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Date</th>
+                                <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Status</th>
+                                <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Note</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {row.records.map((r, i) => (
+                              {filteredRecords.length === 0 ? (
+                                <tr>
+                                  <td colSpan={3} style={{ padding: "0.75rem", textAlign: "center", color: "var(--color-text-muted)", fontSize: "0.8125rem" }}>
+                                    No records for this date.
+                                  </td>
+                                </tr>
+                              ) : (
+                                filteredRecords.map((r, i) => (
                                 <tr key={i}>
                                   <td data-label="Date" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>{new Date(r.date).toLocaleDateString()}</td>
                                   <td data-label="Status" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>
@@ -1142,12 +1180,15 @@ export default function AttendanceClient({
                                   </td>
                                   <td data-label="Note" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)", color: "var(--color-text-muted)" }}>{r.note || "\u2014"}</td>
                                 </tr>
-                              ))}
+                                ))
+                              )}
                             </tbody>
                           </table>
+                          </div>
                         </td>
                       </tr>
-                    )}
+                      );
+                    })()}
                     {isExpanded && row.records.length === 0 && (
                       <tr key={`${row.userName}-empty`}>
                         <td colSpan={5} style={{ padding: "0.75rem 1.5rem", color: "var(--color-text-muted)", fontSize: "0.8125rem", background: "var(--color-bg)" }}>
