@@ -98,7 +98,7 @@ export async function createSignIn(userId: string) {
       date: todayDate(),
       signInTime: new Date(),
       requestedStatus: "PRESENT",
-      status: "PENDING",
+      status: "PRESENT",
     },
   });
 }
