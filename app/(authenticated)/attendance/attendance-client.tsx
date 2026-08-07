@@ -396,37 +396,42 @@ export default function AttendanceClient({
     setError("");
     setSuccess("");
 
-    const startDate = fieldWorkStartDate || new Date().toISOString().slice(0, 10);
-    const endDate = fieldWorkEndDate || startDate;
+    try {
+      const startDate = fieldWorkStartDate || new Date().toISOString().slice(0, 10);
+      const endDate = fieldWorkEndDate || startDate;
 
-    const res = await fetch("/api/attendance/sign-in", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "fieldwork",
-        startDate,
-        endDate,
-        note: fieldWorkNote || undefined,
-      }),
-    });
-    const data = await res.json();
+      const res = await fetch("/api/attendance/sign-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "fieldwork",
+          startDate,
+          endDate,
+          note: fieldWorkNote || undefined,
+        }),
+      });
+      const data = await res.json();
 
-    if (!res.ok) {
-      if (res.status === 409 && data.record) {
-        setRecord(data.record);
-        setError("Already recorded today.");
+      if (!res.ok) {
+        if (res.status === 409 && data.record) {
+          setRecord(data.record);
+          setError("Already recorded today.");
+        } else {
+          setError(data.error || "Something went wrong.");
+        }
       } else {
-        setError(data.error || "Something went wrong.");
+        setFieldWorkNote("");
+        setFieldWorkStartDate("");
+        setFieldWorkEndDate("");
+        setShowFieldWorkForm(false);
+        setSuccess("Field work submitted, awaiting approval.");
+        router.refresh();
       }
-    } else {
-      setFieldWorkNote("");
-      setFieldWorkStartDate("");
-      setFieldWorkEndDate("");
-      setShowFieldWorkForm(false);
-      setSuccess("Field work submitted, awaiting approval.");
-      router.refresh();
+    } catch {
+      setError("Network error — please try again.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
   async function handleApproveAction(recordId: string, action: "approve" | "reject") {

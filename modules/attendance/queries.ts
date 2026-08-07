@@ -134,32 +134,37 @@ export async function createFieldWorkRequest(
   note?: string
 ) {
   const batchId = crypto.randomUUID();
-  const records: {
-    userId: string;
-    date: Date;
-    requestedStatus: AttendanceStatus;
-    note: string | null;
-    status: AttendanceStatus;
-    batchId: string;
-  }[] = [];
 
   const cursor = new Date(startDate);
   const end = new Date(endDate);
+  const dates: Date[] = [];
 
   while (cursor <= end) {
     const dow = cursor.getDay();
     if (dow !== 0 && dow !== 6) {
-      records.push({
-        userId,
-        date: new Date(cursor),
-        requestedStatus: "FIELD_WORK",
-        note: note || null,
-        status: "PENDING",
-        batchId,
-      });
+      dates.push(new Date(cursor));
     }
     cursor.setDate(cursor.getDate() + 1);
   }
+
+  if (dates.length === 0) return null;
+
+  const existing = await prisma.attendanceRecord.findMany({
+    where: { userId, date: { in: dates } },
+    select: { date: true },
+  });
+  const existingSet = new Set(existing.map((r) => r.date.toISOString()));
+
+  const records = dates
+    .filter((d) => !existingSet.has(d.toISOString()))
+    .map((date) => ({
+      userId,
+      date,
+      requestedStatus: "FIELD_WORK" as AttendanceStatus,
+      note: note || null,
+      status: "PENDING" as AttendanceStatus,
+      batchId,
+    }));
 
   if (records.length === 0) return null;
 

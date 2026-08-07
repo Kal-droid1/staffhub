@@ -161,25 +161,40 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "fieldwork") {
-    const startDate = body.startDate as string;
-    const endDate = body.endDate as string;
-    const note = (body.note as string) || undefined;
+    try {
+      const startDate = body.startDate as string;
+      const endDate = body.endDate as string;
+      const note = (body.note as string) || undefined;
 
-    if (!startDate || !endDate) {
-      return NextResponse.json({ error: "Start date and end date are required." }, { status: 400 });
+      if (!startDate || !endDate) {
+        return NextResponse.json({ error: "Start date and end date are required." }, { status: 400 });
+      }
+
+      const batch = await createFieldWorkRequest(
+        session.user.id,
+        new Date(startDate),
+        new Date(endDate),
+        note
+      );
+
+      if (!batch) {
+        return NextResponse.json(
+          { error: "All days in the selected range already have attendance records." },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json(
+        { multiDayBatch: true, record: null },
+        { status: 201 }
+      );
+    } catch (e) {
+      console.error("Field work request failed:", e);
+      return NextResponse.json(
+        { error: "Failed to create field work request. Some dates may already have attendance records." },
+        { status: 500 }
+      );
     }
-
-    await createFieldWorkRequest(
-      session.user.id,
-      new Date(startDate),
-      new Date(endDate),
-      note
-    );
-
-    return NextResponse.json(
-      { multiDayBatch: true, record: null },
-      { status: 201 }
-    );
   }
 
   return NextResponse.json({ error: "Invalid action" }, { status: 400 });
