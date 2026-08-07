@@ -72,6 +72,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
     leaveTypeId: r.leaveTypeId,
     leaveTypeName: r.leaveType?.name ?? null,
     attachmentUrl: r.attachmentUrl,
+    batchId: r.batchId,
     reviewedBy: r.reviewedBy ? { id: r.reviewedBy.id, name: r.reviewedBy.name } : null,
   }));
 

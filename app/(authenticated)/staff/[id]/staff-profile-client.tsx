@@ -40,6 +40,7 @@ interface RecordRow {
   leaveTypeId: string | null;
   leaveTypeName: string | null;
   attachmentUrl: string | null;
+  batchId: string | null;
   reviewedBy: { id: string; name: string } | null;
 }
 
@@ -62,7 +63,7 @@ interface Props {
 const ROLE_OPTIONS = ["STAFF", "MANAGER", "ADMIN"];
 const PAGE_SIZE = 12;
 
-const NON_ROUTINE_STATUSES = new Set(["ABSENT", "PENDING", "PERMISSION", "ANNUAL_LEAVE", "OTHER", "APPROVED", "REJECTED"]);
+const NON_ROUTINE_STATUSES = new Set(["ABSENT", "PENDING", "PERMISSION", "ANNUAL_LEAVE", "OTHER", "FIELD_WORK"]);
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -91,6 +92,58 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
   const [filterStatus, setFilterStatus] = useState("notable");
   const [page, setPage] = useState(0);
 
+  interface GroupedRecord {
+    firstId: string;
+    batchId: string | null;
+    dateRange: string;
+    requestedStatus: string;
+    status: string;
+    note: string | null;
+    leaveTypeId: string | null;
+    leaveTypeName: string | null;
+    attachmentUrl: string | null;
+    reviewedBy: { id: string; name: string } | null;
+    count: number;
+  }
+
+  const groupedRecords = useMemo((): GroupedRecord[] => {
+    const groups = new Map<string | null, RecordRow[]>();
+    for (const r of records) {
+      const key = r.batchId || r.id;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.push(r);
+      } else {
+        groups.set(key, [r]);
+      }
+    }
+
+    const result: GroupedRecord[] = [];
+    for (const recs of groups.values()) {
+      recs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const first = recs[0];
+      const last = recs[recs.length - 1];
+      const dateRange = recs.length > 1
+        ? `${new Date(first.date).toLocaleDateString()} \u2013 ${new Date(last.date).toLocaleDateString()}`
+        : new Date(first.date).toLocaleDateString();
+
+      result.push({
+        firstId: first.id,
+        batchId: first.batchId,
+        dateRange,
+        requestedStatus: first.requestedStatus,
+        status: first.status,
+        note: first.note,
+        leaveTypeId: first.leaveTypeId,
+        leaveTypeName: first.leaveTypeName,
+        attachmentUrl: first.attachmentUrl,
+        reviewedBy: first.reviewedBy,
+        count: recs.length,
+      });
+    }
+    return result;
+  }, [records]);
+
   const monthSummary = useMemo(() => {
     const start = new Date(summaryYear, summaryMonth - 1, 1);
     const end = new Date(summaryYear, summaryMonth, 1);
@@ -99,7 +152,7 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
       const d = new Date(r.date);
       if (d < start || d >= end) continue;
       switch (r.status) {
-        case "PRESENT": present++; break;
+        case "PRESENT": case "FIELD_WORK": present++; break;
         case "ABSENT": absent++; break;
         case "PERMISSION": case "ANNUAL_LEAVE": case "OTHER": leave++; break;
         case "PENDING": pending++; break;
@@ -109,10 +162,10 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
   }, [records, summaryMonth, summaryYear]);
 
   const filteredRecords = useMemo(() => {
-    if (filterStatus === "all") return records;
-    if (filterStatus === "notable") return records.filter((r) => NON_ROUTINE_STATUSES.has(r.status));
-    return records.filter((r) => r.status === filterStatus);
-  }, [records, filterStatus]);
+    if (filterStatus === "all") return groupedRecords;
+    if (filterStatus === "notable") return groupedRecords.filter((r) => NON_ROUTINE_STATUSES.has(r.status));
+    return groupedRecords.filter((r) => r.status === filterStatus);
+  }, [groupedRecords, filterStatus]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
   const clampedPage = Math.min(page, totalPages - 1);
@@ -189,7 +242,7 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
 
   function getStatusVariant(status: string): "present" | "absent" | "pending" | "leave" {
     const s = status.toLowerCase();
-    if (s === "present" || s === "approved") return "present";
+    if (s === "present" || s === "approved" || s === "field_work") return "present";
     if (s === "absent" || s === "rejected") return "absent";
     if (s === "pending") return "pending";
     return "leave";
@@ -452,6 +505,7 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
             <option value="PERMISSION">Permission</option>
             <option value="ANNUAL_LEAVE">Annual Leave</option>
             <option value="OTHER">Other</option>
+            <option value="FIELD_WORK">Field Work</option>
           </select>
         </div>
       </div>
@@ -472,16 +526,21 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
               </tr>
             </thead>
             <tbody>
-              {pagedRecords.map((r) => (
-                <tr key={r.id}>
-                  <td data-label="Date" style={{ whiteSpace: "nowrap" }}>{new Date(r.date).toLocaleDateString()}</td>
-                  <td data-label="Type">
-                    {r.leaveTypeName ?? r.requestedStatus}
-                  </td>
+              {pagedRecords.map((r) => {
+                const displayType = r.requestedStatus === "FIELD_WORK"
+                  ? "Field Work"
+                  : r.leaveTypeName ?? r.requestedStatus;
+                const label = r.count > 1
+                  ? `${displayType} (${r.count} days)`
+                  : displayType;
+                return (
+                <tr key={r.firstId}>
+                  <td data-label="Date" style={{ whiteSpace: "nowrap" }}>{r.dateRange}</td>
+                  <td data-label="Type">{label}</td>
                   <td data-label="Status" style={{ textAlign: "center" }}>
                     <StatusPill status={getStatusVariant(r.status)} label={r.status} />
                   </td>
-                  <td data-label="Note" className="text-muted">{r.note || "—"}</td>
+                  <td data-label="Note" className="text-muted">{r.note || "\u2014"}</td>
                   <td data-label="Attachment">
                     {r.attachmentUrl ? (
                       <div className="flex-row gap-sm">
@@ -501,11 +560,12 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
                         </a>
                       </div>
                     ) : (
-                      <span className="text-muted">—</span>
+                      <span className="text-muted">\u2014</span>
                     )}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           </div>
