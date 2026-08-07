@@ -241,11 +241,17 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
   }
 
   function getStatusVariant(status: string): "present" | "absent" | "pending" | "leave" {
-    const s = status.toLowerCase();
-    if (s === "present" || s === "approved" || s === "field_work") return "present";
-    if (s === "absent" || s === "rejected") return "absent";
-    if (s === "pending") return "pending";
+    if (status === "PENDING") return "pending";
+    if (status === "PRESENT" || status === "FIELD_WORK") return "present";
+    if (status === "ABSENT") return "absent";
     return "leave";
+  }
+
+  function getStatusLabel(status: string, reviewedBy: { id: string; name: string } | null): string {
+    if (status === "PENDING") return "Pending";
+    if (status === "PRESENT" || status === "FIELD_WORK") return "Present";
+    if (status === "ABSENT") return reviewedBy ? "Rejected" : "Absent";
+    return reviewedBy ? "Approved" : status;
   }
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
@@ -538,7 +544,7 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
                   <td data-label="Date" style={{ whiteSpace: "nowrap" }}>{r.dateRange}</td>
                   <td data-label="Type">{label}</td>
                   <td data-label="Status" style={{ textAlign: "center" }}>
-                    <StatusPill status={getStatusVariant(r.status)} label={r.status} />
+                    <StatusPill status={getStatusVariant(r.status)} label={getStatusLabel(r.status, r.reviewedBy)} />
                   </td>
                   <td data-label="Note" className="text-muted">{r.note || "\u2014"}</td>
                   <td data-label="Attachment">
@@ -560,7 +566,7 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
                         </a>
                       </div>
                     ) : (
-                      <span className="text-muted">\u2014</span>
+                      <span className="text-muted">{"\u2014"}</span>
                     )}
                   </td>
                 </tr>
