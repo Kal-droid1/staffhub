@@ -118,12 +118,11 @@ export async function POST(req: NextRequest) {
         attachmentUrl = blob.url;
       }
     } else {
-      const body = await req.json().catch(() => ({}));
       requestedStatus = (body.requestedStatus as AttendanceStatus) || "PERMISSION";
-      leaveTypeId = body.leaveTypeId || undefined;
-      startDate = body.startDate || undefined;
-      endDate = body.endDate || undefined;
-      note = body.note || undefined;
+      leaveTypeId = (body.leaveTypeId as string) || undefined;
+      startDate = (body.startDate as string) || undefined;
+      endDate = (body.endDate as string) || undefined;
+      note = (body.note as string) || undefined;
     }
 
     const isMultiDay = startDate && endDate && startDate !== endDate && leaveTypeId;
@@ -162,7 +161,6 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === "fieldwork") {
-    const body = await req.json().catch(() => ({}));
     const startDate = body.startDate as string;
     const endDate = body.endDate as string;
     const note = (body.note as string) || undefined;

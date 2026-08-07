@@ -837,9 +837,6 @@ export default function AttendanceClient({
               >
                 {loading ? "Submitting..." : "Submit request"}
               </button>
-
-              {error && <p className="form-error mt-1">{error}</p>}
-              {success && <p className="form-success mt-1">{success}</p>}
             </form>
           </Card>
         )}
@@ -895,6 +892,9 @@ export default function AttendanceClient({
             </form>
           </Card>
         )}
+
+        {error && <p className="form-error mt-2">{error}</p>}
+        {success && <p className="form-success mt-2">{success}</p>}
       </Card>
     );
   }
