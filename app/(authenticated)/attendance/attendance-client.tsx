@@ -180,6 +180,32 @@ export default function AttendanceClient({
   const [approveError, setApproveError] = useState("");
 
   const [cutoff, setCutoff] = useState(cutoffTime);
+
+  // Sync client state when server props change after router.refresh()
+  useEffect(() => { setRecord(todayRecord); }, [todayRecord]);
+  useEffect(() => { setPending(pendingRecords); }, [pendingRecords]);
+
+  // Periodically re-check the cutoff so countdowns stay accurate
+  useEffect(() => {
+    let cancelled = false;
+    async function refreshCutoff() {
+      try {
+        const res = await fetch("/api/attendance/cutoff");
+        if (res.ok && !cancelled) {
+          const data = await res.json();
+          setCutoff(data.cutoffTime);
+          setSecondsLeft(data.secondsUntilCutoff);
+          const serverNow = Math.floor(new Date(data.serverTime).getTime() / 1000);
+          const clientNow = Math.floor(Date.now() / 1000);
+          const drift = clientNow - serverNow;
+          setSecondsLeft((prev) => Math.max(0, prev - drift));
+        }
+      } catch { /* ignore */ }
+    }
+    const interval = setInterval(refreshCutoff, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, []);
+
   const [officeLat, setOfficeLat] = useState(initialOfficeLatitude != null ? String(initialOfficeLatitude) : "");
   const [officeLng, setOfficeLng] = useState(initialOfficeLongitude != null ? String(initialOfficeLongitude) : "");
   const [radiusM, setRadiusM] = useState(String(initialAllowedRadiusMeters));
