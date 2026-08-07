@@ -98,6 +98,7 @@ interface MyPendingRecord {
   date: string;
   requestedStatus: string;
   leaveTypeId: string | null;
+  batchId: string | null;
   note: string | null;
   status: string;
 }
@@ -904,8 +905,53 @@ export default function AttendanceClient({
     );
   }
 
+  function groupMyPendingBatches(records: MyPendingRecord[]): MyBatchGroup[] {
+    const groups = new Map<string | null, MyPendingRecord[]>();
+    for (const r of records) {
+      const key = r.batchId || r.id;
+      const existing = groups.get(key);
+      if (existing) {
+        existing.push(r);
+      } else {
+        groups.set(key, [r]);
+      }
+    }
+
+    const result: MyBatchGroup[] = [];
+    for (const [key, recs] of groups) {
+      recs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      const first = recs[0];
+      const last = recs[recs.length - 1];
+      const dateRange = recs.length > 1
+        ? `${new Date(first.date).toLocaleDateString()} \u2013 ${new Date(last.date).toLocaleDateString()}`
+        : new Date(first.date).toLocaleDateString();
+
+      result.push({
+        firstId: first.id,
+        batchId: first.batchId,
+        requestedStatus: first.requestedStatus,
+        leaveTypeId: first.leaveTypeId,
+        note: first.note,
+        dateRange,
+        count: recs.length,
+      });
+    }
+    return result;
+  }
+
+  interface MyBatchGroup {
+    firstId: string;
+    batchId: string | null;
+    requestedStatus: string;
+    leaveTypeId: string | null;
+    note: string | null;
+    dateRange: string;
+    count: number;
+  }
+
   function renderMyPendingRequests() {
     if (myPendingRecords.length === 0) return null;
+    const groups = groupMyPendingBatches(myPendingRecords);
     return (
       <Card style={{ marginTop: "1.25rem" }}>
         <h2 style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
@@ -922,22 +968,26 @@ export default function AttendanceClient({
             </tr>
           </thead>
           <tbody>
-            {myPendingRecords.map((r) => (
-              <tr key={r.id}>
-                <td data-label="Date">{new Date(r.date).toLocaleDateString()}</td>
-                <td data-label="Type">
-                  {r.requestedStatus === "FIELD_WORK"
-                    ? "Field Work"
-                    : r.leaveTypeId
-                      ? leaveTypes.find((lt) => lt.id === r.leaveTypeId)?.name ?? r.requestedStatus
-                      : r.requestedStatus}
-                </td>
-                <td data-label="Note" className="text-muted">{r.note || "\u2014"}</td>
+            {groups.map((g) => {
+              const displayStatus = g.requestedStatus === "FIELD_WORK"
+                ? "Field Work"
+                : g.leaveTypeId
+                  ? leaveTypes.find((lt) => lt.id === g.leaveTypeId)?.name ?? g.requestedStatus
+                  : g.requestedStatus;
+              const label = g.count > 1
+                ? `${displayStatus} (${g.count} days)`
+                : displayStatus;
+              return (
+              <tr key={g.firstId}>
+                <td data-label="Date">{g.dateRange}</td>
+                <td data-label="Type">{label}</td>
+                <td data-label="Note" className="text-muted">{g.note || "\u2014"}</td>
                 <td data-label="Status" style={{ textAlign: "center" }}>
-                  <StatusPill status="pending" label={r.status} />
+                  <StatusPill status="pending" label="PENDING" />
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         </div>

@@ -96,6 +96,7 @@ export default async function AttendancePage() {
     date: r.date.toISOString(),
     requestedStatus: r.requestedStatus,
     leaveTypeId: r.leaveTypeId,
+    batchId: r.batchId,
     note: r.note,
     status: r.status,
   }));
