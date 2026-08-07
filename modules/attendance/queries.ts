@@ -127,6 +127,52 @@ export async function createLeaveRequest(
   });
 }
 
+export async function createFieldWorkRequest(
+  userId: string,
+  startDate: Date,
+  endDate: Date,
+  note?: string
+) {
+  const batchId = crypto.randomUUID();
+  const records: {
+    userId: string;
+    date: Date;
+    requestedStatus: AttendanceStatus;
+    note: string | null;
+    status: AttendanceStatus;
+    batchId: string;
+  }[] = [];
+
+  const cursor = new Date(startDate);
+  const end = new Date(endDate);
+
+  while (cursor <= end) {
+    const dow = cursor.getDay();
+    if (dow !== 0 && dow !== 6) {
+      records.push({
+        userId,
+        date: new Date(cursor),
+        requestedStatus: "FIELD_WORK",
+        note: note || null,
+        status: "PENDING",
+        batchId,
+      });
+    }
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  if (records.length === 0) return null;
+
+  await prisma.attendanceRecord.createMany({ data: records });
+
+  return prisma.attendanceRecord.findFirst({
+    where: { batchId },
+    include: {
+      user: { select: { id: true, name: true, email: true, department: true } },
+    },
+  });
+}
+
 export async function createLeaveRequestBatch(
   userId: string,
   requestedStatus: AttendanceStatus,
@@ -389,6 +435,7 @@ export async function getMonthlyReport(
 
     switch (r.status) {
       case "PRESENT":
+      case "FIELD_WORK":
         entry.present++;
         break;
       case "ABSENT":

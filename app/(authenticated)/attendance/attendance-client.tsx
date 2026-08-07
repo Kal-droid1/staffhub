@@ -111,7 +111,7 @@ function formatCountdown(totalSeconds: number): string {
 
 function getStatusVariant(status: string): "present" | "absent" | "pending" | "leave" {
   const s = status.toLowerCase();
-  if (s === "present" || s === "approved") return "present";
+  if (s === "present" || s === "approved" || s === "field_work") return "present";
   if (s === "absent" || s === "rejected") return "absent";
   if (s === "pending") return "pending";
   return "leave";
@@ -165,6 +165,10 @@ export default function AttendanceClient({
   const [leaveStartDate, setLeaveStartDate] = useState("");
   const [leaveEndDate, setLeaveEndDate] = useState("");
   const [leaveFile, setLeaveFile] = useState<File | null>(null);
+  const [showFieldWorkForm, setShowFieldWorkForm] = useState(false);
+  const [fieldWorkStartDate, setFieldWorkStartDate] = useState("");
+  const [fieldWorkEndDate, setFieldWorkEndDate] = useState("");
+  const [fieldWorkNote, setFieldWorkNote] = useState("");
   const [secondsLeft, setSecondsLeft] = useState(initialSecondsUntil);
   const [secondsUntilTomorrow, setSecondsUntilTomorrow] = useState(initialSecondsUntilTomorrow);
   const locationRef = useRef<{ latitude: number; longitude: number } | null>(null);
@@ -384,6 +388,45 @@ export default function AttendanceClient({
     }
     setLoading(false);
     router.refresh();
+  }
+
+  async function handleFieldWorkRequest(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    const startDate = fieldWorkStartDate || new Date().toISOString().slice(0, 10);
+    const endDate = fieldWorkEndDate || startDate;
+
+    const res = await fetch("/api/attendance/sign-in", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "fieldwork",
+        startDate,
+        endDate,
+        note: fieldWorkNote || undefined,
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      if (res.status === 409 && data.record) {
+        setRecord(data.record);
+        setError("Already recorded today.");
+      } else {
+        setError(data.error || "Something went wrong.");
+      }
+    } else {
+      setFieldWorkNote("");
+      setFieldWorkStartDate("");
+      setFieldWorkEndDate("");
+      setShowFieldWorkForm(false);
+      setSuccess("Field work submitted, awaiting approval.");
+      router.refresh();
+    }
+    setLoading(false);
   }
 
   async function handleApproveAction(recordId: string, action: "approve" | "reject") {
@@ -691,13 +734,22 @@ export default function AttendanceClient({
   function renderLeaveRequest() {
     return (
       <Card style={{ marginTop: "1.25rem" }}>
-        <button
-          onClick={() => setShowLeaveForm(!showLeaveForm)}
-          disabled={loading}
-          className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
-        >
-          Request leave
-        </button>
+        <div className="flex-row gap-sm">
+          <button
+            onClick={() => { setShowLeaveForm(!showLeaveForm); setShowFieldWorkForm(false); }}
+            disabled={loading}
+            className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
+          >
+            Request leave
+          </button>
+          <button
+            onClick={() => { setShowFieldWorkForm(!showFieldWorkForm); setShowLeaveForm(false); }}
+            disabled={loading}
+            className={showFieldWorkForm ? "btn btn-ghost" : "btn btn-secondary"}
+          >
+            Field Work
+          </button>
+        </div>
 
         {showLeaveForm && (
           <Card
@@ -791,6 +843,58 @@ export default function AttendanceClient({
             </form>
           </Card>
         )}
+
+        {showFieldWorkForm && (
+          <Card
+            style={{ marginTop: "1rem", padding: "1.25rem", border: "1px solid var(--color-border)" }}
+          >
+            <h3 style={{ fontSize: "0.9rem", fontWeight: 600, margin: "0 0 1rem", color: "var(--color-brand)" }}>
+              Field Work Request
+            </h3>
+            <form onSubmit={handleFieldWorkRequest}>
+              <div className="flex-row gap-md mb-2 flex-wrap">
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">Start date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={fieldWorkStartDate}
+                    onChange={(e) => setFieldWorkStartDate(e.target.value)}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">End date</label>
+                  <input
+                    type="date"
+                    className="form-input"
+                    value={fieldWorkEndDate}
+                    onChange={(e) => setFieldWorkEndDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="form-hint mb-2">
+                Defaults to today if left empty. Multi-day requests skip weekends.
+              </p>
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="form-label">Where / Why</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={fieldWorkNote}
+                  onChange={(e) => setFieldWorkNote(e.target.value)}
+                  placeholder="e.g. Client visit at Bole..."
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn btn-primary"
+              >
+                {loading ? "Submitting..." : "Submit field work"}
+              </button>
+            </form>
+          </Card>
+        )}
       </Card>
     );
   }
@@ -817,7 +921,11 @@ export default function AttendanceClient({
               <tr key={r.id}>
                 <td data-label="Date">{new Date(r.date).toLocaleDateString()}</td>
                 <td data-label="Type">
-                  {r.leaveTypeId ? leaveTypes.find((lt) => lt.id === r.leaveTypeId)?.name ?? r.requestedStatus : r.requestedStatus}
+                  {r.requestedStatus === "FIELD_WORK"
+                    ? "Field Work"
+                    : r.leaveTypeId
+                      ? leaveTypes.find((lt) => lt.id === r.leaveTypeId)?.name ?? r.requestedStatus
+                      : r.requestedStatus}
                 </td>
                 <td data-label="Note" className="text-muted">{r.note || "\u2014"}</td>
                 <td data-label="Status" style={{ textAlign: "center" }}>
@@ -989,9 +1097,11 @@ export default function AttendanceClient({
               {batchGroups.map((g) => {
                 const firstRecord = g.records[0];
                 const warning = getBalanceWarning(firstRecord);
-                const displayStatus = g.leaveTypeId
-                  ? getLeaveTypeName(g.leaveTypeId) ?? g.requestedStatus
-                  : g.requestedStatus;
+                const displayStatus = firstRecord.requestedStatus === "FIELD_WORK"
+                  ? "Field Work"
+                  : g.leaveTypeId
+                    ? getLeaveTypeName(g.leaveTypeId) ?? g.requestedStatus
+                    : g.requestedStatus;
                 const label = g.count > 1
                   ? `${displayStatus} (${g.count} days)`
                   : displayStatus;
@@ -1277,7 +1387,7 @@ export default function AttendanceClient({
                                   <td data-label="Status" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>
                                     <StatusPill
                                       status={
-                                        r.status === "PRESENT" || r.status === "APPROVED" ? "present" :
+                                        r.status === "PRESENT" || r.status === "APPROVED" || r.status === "FIELD_WORK" ? "present" :
                                         r.status === "ABSENT" || r.status === "REJECTED" ? "absent" :
                                         r.status === "PENDING" ? "pending" : "leave"
                                       }

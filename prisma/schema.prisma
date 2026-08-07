@@ -20,6 +20,7 @@ enum AttendanceStatus {
   PERMISSION
   ANNUAL_LEAVE
   OTHER
+  FIELD_WORK
 }
 
 model User {

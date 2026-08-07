@@ -279,7 +279,8 @@ function toDateKey(date: Date): string {
 function statusToMark(status: string | undefined): string | null {
   if (!status) return null;
   switch (status) {
-    case "PRESENT": return "\u2713";
+    case "PRESENT":
+    case "FIELD_WORK": return "\u2713";
     case "ABSENT":  return "A";
     case "PERMISSION":
     case "ANNUAL_LEAVE":

@@ -6,6 +6,7 @@ import {
   createSignIn,
   createLeaveRequest,
   createLeaveRequestBatch,
+  createFieldWorkRequest,
   getSettings,
   isPastCutoff,
 } from "@/modules/attendance/queries";
@@ -156,6 +157,29 @@ export async function POST(req: NextRequest) {
           reviewedBy: null,
         },
       },
+      { status: 201 }
+    );
+  }
+
+  if (action === "fieldwork") {
+    const body = await req.json().catch(() => ({}));
+    const startDate = body.startDate as string;
+    const endDate = body.endDate as string;
+    const note = (body.note as string) || undefined;
+
+    if (!startDate || !endDate) {
+      return NextResponse.json({ error: "Start date and end date are required." }, { status: 400 });
+    }
+
+    await createFieldWorkRequest(
+      session.user.id,
+      new Date(startDate),
+      new Date(endDate),
+      note
+    );
+
+    return NextResponse.json(
+      { multiDayBatch: true, record: null },
       { status: 201 }
     );
   }
