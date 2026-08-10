@@ -45,12 +45,6 @@ export default function NavBar() {
             <Link href="/participants" style={linkStyle} onClick={() => setMenuOpen(false)}>
               Participants
             </Link>
-            <Link href="/participants/campaigns" style={linkStyle} onClick={() => setMenuOpen(false)}>
-              Campaigns
-            </Link>
-            <Link href="/participants/archive" style={linkStyle} onClick={() => setMenuOpen(false)}>
-              Archive
-            </Link>
             {isManager && (
               <Link href="/leave-types" style={linkStyle} onClick={() => setMenuOpen(false)}>
                 Leave Types

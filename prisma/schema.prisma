@@ -39,9 +39,6 @@ model User {
   attendance      AttendanceRecord[] @relation("UserAttendance")
   reviewed        AttendanceRecord[] @relation("ReviewedBy")
   leaveGrants     LeaveGrant[]
-  campaigns       ChecklistCampaign[] @relation("CampaignCreator")
-  archivedCampaigns ChecklistCampaign[] @relation("ArchivedCampaigns")
-  completedEntries ChecklistEntry[]  @relation("EntryCompletions")
 }
 
 model Settings {
@@ -111,59 +108,18 @@ model Holiday {
 }
 
 model Participant {
-  id                 String             @id @default(uuid())
+  id                 String  @id @default(uuid())
   fcpId              String
   fcpName            String
-  localParticipantId String             @unique
+  localParticipantId String  @unique
   name               String
   gradeLevel         String?
   gender             String
   ageText            String?
   communityName      String
   status             String
-  createdAt          DateTime           @default(now())
-  checklistEntries   ChecklistEntry[]
+  createdAt          DateTime @default(now())
 
   @@index([name])
   @@index([localParticipantId])
-}
-
-enum CampaignVisibility {
-  ALL_STAFF
-  CREATOR_ONLY
-}
-
-enum CampaignStatus {
-  ACTIVE
-  ARCHIVED
-}
-
-model ChecklistCampaign {
-  id           String             @id @default(uuid())
-  name         String
-  createdById  String
-  createdBy    User               @relation("CampaignCreator", fields: [createdById], references: [id])
-  visibility   CampaignVisibility @default(ALL_STAFF)
-  status       CampaignStatus     @default(ACTIVE)
-  createdAt    DateTime           @default(now())
-  archivedAt   DateTime?
-  archivedById String?
-  archivedBy   User?              @relation("ArchivedCampaigns", fields: [archivedById], references: [id])
-  entries      ChecklistEntry[]
-
-  @@index([status])
-}
-
-model ChecklistEntry {
-  id            String           @id @default(uuid())
-  campaignId    String
-  campaign      ChecklistCampaign @relation(fields: [campaignId], references: [id])
-  participantId String
-  participant   Participant      @relation(fields: [participantId], references: [id])
-  completed     Boolean          @default(false)
-  completedById String?
-  completedBy   User?            @relation("EntryCompletions", fields: [completedById], references: [id])
-  completedAt   DateTime?
-
-  @@unique([campaignId, participantId])
 }
