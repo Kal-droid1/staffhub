@@ -42,6 +42,9 @@ export default function NavBar() {
             <Link href="/attendance" style={linkStyle} onClick={() => setMenuOpen(false)}>
               Attendance
             </Link>
+            <Link href="/participants" style={linkStyle} onClick={() => setMenuOpen(false)}>
+              Participants
+            </Link>
             {isManager && (
               <Link href="/leave-types" style={linkStyle} onClick={() => setMenuOpen(false)}>
                 Leave Types

@@ -106,3 +106,20 @@ model Holiday {
   @@unique([date, name])
   @@index([year])
 }
+
+model Participant {
+  id                 String  @id @default(uuid())
+  fcpId              String
+  fcpName            String
+  localParticipantId String  @unique
+  name               String
+  gradeLevel         String?
+  gender             String
+  ageText            String?
+  communityName      String
+  status             String
+  createdAt          DateTime @default(now())
+
+  @@index([name])
+  @@index([localParticipantId])
+}
