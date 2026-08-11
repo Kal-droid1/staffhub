@@ -15,6 +15,11 @@ export default function NavBar() {
 
   const role = session.user?.role as string;
   const isManager = role === "MANAGER" || role === "ADMIN";
+  const userName = session.user?.name ?? "";
+  const userRoleLabel =
+    role === "ADMIN" ? "Administrator" :
+    role === "MANAGER" ? "Manager" :
+    "Staff";
 
   const linkStyle: React.CSSProperties = {
     color: "#FFFFFF",
@@ -81,7 +86,10 @@ export default function NavBar() {
           <div className="navbar-links" style={{ gap: "0.75rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <span className="material-symbols-outlined" style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.5rem" }}>person</span>
-              <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "rgba(255,255,255,0.8)" }}>User</span>
+              <div>
+                <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 700, color: "rgba(255,255,255,0.9)", lineHeight: 1.2 }}>{userName}</p>
+                <p style={{ margin: 0, fontSize: "0.65rem", fontWeight: 500, color: "rgba(255,255,255,0.55)", lineHeight: 1.2 }}>{userRoleLabel}</p>
+              </div>
             </div>
             <Link
               href="/change-password"
