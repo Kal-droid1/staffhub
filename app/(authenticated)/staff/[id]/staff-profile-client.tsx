@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Card from "@/modules/core/components/card";
@@ -111,6 +111,11 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
   const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [docError, setDocError] = useState("");
+  const [docSuccess, setDocSuccess] = useState("");
+
+  useEffect(() => {
+    setDocuments(initialDocuments);
+  }, [initialDocuments]);
 
   interface GroupedRecord {
     firstId: string;
@@ -289,6 +294,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
   async function handleDocumentUpload(category: string, file: File) {
     setUploadingCategory(category);
     setDocError("");
+    setDocSuccess("");
     const formData = new FormData();
     formData.append("userId", staff.id);
     formData.append("category", category);
@@ -302,8 +308,17 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
       return;
     }
 
-    router.refresh();
+    const newDoc = await res.json();
+    setDocuments((prev) =>
+      prev.map((c) =>
+        c.category === category
+          ? { ...c, files: [newDoc, ...c.files] }
+          : c
+      )
+    );
+    setDocSuccess(`"${category}" uploaded successfully.`);
     setUploadingCategory(null);
+    setTimeout(() => setDocSuccess(""), 3000);
   }
 
   function getApprovalStatus(status: string, reviewedBy: { id: string; name: string } | null): string {
@@ -570,6 +585,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
       </h2>
 
       {docError && <p className="form-error mb-2">{docError}</p>}
+      {docSuccess && <p className="form-success mb-2">{docSuccess}</p>}
 
       <Card style={{ marginBottom: "1.25rem" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
