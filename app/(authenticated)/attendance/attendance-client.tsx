@@ -225,6 +225,7 @@ export default function AttendanceClient({
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [filterStartDate, setFilterStartDate] = useState("");
   const [filterEndDate, setFilterEndDate] = useState("");
+  const [reportModalOpen, setReportModalOpen] = useState(false);
 
   const cutoffPassed = secondsLeft <= 0;
 
@@ -614,6 +615,7 @@ export default function AttendanceClient({
     setReportStaff(data.staff);
     setReportLoaded(true);
     setReportLoading(false);
+    setReportModalOpen(true);
   }, [reportMonth, reportYear]);
 
   const staffMap: Record<string, string> = {};
@@ -1487,185 +1489,244 @@ export default function AttendanceClient({
               >
                 {reportLoading ? "Loading..." : "View Report"}
               </button>
-
-              {reportLoaded && (
-                <a href={xlsxUrl} className="btn btn-success">
-                  Download report
-                </a>
-              )}
             </div>
           </div>
         </div>
       </div>
 
-      {reportError && (
-        <p className="form-error mb-2">{reportError}</p>
-      )}
+      {reportModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => setReportModalOpen(false)}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 960,
+              width: "calc(100% - 2rem)",
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+              margin: "0 1rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.25rem 1.5rem 0", flexShrink: 0 }}>
+              <span className="section-label" style={{ color: "#1F6B4D" }}>MONTHLY ATTENDANCE REPORT</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                <a href={xlsxUrl} className="btn btn-success btn-sm">
+                  Download report
+                </a>
+                <button
+                  onClick={() => setReportModalOpen(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "1.5rem",
+                    color: "#1F6B4D",
+                    lineHeight: 1,
+                    padding: "0.25rem",
+                  }}
+                  aria-label="Close"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
 
-      {reportLoaded && filteredSummary.length === 0 && !reportLoading && (
-        <Card>
-          <p className="text-muted text-center" style={{ padding: "1rem 0", margin: 0 }}>
-            No attendance records for this month.
-          </p>
-        </Card>
-      )}
+            <div style={{ overflowY: "auto", flex: 1, padding: "0 1.5rem 1.5rem" }}>
+              {reportError && (
+                <p className="form-error mb-2" style={{ marginTop: "1rem" }}>{reportError}</p>
+              )}
 
-      {reportLoaded && filteredSummary.length > 0 && (
-        <Card style={{ padding: 0, overflow: "hidden" }}>
-          <div className="table-responsive">
-          <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
-            <thead>
-              <tr>
-                <th>Staff</th>
-                <th style={{ textAlign: "center" }}>Present</th>
-                <th style={{ textAlign: "center" }}>Absent</th>
-                <th style={{ textAlign: "center" }}>Leave</th>
-                <th style={{ textAlign: "center" }}>Pending</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSummary.map((row) => {
-                const isExpanded = expandedUser === row.userName;
-                return (
-                  <>
-                    <tr
-                      key={row.userName}
-                      onClick={() => handleRowClick(row.userName)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <td data-label="Staff" style={{ fontWeight: 600 }}>
-                        {isExpanded ? "▼" : "▶"} {row.userName}
-                      </td>
-                      <td data-label="Present" style={{ textAlign: "center" }}>
-                        {row.presentCount > 0 ? (
-                          <StatusPill status="present" label={String(row.presentCount)} />
-                        ) : (
-                          row.presentCount
-                        )}
-                      </td>
-                      <td data-label="Absent" style={{ textAlign: "center" }}>
-                        {row.absentCount > 0 ? (
-                          <StatusPill status="absent" label={String(row.absentCount)} />
-                        ) : (
-                          row.absentCount
-                        )}
-                      </td>
-                      <td data-label="Leave" style={{ textAlign: "center" }}>
-                        {row.leaveCount > 0 ? (
-                          <StatusPill status="leave" label={String(row.leaveCount)} />
-                        ) : (
-                          row.leaveCount
-                        )}
-                      </td>
-                      <td data-label="Pending" style={{ textAlign: "center" }}>
-                        {row.pendingCount > 0 ? (
-                          <StatusPill status="pending" label={String(row.pendingCount)} />
-                        ) : (
-                          row.pendingCount
-                        )}
-                      </td>
-                    </tr>
-                    {isExpanded && row.records.length > 0 && (() => {
-                      const hasRange = !!(filterStartDate || filterEndDate);
-                      const filteredRecords = hasRange
-                        ? row.records.filter((r) => {
-                            const rd = r.date.slice(0, 10);
-                            if (filterStartDate && rd < filterStartDate) return false;
-                            if (filterEndDate && rd > filterEndDate) return false;
-                            return true;
-                          })
-                        : row.records;
-                      return (
-                      <tr key={`${row.userName}-detail`}>
-                        <td colSpan={5} style={{ padding: 0 }}>
-                          <div style={{ padding: "1rem 1.5rem 0.75rem", background: "var(--color-surface-hover)", borderTop: "2px solid var(--color-brand)", margin: "0 0.5rem" }}>
-                            <div className="flex-row gap-sm flex-wrap" style={{ alignItems: "flex-end" }}>
-                              <div>
-                                <label className="form-label" style={{ fontSize: "0.75rem" }}>Start date</label>
-                                <input
-                                  type="date"
-                                  className="form-input"
-                                  value={filterStartDate}
-                                  onChange={(e) => setFilterStartDate(e.target.value)}
-                                  style={{ maxWidth: 155, fontSize: "0.8125rem" }}
-                                />
-                              </div>
-                              <div>
-                                <label className="form-label" style={{ fontSize: "0.75rem" }}>End date</label>
-                                <input
-                                  type="date"
-                                  className="form-input"
-                                  value={filterEndDate}
-                                  onChange={(e) => setFilterEndDate(e.target.value)}
-                                  style={{ maxWidth: 155, fontSize: "0.8125rem" }}
-                                />
-                              </div>
-                              {hasRange && (
-                                <button
-                                  type="button"
-                                  className="btn btn-ghost btn-sm"
-                                  onClick={() => { setFilterStartDate(""); setFilterEndDate(""); }}
-                                >
-                                  Clear filter
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          <div className="detail-scroll" style={{ maxHeight: 260, overflowY: "auto", margin: "0 0.5rem" }}>
-                          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                            <thead>
-                              <tr>
-                                <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Date</th>
-                                <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Status</th>
-                                <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Note</th>
+              {reportLoaded && filteredSummary.length === 0 && !reportLoading && (
+                <Card style={{ marginTop: "1rem" }}>
+                  <p className="text-muted text-center" style={{ padding: "1rem 0", margin: 0 }}>
+                    No attendance records for this month.
+                  </p>
+                </Card>
+              )}
+
+              {reportLoaded && filteredSummary.length > 0 && (
+                <Card style={{ padding: 0, overflow: "hidden", marginTop: "1rem" }}>
+                  <div className="table-responsive">
+                  <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
+                    <thead>
+                      <tr>
+                        <th>Staff</th>
+                        <th style={{ textAlign: "center" }}>Present</th>
+                        <th style={{ textAlign: "center" }}>Absent</th>
+                        <th style={{ textAlign: "center" }}>Leave</th>
+                        <th style={{ textAlign: "center" }}>Pending</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSummary.map((row) => {
+                        const isExpanded = expandedUser === row.userName;
+                        return (
+                          <>
+                            <tr
+                              key={row.userName}
+                              onClick={() => handleRowClick(row.userName)}
+                              style={{ cursor: "pointer" }}
+                            >
+                              <td data-label="Staff" style={{ fontWeight: 600 }}>
+                                {isExpanded ? "▼" : "▶"} {row.userName}
+                              </td>
+                              <td data-label="Present" style={{ textAlign: "center" }}>
+                                {row.presentCount > 0 ? (
+                                  <StatusPill status="present" label={String(row.presentCount)} />
+                                ) : (
+                                  row.presentCount
+                                )}
+                              </td>
+                              <td data-label="Absent" style={{ textAlign: "center" }}>
+                                {row.absentCount > 0 ? (
+                                  <StatusPill status="absent" label={String(row.absentCount)} />
+                                ) : (
+                                  row.absentCount
+                                )}
+                              </td>
+                              <td data-label="Leave" style={{ textAlign: "center" }}>
+                                {row.leaveCount > 0 ? (
+                                  <StatusPill status="leave" label={String(row.leaveCount)} />
+                                ) : (
+                                  row.leaveCount
+                                )}
+                              </td>
+                              <td data-label="Pending" style={{ textAlign: "center" }}>
+                                {row.pendingCount > 0 ? (
+                                  <StatusPill status="pending" label={String(row.pendingCount)} />
+                                ) : (
+                                  row.pendingCount
+                                )}
+                              </td>
+                            </tr>
+                            {isExpanded && row.records.length > 0 && (() => {
+                              const hasRange = !!(filterStartDate || filterEndDate);
+                              const filteredRecords = hasRange
+                                ? row.records.filter((r) => {
+                                    const rd = r.date.slice(0, 10);
+                                    if (filterStartDate && rd < filterStartDate) return false;
+                                    if (filterEndDate && rd > filterEndDate) return false;
+                                    return true;
+                                  })
+                                : row.records;
+                              return (
+                              <tr key={`${row.userName}-detail`}>
+                                <td colSpan={5} style={{ padding: 0 }}>
+                                  <div style={{ padding: "1rem 1.5rem 0.75rem", background: "var(--color-surface-hover)", borderTop: "2px solid var(--color-brand)", margin: "0 0.5rem" }}>
+                                    <div className="flex-row gap-sm flex-wrap" style={{ alignItems: "flex-end" }}>
+                                      <div>
+                                        <label className="form-label" style={{ fontSize: "0.75rem" }}>Start date</label>
+                                        <input
+                                          type="date"
+                                          className="form-input"
+                                          value={filterStartDate}
+                                          onChange={(e) => setFilterStartDate(e.target.value)}
+                                          style={{ maxWidth: 155, fontSize: "0.8125rem" }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="form-label" style={{ fontSize: "0.75rem" }}>End date</label>
+                                        <input
+                                          type="date"
+                                          className="form-input"
+                                          value={filterEndDate}
+                                          onChange={(e) => setFilterEndDate(e.target.value)}
+                                          style={{ maxWidth: 155, fontSize: "0.8125rem" }}
+                                        />
+                                      </div>
+                                      {hasRange && (
+                                        <button
+                                          type="button"
+                                          className="btn btn-ghost btn-sm"
+                                          onClick={() => { setFilterStartDate(""); setFilterEndDate(""); }}
+                                        >
+                                          Clear filter
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="detail-scroll" style={{ maxHeight: 260, overflowY: "auto", margin: "0 0.5rem" }}>
+                                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                    <thead>
+                                      <tr>
+                                        <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Date</th>
+                                        <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Status</th>
+                                        <th style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", textAlign: "left", fontWeight: 600, background: "var(--color-brand)", color: "#fff", textTransform: "uppercase", letterSpacing: "0.03em" }}>Note</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {filteredRecords.length === 0 ? (
+                                        <tr>
+                                          <td colSpan={3} style={{ padding: "0.75rem", textAlign: "center", color: "var(--color-text-muted)", fontSize: "0.8125rem" }}>
+                                            No records in this range.
+                                          </td>
+                                        </tr>
+                                      ) : (
+                                        filteredRecords.map((r, i) => (
+                                        <tr key={i}>
+                                          <td data-label="Date" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>{new Date(r.date).toLocaleDateString()}</td>
+                                          <td data-label="Status" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>
+                                            <StatusPill
+                                              status={
+                                                r.status === "PRESENT" || r.status === "APPROVED" || r.status === "FIELD_WORK" ? "present" :
+                                                r.status === "ABSENT" || r.status === "REJECTED" ? "absent" :
+                                                r.status === "PENDING" ? "pending" : "leave"
+                                              }
+                                              label={r.status}
+                                            />
+                                          </td>
+                                          <td data-label="Note" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)", color: "var(--color-text-muted)" }}>{r.note || "\u2014"}</td>
+                                        </tr>
+                                        ))
+                                      )}
+                                    </tbody>
+                                  </table>
+                                  </div>
+                                </td>
                               </tr>
-                            </thead>
-                            <tbody>
-                              {filteredRecords.length === 0 ? (
-                                <tr>
-                                  <td colSpan={3} style={{ padding: "0.75rem", textAlign: "center", color: "var(--color-text-muted)", fontSize: "0.8125rem" }}>
-                                    No records in this range.
-                                  </td>
-                                </tr>
-                              ) : (
-                                filteredRecords.map((r, i) => (
-                                <tr key={i}>
-                                  <td data-label="Date" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>{new Date(r.date).toLocaleDateString()}</td>
-                                  <td data-label="Status" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>
-                                    <StatusPill
-                                      status={
-                                        r.status === "PRESENT" || r.status === "APPROVED" || r.status === "FIELD_WORK" ? "present" :
-                                        r.status === "ABSENT" || r.status === "REJECTED" ? "absent" :
-                                        r.status === "PENDING" ? "pending" : "leave"
-                                      }
-                                      label={r.status}
-                                    />
-                                  </td>
-                                  <td data-label="Note" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)", color: "var(--color-text-muted)" }}>{r.note || "\u2014"}</td>
-                                </tr>
-                                ))
-                              )}
-                            </tbody>
-                          </table>
-                          </div>
-                        </td>
-                      </tr>
-                      );
-                    })()}
-                    {isExpanded && row.records.length === 0 && (
-                      <tr key={`${row.userName}-empty`}>
-                        <td colSpan={5} style={{ padding: "0.75rem 1.5rem", color: "var(--color-text-muted)", fontSize: "0.8125rem", background: "var(--color-bg)" }}>
-                          No daily records for this month.
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })}
-            </tbody>
-          </table>
+                              );
+                            })()}
+                            {isExpanded && row.records.length === 0 && (
+                              <tr key={`${row.userName}-empty`}>
+                                <td colSpan={5} style={{ padding: "0.75rem 1.5rem", color: "var(--color-text-muted)", fontSize: "0.8125rem", background: "var(--color-bg)" }}>
+                                  No daily records for this month.
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  </div>
+                </Card>
+              )}
+            </div>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );
