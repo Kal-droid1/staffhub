@@ -127,15 +127,16 @@ model Participant {
 }
 
 model StaffDocument {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   userId       String
-  user         User     @relation("StaffDocuments", fields: [userId], references: [id])
+  user         User      @relation("StaffDocuments", fields: [userId], references: [id])
   category     String
   fileUrl      String
   fileName     String
   uploadedById String
-  uploadedBy   User     @relation("UploadedDocuments", fields: [uploadedById], references: [id])
-  uploadedAt   DateTime @default(now())
+  uploadedBy   User      @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  uploadedAt   DateTime  @default(now())
+  deletedAt    DateTime?
 
   @@index([userId, category])
 }

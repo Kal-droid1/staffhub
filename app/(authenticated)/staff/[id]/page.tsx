@@ -62,7 +62,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
   const grants = await getLeaveGrants(id);
 
   const docs = await prisma.staffDocument.findMany({
-    where: { userId: id },
+    where: { userId: id, deletedAt: null },
     orderBy: { uploadedAt: "desc" },
     select: {
       id: true,

@@ -96,3 +96,23 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(doc, { status: 201 });
 }
+
+export async function DELETE(req: NextRequest) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.role || !hasRole(session.user.role as Role, "MANAGER")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const docId = searchParams.get("id");
+  if (!docId) {
+    return NextResponse.json({ error: "id is required" }, { status: 400 });
+  }
+
+  await prisma.staffDocument.update({
+    where: { id: docId },
+    data: { deletedAt: new Date() },
+  });
+
+  return NextResponse.json({ success: true });
+}

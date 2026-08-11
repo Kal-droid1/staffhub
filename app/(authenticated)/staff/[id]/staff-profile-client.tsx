@@ -112,6 +112,8 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [docError, setDocError] = useState("");
   const [docSuccess, setDocSuccess] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<{ docId: string; category: string; isLatest: boolean; hasPrevious: boolean } | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     setDocuments(initialDocuments);
@@ -319,6 +321,101 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
     setDocSuccess(`"${category}" uploaded successfully.`);
     setUploadingCategory(null);
     setTimeout(() => setDocSuccess(""), 3000);
+  }
+
+  async function handleDocumentDelete(docId: string, category: string, action?: "leave-empty" | "promote" | "upload-new") {
+    setDeletingId(docId);
+
+    if (!action) {
+      const res = await fetch(`/api/staff-documents?id=${encodeURIComponent(docId)}`, { method: "DELETE" });
+      if (!res.ok) {
+        setDocError("Delete failed");
+        setDeletingId(null);
+        return;
+      }
+      setDocuments((prev) =>
+        prev.map((c) =>
+          c.category === category
+            ? { ...c, files: c.files.filter((f) => f.id !== docId) }
+            : c
+        )
+      );
+      setDocSuccess("Version deleted.");
+      setTimeout(() => setDocSuccess(""), 3000);
+      setDeletingId(null);
+      setDeleteTarget(null);
+      return;
+    }
+
+    if (action === "leave-empty") {
+      const res = await fetch(`/api/staff-documents?id=${encodeURIComponent(docId)}`, { method: "DELETE" });
+      if (!res.ok) {
+        setDocError("Delete failed");
+        setDeletingId(null);
+        return;
+      }
+      setDocuments((prev) =>
+        prev.map((c) =>
+          c.category === category
+            ? { ...c, files: c.files.filter((f) => f.id !== docId) }
+            : c
+        )
+      );
+      setDocSuccess("Document removed. Category is now empty.");
+      setTimeout(() => setDocSuccess(""), 3000);
+      setDeletingId(null);
+      setDeleteTarget(null);
+      return;
+    }
+
+    if (action === "promote") {
+      const cat = documents.find((c) => c.category === category);
+      const next = cat?.files.find((f) => f.id !== docId);
+      if (!next) {
+        setDeletingId(null);
+        setDeleteTarget(null);
+        return;
+      }
+      const res = await fetch(`/api/staff-documents?id=${encodeURIComponent(docId)}`, { method: "DELETE" });
+      if (!res.ok) {
+        setDocError("Delete failed");
+        setDeletingId(null);
+        return;
+      }
+      setDocuments((prev) =>
+        prev.map((c) =>
+          c.category === category
+            ? { ...c, files: c.files.filter((f) => f.id !== docId) }
+            : c
+        )
+      );
+      setDocSuccess("Previous version promoted.");
+      setTimeout(() => setDocSuccess(""), 3000);
+      setDeletingId(null);
+      setDeleteTarget(null);
+      return;
+    }
+
+    if (action === "upload-new") {
+      const res = await fetch(`/api/staff-documents?id=${encodeURIComponent(docId)}`, { method: "DELETE" });
+      if (!res.ok) {
+        setDocError("Delete failed");
+        setDeletingId(null);
+        return;
+      }
+      setDocuments((prev) =>
+        prev.map((c) =>
+          c.category === category
+            ? { ...c, files: c.files.filter((f) => f.id !== docId) }
+            : c
+        )
+      );
+      setUploadingCategory(category);
+      setDeletingId(null);
+      setDeleteTarget(null);
+      const input = document.querySelector(`input[data-category="${CSS.escape(category)}"]`) as HTMLInputElement | null;
+      if (input) input.click();
+    }
   }
 
   function getApprovalStatus(status: string, reviewedBy: { id: string; name: string } | null): string {
@@ -644,13 +741,21 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                             >
                               Download
                             </a>
+                            <button
+                              onClick={() => setDeleteTarget({ docId: f.id, category: cat.category, isLatest: false, hasPrevious: false })}
+                              disabled={deletingId === f.id}
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: "0.7rem", padding: "0.2rem 0.5rem", color: "var(--color-danger)" }}
+                            >
+                              {deletingId === f.id ? "…" : "Delete"}
+                            </button>
                           </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-                <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0, marginLeft: "0.75rem" }}>
+                <div style={{ display: "flex", gap: "0.35rem", flexShrink: 0, marginLeft: "0.75rem" }}>
                   {latest && (
                     <>
                       <a
@@ -667,6 +772,13 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                       >
                         Download
                       </a>
+                      <button
+                        onClick={() => setDeleteTarget({ docId: latest.id, category: cat.category, isLatest: true, hasPrevious: cat.files.length > 1 })}
+                        disabled={deletingId === latest.id}
+                        className="btn btn-danger btn-sm"
+                      >
+                        {deletingId === latest.id ? "…" : "Delete"}
+                      </button>
                     </>
                   )}
                   <label className="btn btn-primary btn-sm" style={{ cursor: "pointer", position: "relative" }}>
@@ -676,6 +788,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                       accept=".pdf,.jpg,.jpeg,.png"
                       style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
                       disabled={uploadingCategory === cat.category}
+                      data-category={cat.category}
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) handleDocumentUpload(cat.category, f);
@@ -689,6 +802,65 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
           })}
         </div>
       </Card>
+
+      {deleteTarget && (
+        <Card style={{ marginBottom: "1.25rem" }}>
+          {!deleteTarget.isLatest ? (
+            <>
+              <p style={{ fontWeight: 500, marginBottom: "0.75rem" }}>
+                Delete this version? This can be undone by an administrator if needed.
+              </p>
+              <div className="flex-row gap-sm">
+                <button
+                  onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category)}
+                  disabled={deletingId === deleteTarget.docId}
+                  className="btn btn-danger btn-sm"
+                >
+                  {deletingId === deleteTarget.docId ? "Deleting..." : "Delete"}
+                </button>
+                <button onClick={() => setDeleteTarget(null)} className="btn btn-ghost btn-sm">Cancel</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p style={{ fontWeight: 600, marginBottom: "0.75rem", color: "var(--color-brand)" }}>
+                Delete the current version of this document?
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                <button
+                  onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "leave-empty")}
+                  disabled={deletingId === deleteTarget.docId}
+                  className="btn btn-ghost btn-sm"
+                  style={{ justifyContent: "flex-start", textAlign: "left" }}
+                >
+                  {deletingId === deleteTarget.docId ? "..." : "Leave empty"} — category shows "Not uploaded yet"
+                </button>
+                {deleteTarget.hasPrevious && (
+                  <button
+                    onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "promote")}
+                    disabled={deletingId === deleteTarget.docId}
+                    className="btn btn-ghost btn-sm"
+                    style={{ justifyContent: "flex-start", textAlign: "left" }}
+                  >
+                    {deletingId === deleteTarget.docId ? "..." : "Promote previous version"} — older version becomes current
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "upload-new")}
+                  disabled={deletingId === deleteTarget.docId}
+                  className="btn btn-primary btn-sm"
+                  style={{ justifyContent: "flex-start", textAlign: "left" }}
+                >
+                  Upload a new one now
+                </button>
+              </div>
+              <div style={{ marginTop: "0.75rem" }}>
+                <button onClick={() => setDeleteTarget(null)} className="btn btn-ghost btn-sm">Cancel</button>
+              </div>
+            </>
+          )}
+        </Card>
+      )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.75rem" }}>
         <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: 0, paddingTop: "0.35rem" }}>
