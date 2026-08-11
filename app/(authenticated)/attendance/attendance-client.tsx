@@ -630,142 +630,198 @@ export default function AttendanceClient({
   function renderAttendance() {
     if (isWeekend) {
       return (
-        <Card>
-          <p className="mb-2" style={{ fontWeight: 500 }}>
+        <div style={{
+          background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
+          borderRadius: "var(--radius-lg, 12px)",
+          padding: "2rem",
+          color: "#fff",
+          marginBottom: "1.5rem",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span style={{ fontSize: "0.8rem", fontWeight: 500, opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.06em" }}>Today&apos;s Attendance</span>
+          </div>
+          <p style={{ fontSize: "0.95rem", fontWeight: 500, opacity: 0.8, margin: 0 }}>
             It&apos;s the weekend — no attendance needed today.
           </p>
-        </Card>
+        </div>
       );
     }
 
     if (record) {
       const recordStatus = getStatusVariant(record.status);
 
+      const heroDoneStyle: React.CSSProperties = {
+        background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
+        borderRadius: "var(--radius-lg, 12px)",
+        padding: "2rem 2rem 1.75rem",
+        color: "#fff",
+        marginBottom: "1.5rem",
+      };
+
       return (
-        <Card>
-          <p className="mb-2" style={{ fontWeight: 500 }}>
-            You have already recorded your attendance for today.
-          </p>
+        <div style={heroDoneStyle}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span style={{ fontSize: "0.8rem", fontWeight: 500, opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.06em" }}>Today&apos;s Attendance</span>
+              </div>
+              <p style={{ fontSize: "0.85rem", opacity: 0.7, margin: "0 0 0.25rem" }}>Attendance recorded for today.</p>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6ee7b7" }}>✓ Signed In</span>
+                {record.signInTime && (
+                  <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>
+                    at {new Date(record.signInTime).toLocaleTimeString()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ marginTop: "1.25rem", padding: "1rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "var(--radius-sm, 6px)" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div className="flex-row" style={{ justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.8rem", opacity: 0.65 }}>Requested</span>
+                <span style={{ fontWeight: 600 }}>{record.requestedStatus}</span>
+              </div>
+              <div className="flex-row" style={{ justifyContent: "space-between" }}>
+                <span style={{ fontSize: "0.8rem", opacity: 0.65 }}>Status</span>
+                <StatusPill status={recordStatus} label={record.status} />
+              </div>
+              {record.note && (
+                <div className="flex-row" style={{ justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.65 }}>Note</span>
+                  <span style={{ fontSize: "0.85rem" }}>{record.note}</span>
+                </div>
+              )}
+              {record.reviewedBy && (
+                <div className="flex-row" style={{ justifyContent: "space-between" }}>
+                  <span style={{ fontSize: "0.8rem", opacity: 0.65 }}>Reviewed by</span>
+                  <PersonRow name={record.reviewedBy.name} size="sm" />
+                </div>
+              )}
+            </div>
+          </div>
+
           {ongoingLeaveUntil ? (
-            <p className="mb-2" style={{ fontSize: "1rem", fontWeight: 500, color: "var(--color-muted)" }}>
-              You&apos;re on leave until {new Date(ongoingLeaveUntil).toLocaleDateString()}. Enjoy your rest — the countdown will begin 24 hours before your return.
+            <p style={{ marginTop: "0.75rem", fontSize: "0.8rem", opacity: 0.6 }}>
+              You&apos;re on leave until {new Date(ongoingLeaveUntil).toLocaleDateString()}.
             </p>
           ) : secondsUntilTomorrow > 0 ? (
-            <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
-              Next sign-in window closes in {formatCountdown(secondsUntilTomorrow)}
+            <p style={{ marginTop: "0.75rem", fontSize: "0.8rem", opacity: 0.7 }}>
+              Next window closes in {formatCountdown(secondsUntilTomorrow)}
             </p>
           ) : null}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            <div className="flex-row">
-              <span className="text-muted text-sm" style={{ minWidth: 110 }}>
-                Date
-              </span>
-              <span style={{ fontWeight: 500 }}>
-                {new Date(record.date).toLocaleDateString()}
-              </span>
-            </div>
-            {record.signInTime && (
-              <div className="flex-row">
-                <span className="text-muted text-sm" style={{ minWidth: 110 }}>
-                  Sign-in time
-                </span>
-                <span style={{ fontWeight: 500 }}>
-                  {new Date(record.signInTime).toLocaleTimeString()}
-                </span>
-              </div>
-            )}
-            <div className="flex-row">
-              <span className="text-muted text-sm" style={{ minWidth: 110 }}>
-                Requested
-              </span>
-              <span style={{ fontWeight: 500 }}>{record.requestedStatus}</span>
-            </div>
-            {record.note && (
-              <div className="flex-row">
-                <span className="text-muted text-sm" style={{ minWidth: 110 }}>
-                  Note
-                </span>
-                <span>{record.note}</span>
-              </div>
-            )}
-            <div className="flex-row">
-              <span className="text-muted text-sm" style={{ minWidth: 110 }}>
-                Status
-              </span>
-              <StatusPill status={recordStatus} label={record.status} />
-            </div>
-            {record.reviewedBy && (
-              <div className="flex-row">
-                <span className="text-muted text-sm" style={{ minWidth: 110 }}>
-                  Reviewed by
-                </span>
-                <PersonRow name={record.reviewedBy.name} size="sm" />
-              </div>
-            )}
-          </div>
-        </Card>
+        </div>
       );
     }
 
+    const heroStyle: React.CSSProperties = {
+      background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
+      borderRadius: "var(--radius-lg, 12px)",
+      padding: "2rem 2rem 1.75rem",
+      color: "#fff",
+      marginBottom: "1.5rem",
+    };
+
     return (
-      <Card>
-        <p className="mb-2" style={{ fontWeight: 500 }}>
-          You haven&apos;t recorded your attendance today.
-        </p>
-
-        {!cutoffPassed && (
-          <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
-            Sign-in closes in {formatCountdown(secondsLeft)}
-          </p>
-        )}
-
-        {!cutoffPassed && locationStatus === "checking" && (
-          <p className="mb-2 text-muted">Checking your location…</p>
-        )}
-
-        {!cutoffPassed && locationStatus === "out-of-range" && (
-          <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
-            You must be at the office to sign in. Contact your manager if this is incorrect.
-          </p>
-        )}
-
-        {cutoffPassed && (
-          <>
-            <p className="mb-2 form-error" style={{ fontWeight: 500 }}>
-              Sign-in closed for today (cutoff was {cutoffTime}).
-            </p>
-            {ongoingLeaveUntil ? (
-              <p className="mb-2" style={{ fontSize: "1rem", fontWeight: 500, color: "var(--color-muted)" }}>
-                You&apos;re on leave until {new Date(ongoingLeaveUntil).toLocaleDateString()}. Enjoy your rest — the countdown will begin 24 hours before your return.
-              </p>
-            ) : secondsUntilTomorrow > 0 ? (
-              <p className="mb-2" style={{ fontSize: "1.1rem", fontWeight: 500, color: "var(--color-accent)" }}>
-                Next sign-in window closes in {formatCountdown(secondsUntilTomorrow)}
-              </p>
-            ) : null}
-          </>
-        )}
-
-        <div className="flex-row gap-md mt-2">
+      <div style={heroStyle}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span style={{ fontSize: "0.8rem", fontWeight: 500, opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.06em" }}>Today&apos;s Attendance</span>
+            </div>
+            <p style={{ fontSize: "0.85rem", opacity: 0.7, margin: "0 0 0.25rem" }}>You haven&apos;t signed in yet today.</p>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginTop: "0.5rem" }}>
+              <span style={{
+                display: "inline-block",
+                padding: "0.15rem 0.5rem",
+                borderRadius: 999,
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                background: "rgba(255,255,255,0.15)",
+              }}>
+                Not Signed In
+              </span>
+            </div>
+          </div>
           {!cutoffPassed && (
             <button
               onClick={handleSignIn}
               disabled={loading || locationStatus === "checking" || locationStatus === "idle" || locationStatus === "out-of-range"}
-              className="btn btn-success"
+              style={{
+                background: "#D9A441",
+                color: "#fff",
+                border: "none",
+                borderRadius: "var(--radius-sm, 6px)",
+                padding: "0.75rem 1.75rem",
+                fontSize: "0.9rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+              }}
             >
-              {loading && !showLeaveForm ? "Signing in..." : "Sign in"}
+              {loading ? "Signing in..." : "Sign In Now"}
             </button>
           )}
         </div>
 
-        {error && <p className="form-error mt-2">{error}</p>}
-      </Card>
+        {!cutoffPassed && (
+          <div style={{ marginTop: "1.5rem", padding: "1.25rem 1.5rem", background: "rgba(255,255,255,0.08)", borderRadius: "var(--radius-sm, 6px)" }}>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "1.5rem", flexWrap: "wrap" }}>
+              <div>
+                <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 600, opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Sign-in Closes In</p>
+                <p style={{ margin: "0.2rem 0 0", fontSize: "2.25rem", fontWeight: 800, fontFamily: "monospace", letterSpacing: "0.02em", lineHeight: 1 }}>
+                  {formatCountdown(secondsLeft)}
+                </p>
+              </div>
+              {locationStatus === "checking" && (
+                <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.7 }}>Checking location…</p>
+              )}
+              {locationStatus === "out-of-range" && (
+                <p style={{ margin: 0, fontSize: "0.8rem", color: "#fca5a5", fontWeight: 500 }}>
+                  You must be at the office to sign in.
+                </p>
+              )}
+              {locationStatus === "in-range" && (
+                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6ee7b7" }}>✓ In range</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {cutoffPassed && (
+          <div style={{ marginTop: "1.25rem", padding: "1rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "var(--radius-sm, 6px)" }}>
+            <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "#fca5a5" }}>
+              Sign-in closed for today (cutoff was {cutoffTime}).
+            </p>
+            {ongoingLeaveUntil ? (
+              <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem", opacity: 0.6 }}>
+                You&apos;re on leave until {new Date(ongoingLeaveUntil).toLocaleDateString()}.
+              </p>
+            ) : secondsUntilTomorrow > 0 ? (
+              <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem", opacity: 0.7 }}>
+                Next window closes in {formatCountdown(secondsUntilTomorrow)}
+              </p>
+            ) : null}
+          </div>
+        )}
+
+        {error && <p style={{ marginTop: "1rem", color: "#fca5a5", fontWeight: 500 }}>{error}</p>}
+      </div>
     );
   }
 
   function renderLeaveRequest() {
     return (
-      <Card style={{ marginTop: "1.25rem" }}>
+      <Card style={{ marginTop: "1.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <h3 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-brand)", margin: 0 }}>Request</h3>
+        </div>
         <div className="flex-row gap-sm">
           <button
             onClick={() => { setShowLeaveForm(!showLeaveForm); setShowFieldWorkForm(false); }}
@@ -980,9 +1036,12 @@ export default function AttendanceClient({
     const groups = groupMyPendingBatches(myPendingRecords);
     return (
       <Card style={{ marginTop: "1.25rem" }}>
-        <h2 style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
-          My Pending Requests
-        </h2>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-accent)", margin: 0 }}>
+            My Pending Requests
+          </h2>
+        </div>
         <div className="table-responsive">
         <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
           <thead>
@@ -1047,111 +1106,145 @@ export default function AttendanceClient({
         </div>
 
         <div>
-          <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
-            Settings
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-brand)", margin: 0 }}>
+              Settings
+            </h2>
+          </div>
           <Card>
             <form onSubmit={handleSettingsSave}>
-              <div style={{ marginBottom: "1rem" }}>
-                <label htmlFor="cutoffTime" className="form-label">
-                  Daily sign-in cutoff time (24-hour format)
-                </label>
-                <input
-                  id="cutoffTime"
-                  type="text"
-                  className="form-input"
-                  value={cutoff}
-                  onChange={(e) => setCutoff(e.target.value)}
-                  placeholder="09:00"
-                />
-                <p className="form-hint">
-                  The daily auto-absent check runs at 11:00 AM Addis Ababa time.
-                  Cutoff must be no later than 10:30.
-                </p>
-              </div>
-
-              <div className="flex-row gap-md mb-2">
-                <div style={{ flex: 1 }}>
-                  <label className="form-label">Office Latitude</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+                {/* Cutoff Time Row */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <div>
+                      <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>Cutoff Time</p>
+                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.7rem", color: "var(--color-text-muted)" }}>Daily sign-in window closes at (HH:MM)</p>
+                    </div>
+                  </div>
                   <input
-                    type="number"
-                    step="any"
+                    id="cutoffTime"
+                    type="text"
                     className="form-input"
-                    value={officeLat}
-                    onChange={(e) => setOfficeLat(e.target.value)}
-                    placeholder="e.g. 9.0320"
+                    value={cutoff}
+                    onChange={(e) => setCutoff(e.target.value)}
+                    placeholder="09:00"
+                    style={{ width: 70, textAlign: "center", fontSize: "0.85rem", fontWeight: 600 }}
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label className="form-label">Office Longitude</label>
+
+                {/* Location Rows */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <div>
+                      <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>Office Location</p>
+                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.7rem", color: "var(--color-text-muted)" }}>Lat / Lng coordinates for GPS check</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "0.4rem" }}>
+                    <input
+                      type="number"
+                      step="any"
+                      className="form-input"
+                      value={officeLat}
+                      onChange={(e) => setOfficeLat(e.target.value)}
+                      placeholder="Lat"
+                      style={{ width: 85, fontSize: "0.8rem", padding: "0.3rem 0.4rem" }}
+                    />
+                    <input
+                      type="number"
+                      step="any"
+                      className="form-input"
+                      value={officeLng}
+                      onChange={(e) => setOfficeLng(e.target.value)}
+                      placeholder="Lng"
+                      style={{ width: 85, fontSize: "0.8rem", padding: "0.3rem 0.4rem" }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem 0" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/></svg>
+                    <div>
+                      <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>Allowed Radius</p>
+                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.7rem", color: "var(--color-text-muted)" }}>Max distance from office (meters)</p>
+                    </div>
+                  </div>
                   <input
                     type="number"
-                    step="any"
                     className="form-input"
-                    value={officeLng}
-                    onChange={(e) => setOfficeLng(e.target.value)}
-                    placeholder="e.g. 38.7520"
+                    value={radiusM}
+                    onChange={(e) => setRadiusM(e.target.value)}
+                    style={{ width: 85, textAlign: "center", fontSize: "0.85rem", fontWeight: 600 }}
                   />
                 </div>
               </div>
 
-              <div style={{ marginBottom: "1rem" }}>
-                <label className="form-label">Allowed Radius (meters)</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={radiusM}
-                  onChange={(e) => setRadiusM(e.target.value)}
-                  style={{ maxWidth: 150 }}
-                />
-                <p className="form-hint">
-                  Staff must be within this distance from the office to sign in.
-                </p>
-              </div>
+              {settingsError && <p className="form-error mb-1" style={{ marginTop: "0.75rem" }}>{settingsError}</p>}
+              {settingsSuccess && <p className="form-success mb-1" style={{ marginTop: "0.75rem" }}>{settingsSuccess}</p>}
 
-              {settingsError && <p className="form-error mb-1">{settingsError}</p>}
-              {settingsSuccess && <p className="form-success mb-1">{settingsSuccess}</p>}
-
-              <button type="submit" disabled={settingsLoading} className="btn btn-primary">
-                {settingsLoading ? "Saving..." : "Save"}
+              <button type="submit" disabled={settingsLoading} className="btn btn-primary" style={{ marginTop: "1rem" }}>
+                {settingsLoading ? "Saving..." : "Save Settings"}
               </button>
             </form>
           </Card>
         </div>
 
         <div>
-          <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
-            Your Leave
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-brand)", margin: 0 }}>
+              Your Leave
+            </h2>
+          </div>
           <Card hover>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
               <RadialGauge
                 value={totalOwnRemaining}
                 max={maxOwnGranted}
-                size={130}
-                strokeWidth={10}
-                label="Remaining"
+                size={160}
+                strokeWidth={14}
+                label="Days Remaining"
               />
               {ownBalances.length > 0 && (
-                <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
-                  {ownBalances.slice(0, 3).map((b) => (
-                    <div key={b.leaveTypeId} style={{ textAlign: "center" }}>
-                      <div className="text-sm text-muted">{b.leaveTypeName}</div>
-                      <div style={{ fontWeight: 600, color: b.remaining <= 0 ? "var(--color-danger)" : "var(--color-success)" }}>
-                        {formatDays(b.remaining)}
-                      </div>
+                <>
+                  <div style={{ display: "flex", gap: "2rem", marginTop: "0.25rem" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ margin: 0, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-text-muted)" }}>Total</p>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "1rem", fontWeight: 700, color: "var(--color-text)" }}>{formatDays(maxOwnGranted)}</p>
                     </div>
-                  ))}
-                </div>
+                    <div style={{ textAlign: "center" }}>
+                      <p style={{ margin: 0, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-text-muted)" }}>Used</p>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "1rem", fontWeight: 700, color: "var(--color-danger)" }}>{formatDays(maxOwnGranted - totalOwnRemaining)}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
+                    {ownBalances.slice(0, 3).map((b) => (
+                      <div key={b.leaveTypeId} style={{ textAlign: "center" }}>
+                        <div className="text-sm text-muted">{b.leaveTypeName}</div>
+                        <div style={{ fontWeight: 600, color: b.remaining <= 0 ? "var(--color-danger)" : "var(--color-success)" }}>
+                          {formatDays(b.remaining)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </Card>
         </div>
       </div>
 
-      <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
-        Pending Approvals
-      </h2>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-accent)", margin: 0 }}>
+          Pending Approvals
+        </h2>
+      </div>
 
       {batchGroups.length === 0 ? (
         <Card>
@@ -1257,9 +1350,12 @@ export default function AttendanceClient({
         </>
       )}
 
-      <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "2rem 0 0.75rem" }}>
-        Monthly Attendance Report
-      </h2>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: "2rem 0 0.75rem" }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-brand)", margin: 0 }}>
+          Monthly Attendance Report
+        </h2>
+      </div>
 
       <Card style={{ marginBottom: "1.25rem" }}>
         <div className="flex-row gap-lg flex-wrap">

@@ -27,6 +27,8 @@ export default function RadialGauge({
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - ratio);
 
+  const fontSize = Math.round(size * 0.22);
+
   return (
     <div className="radial-gauge">
       <svg width={size} height={size} style={{ display: "block" }}>
@@ -53,12 +55,15 @@ export default function RadialGauge({
         />
         <text
           x={size / 2}
-          y={size / 2 - 4}
+          y={size / 2 + 2}
           textAnchor="middle"
-          className="radial-gauge__value"
-          fill="var(--color-text)"
+          dominantBaseline="middle"
+          fill={colorVar}
+          fontWeight={800}
+          fontSize={fontSize}
+          fontFamily="system-ui, -apple-system, sans-serif"
         >
-          {formatDays(value)} / {formatDays(max)}
+          {formatDays(value)}
         </text>
       </svg>
       {label && <span className="radial-gauge__label">{label}</span>}
