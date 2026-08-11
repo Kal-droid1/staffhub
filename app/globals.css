@@ -1,4 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@600&display=swap");
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  font-size: 24px;
+  line-height: 1;
+  vertical-align: middle;
+}
 
 :root {
   --color-brand: #1f6b4d;
@@ -32,7 +39,8 @@
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
 
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-sans: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
 *,
@@ -44,7 +52,11 @@
 body {
   margin: 0;
   padding: 0;
-  background: var(--color-bg);
+  background-color: #FAF7F0;
+  background-image: radial-gradient(circle at 100% 0%, rgba(31, 107, 77, 0.08) 0%, transparent 35%),
+                    radial-gradient(circle at 0% 100%, rgba(31, 107, 77, 0.08) 0%, transparent 35%);
+  background-attachment: fixed;
+  padding-top: 64px;
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: 0.9375rem;
@@ -56,15 +68,15 @@ body {
 /* ---- Layout ---- */
 
 .page-container {
-  max-width: 1100px;
+  max-width: 1440px;
   margin: 2rem auto;
   padding: 0 1.5rem;
 }
 
 .card-grid {
   display: grid;
-  gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  grid-template-columns: 2fr 1fr;
 }
 
 .card-grid--3 {
@@ -87,6 +99,15 @@ body {
 
 /* ---- Card ---- */
 
+.glass-card {
+  background: #FAF7F0;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(31, 107, 77, 0.15), 0 8px 10px -6px rgba(31, 107, 77, 0.1);
+  border-top: 4px solid #D9A441;
+}
+
 .card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -104,10 +125,11 @@ body {
 /* ---- Typography ---- */
 
 .page-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--color-brand);
-  margin: 0 0 1.25rem;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #1F6B4D;
+  margin: 0 0 2.5rem;
+  letter-spacing: -0.02em;
 }
 
 .stat-number {
@@ -123,6 +145,14 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-weight: 500;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 /* ---- Buttons ---- */
@@ -163,6 +193,15 @@ body {
   background: var(--color-brand-hover);
 }
 
+.btn-secondary {
+  background: var(--color-accent);
+  color: #0A261B;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-accent-hover);
+}
+
 .btn-success {
   background: var(--color-success);
   color: #ffffff;
@@ -179,15 +218,6 @@ body {
 
 .btn-danger:hover:not(:disabled) {
   background: var(--color-danger-hover);
-}
-
-.btn-secondary {
-  background: var(--color-accent);
-  color: #ffffff;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--color-accent-hover);
 }
 
 .btn-ghost {
@@ -409,16 +439,22 @@ body {
 /* ---- Misc ---- */
 
 .navbar {
-  background: var(--color-brand);
+  background: #1F6B4D;
   color: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 20px rgba(31, 107, 77, 0.3);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  height: 64px;
 }
 
 .navbar-inner {
-  max-width: 1100px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 0 1.5rem;
-  height: 52px;
+  padding: 0 2rem;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -461,6 +497,11 @@ body {
   gap: 1.25rem;
 }
 
+.nav-link-active {
+  border-bottom: 2px solid #D9A441;
+  padding-bottom: 2px;
+}
+
 .flex-row {
   display: flex;
   align-items: center;
@@ -501,7 +542,7 @@ body {
   }
 
   .page-title {
-    font-size: 1.25rem;
+    font-size: 1.5rem;
   }
 
   .card {
@@ -609,7 +650,7 @@ body {
   .navbar-menu {
     display: none;
     position: absolute;
-    top: 52px;
+    top: 64px;
     left: 0;
     right: 0;
     flex-direction: column;

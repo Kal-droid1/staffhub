@@ -632,18 +632,25 @@ export default function AttendanceClient({
       return (
         <div style={{
           background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
-          borderRadius: "var(--radius-lg, 12px)",
+          borderRadius: "12px",
           padding: "2rem",
           color: "#fff",
           marginBottom: "1.5rem",
+          position: "relative",
+          overflow: "hidden",
+          boxShadow: "0 20px 40px rgba(31,107,77,0.4)",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            <span style={{ fontSize: "0.8rem", fontWeight: 500, opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.06em" }}>Today&apos;s Attendance</span>
+          <div style={{ position: "absolute", top: 0, right: 0, width: "16rem", height: "16rem", background: "rgba(255,255,255,0.05)", borderRadius: "50%", filter: "blur(48px)", transform: "translate(5rem, -5rem)", pointerEvents: "none" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", position: "relative", zIndex: 1 }}>
+            <div>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#D9A441", display: "block", marginBottom: "0.5rem" }}>
+                TODAY&apos;S ATTENDANCE
+              </span>
+              <p style={{ fontSize: "0.85rem", opacity: 0.7, margin: 0 }}>
+                It&apos;s the weekend — no attendance needed today.
+              </p>
+            </div>
           </div>
-          <p style={{ fontSize: "0.95rem", fontWeight: 500, opacity: 0.8, margin: 0 }}>
-            It&apos;s the weekend — no attendance needed today.
-          </p>
         </div>
       );
     }
@@ -653,20 +660,23 @@ export default function AttendanceClient({
 
       const heroDoneStyle: React.CSSProperties = {
         background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
-        borderRadius: "var(--radius-lg, 12px)",
+        borderRadius: "12px",
         padding: "2rem 2rem 1.75rem",
         color: "#fff",
         marginBottom: "1.5rem",
+        position: "relative",
+        overflow: "hidden",
+        boxShadow: "0 20px 40px rgba(31,107,77,0.4)",
       };
 
       return (
         <div style={heroDoneStyle}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, width: "16rem", height: "16rem", background: "rgba(255,255,255,0.05)", borderRadius: "50%", filter: "blur(48px)", transform: "translate(5rem, -5rem)", pointerEvents: "none" }} />
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", position: "relative", zIndex: 1 }}>
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                <span style={{ fontSize: "0.8rem", fontWeight: 500, opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.06em" }}>Today&apos;s Attendance</span>
-              </div>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#D9A441", display: "block", marginBottom: "0.25rem" }}>
+                TODAY&apos;S ATTENDANCE
+              </span>
               <p style={{ fontSize: "0.85rem", opacity: 0.7, margin: "0 0 0.25rem" }}>Attendance recorded for today.</p>
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
                 <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6ee7b7" }}>✓ Signed In</span>
@@ -677,62 +687,57 @@ export default function AttendanceClient({
                 )}
               </div>
             </div>
+            <span className="material-symbols-outlined" style={{ fontSize: "2.5rem", color: "#D9A441", textShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>how_to_reg</span>
           </div>
 
-          <div style={{ marginTop: "1.25rem", padding: "1rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "var(--radius-sm, 6px)" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <div className="flex-row" style={{ justifyContent: "space-between" }}>
-                <span style={{ fontSize: "0.8rem", opacity: 0.65 }}>Requested</span>
-                <span style={{ fontWeight: 600 }}>{record.requestedStatus}</span>
-              </div>
-              <div className="flex-row" style={{ justifyContent: "space-between" }}>
-                <span style={{ fontSize: "0.8rem", opacity: 0.65 }}>Status</span>
-                <StatusPill status={recordStatus} label={record.status} />
-              </div>
-              {record.note && (
-                <div className="flex-row" style={{ justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.65 }}>Note</span>
-                  <span style={{ fontSize: "0.85rem" }}>{record.note}</span>
-                </div>
-              )}
-              {record.reviewedBy && (
-                <div className="flex-row" style={{ justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "0.8rem", opacity: 0.65 }}>Reviewed by</span>
-                  <PersonRow name={record.reviewedBy.name} size="sm" />
-                </div>
-              )}
+          <div style={{ marginTop: "1.25rem", padding: "1rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div>
+              <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65, fontWeight: 700 }}>Requested vs Status</p>
+              <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#fff" }}>
+                {record.requestedStatus}
+              </p>
+            </div>
+            <div>
+              {ongoingLeaveUntil ? (
+                <>
+                  <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65, fontWeight: 700 }}>On leave until</p>
+                  <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "#D9A441", fontFamily: "var(--font-mono)" }}>
+                    {new Date(ongoingLeaveUntil).toLocaleDateString()}
+                  </p>
+                </>
+              ) : secondsUntilTomorrow > 0 ? (
+                <>
+                  <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65, fontWeight: 700 }}>Next Window Ends In</p>
+                  <p style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800, color: "#D9A441", fontFamily: "var(--font-mono)" }}>
+                    {formatCountdown(secondsUntilTomorrow)}
+                  </p>
+                </>
+              ) : null}
             </div>
           </div>
-
-          {ongoingLeaveUntil ? (
-            <p style={{ marginTop: "0.75rem", fontSize: "0.8rem", opacity: 0.6 }}>
-              You&apos;re on leave until {new Date(ongoingLeaveUntil).toLocaleDateString()}.
-            </p>
-          ) : secondsUntilTomorrow > 0 ? (
-            <p style={{ marginTop: "0.75rem", fontSize: "0.8rem", opacity: 0.7 }}>
-              Next window closes in {formatCountdown(secondsUntilTomorrow)}
-            </p>
-          ) : null}
         </div>
       );
     }
 
     const heroStyle: React.CSSProperties = {
       background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
-      borderRadius: "var(--radius-lg, 12px)",
+      borderRadius: "12px",
       padding: "2rem 2rem 1.75rem",
       color: "#fff",
       marginBottom: "1.5rem",
+      position: "relative",
+      overflow: "hidden",
+      boxShadow: "0 20px 40px rgba(31,107,77,0.4)",
     };
 
     return (
       <div style={heroStyle}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+        <div style={{ position: "absolute", top: 0, right: 0, width: "16rem", height: "16rem", background: "rgba(255,255,255,0.05)", borderRadius: "50%", filter: "blur(48px)", transform: "translate(5rem, -5rem)", pointerEvents: "none" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", position: "relative", zIndex: 1 }}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.35rem" }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-              <span style={{ fontSize: "0.8rem", fontWeight: 500, opacity: 0.85, textTransform: "uppercase", letterSpacing: "0.06em" }}>Today&apos;s Attendance</span>
-            </div>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#D9A441", display: "block", marginBottom: "0.25rem" }}>
+              TODAY&apos;S ATTENDANCE
+            </span>
             <p style={{ fontSize: "0.85rem", opacity: 0.7, margin: "0 0 0.25rem" }}>You haven&apos;t signed in yet today.</p>
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginTop: "0.5rem" }}>
               <span style={{
@@ -753,15 +758,15 @@ export default function AttendanceClient({
               disabled={loading || locationStatus === "checking" || locationStatus === "idle" || locationStatus === "out-of-range"}
               style={{
                 background: "#D9A441",
-                color: "#fff",
+                color: "#0A261B",
                 border: "none",
-                borderRadius: "var(--radius-sm, 6px)",
+                borderRadius: "0.75rem",
                 padding: "0.75rem 1.75rem",
                 fontSize: "0.9rem",
                 fontWeight: 700,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                boxShadow: "0 4px 15px rgba(217,164,65,0.4)",
               }}
             >
               {loading ? "Signing in..." : "Sign In Now"}
@@ -770,11 +775,11 @@ export default function AttendanceClient({
         </div>
 
         {!cutoffPassed && (
-          <div style={{ marginTop: "1.5rem", padding: "1.25rem 1.5rem", background: "rgba(255,255,255,0.08)", borderRadius: "var(--radius-sm, 6px)" }}>
+          <div style={{ marginTop: "1.5rem", padding: "1.25rem 1.5rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1 }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "1.5rem", flexWrap: "wrap" }}>
               <div>
-                <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 600, opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Sign-in Closes In</p>
-                <p style={{ margin: "0.2rem 0 0", fontSize: "2.25rem", fontWeight: 800, fontFamily: "monospace", letterSpacing: "0.02em", lineHeight: 1 }}>
+                <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 600, opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>Sign-in Closes In</p>
+                <p style={{ margin: "0.2rem 0 0", fontSize: "2.25rem", fontWeight: 800, fontFamily: "var(--font-mono)", letterSpacing: "0.02em", lineHeight: 1, color: "#D9A441" }}>
                   {formatCountdown(secondsLeft)}
                 </p>
               </div>
@@ -794,7 +799,7 @@ export default function AttendanceClient({
         )}
 
         {cutoffPassed && (
-          <div style={{ marginTop: "1.25rem", padding: "1rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "var(--radius-sm, 6px)" }}>
+          <div style={{ marginTop: "1.25rem", padding: "1rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1 }}>
             <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "#fca5a5" }}>
               Sign-in closed for today (cutoff was {cutoffTime}).
             </p>
@@ -810,31 +815,34 @@ export default function AttendanceClient({
           </div>
         )}
 
-        {error && <p style={{ marginTop: "1rem", color: "#fca5a5", fontWeight: 500 }}>{error}</p>}
+        {error && <p style={{ marginTop: "1rem", color: "#fca5a5", fontWeight: 500, position: "relative", zIndex: 1 }}>{error}</p>}
       </div>
     );
   }
 
   function renderLeaveRequest() {
     return (
-      <Card style={{ marginTop: "1.5rem" }}>
+      <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem", marginTop: "1.5rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <h3 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-brand)", margin: 0 }}>Request</h3>
+          <span className="section-label" style={{ color: "#1F6B4D" }}>REQUEST</span>
         </div>
         <div className="flex-row gap-sm">
           <button
             onClick={() => { setShowLeaveForm(!showLeaveForm); setShowFieldWorkForm(false); }}
             disabled={loading}
             className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", borderRadius: "0.75rem", fontWeight: 800 }}
           >
+            <span className="material-symbols-outlined" style={{ color: "#D9A441", fontSize: "1.2rem" }}>event_note</span>
             Request leave
           </button>
           <button
             onClick={() => { setShowFieldWorkForm(!showFieldWorkForm); setShowLeaveForm(false); }}
             disabled={loading}
             className={showFieldWorkForm ? "btn btn-ghost" : "btn btn-secondary"}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", borderRadius: "0.75rem", fontWeight: 800 }}
           >
+            <span className="material-symbols-outlined" style={{ fontSize: "1.2rem" }}>explore</span>
             Field Work
           </button>
         </div>
@@ -983,7 +991,7 @@ export default function AttendanceClient({
 
         {error && <p className="form-error mt-2">{error}</p>}
         {success && <p className="form-success mt-2">{success}</p>}
-      </Card>
+      </div>
     );
   }
 
@@ -1096,26 +1104,20 @@ export default function AttendanceClient({
       <h1 className="page-title">Operations</h1>
 
       <div className="card-grid" style={{ marginBottom: "1.5rem" }}>
+        {/* Left column */}
         <div>
-          <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
-            Attendance
-          </h2>
           {renderAttendance()}
           {renderLeaveRequest()}
           {renderMyPendingRequests()}
-        </div>
 
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-            <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-brand)", margin: 0 }}>
-              Settings
-            </h2>
-          </div>
-          <Card>
+          {/* Admin Settings */}
+          <div className="glass-card" style={{ borderRadius: "12px", padding: "2rem", marginTop: "1.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
+              <span className="material-symbols-outlined" style={{ fontSize: "1.25rem", color: "#D9A441" }}>settings</span>
+              <span className="section-label" style={{ color: "#1F6B4D" }}>ADMIN SETTINGS</span>
+            </div>
             <form onSubmit={handleSettingsSave}>
               <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-                {/* Cutoff Time Row */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -1135,7 +1137,6 @@ export default function AttendanceClient({
                   />
                 </div>
 
-                {/* Location Rows */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -1191,17 +1192,143 @@ export default function AttendanceClient({
                 {settingsLoading ? "Saving..." : "Save Settings"}
               </button>
             </form>
-          </Card>
+          </div>
+
+          {/* Pending Approvals */}
+          <div style={{ marginTop: "1.5rem" }}>
+            <div className="glass-card" style={{ borderRadius: "12px", padding: batchGroups.length > 0 ? "0" : "2rem", overflow: "hidden" }}>
+              {batchGroups.length === 0 ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "2.5rem", color: "#D9A441", marginBottom: "0.75rem" }}>inbox</span>
+                  <p className="section-label" style={{ color: "#1F6B4D", opacity: 0.7, marginBottom: "0.25rem" }}>PENDING APPROVALS</p>
+                  <p style={{ color: "#1F6B4D", opacity: 0.7, margin: 0, fontWeight: 700 }}>No pending records.</p>
+                </div>
+              ) : (
+                <>
+                  {approveError && <p className="form-error mb-1" style={{ padding: "1rem 1rem 0" }}>{approveError}</p>}
+                  <div className="table-responsive">
+                  <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
+                    <thead>
+                      <tr>
+                        <th>Staff</th>
+                        <th>Date</th>
+                        <th>Requested</th>
+                        <th>Note</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {batchGroups.map((g) => {
+                        const firstRecord = g.records[0];
+                        const warning = getBalanceWarning(firstRecord);
+                        const displayStatus = firstRecord.requestedStatus === "FIELD_WORK"
+                          ? "Field Work"
+                          : g.leaveTypeId
+                            ? getLeaveTypeName(g.leaveTypeId) ?? g.requestedStatus
+                            : g.requestedStatus;
+                        const label = g.count > 1
+                          ? `${displayStatus} (${g.count} days)`
+                          : displayStatus;
+                        const isLoading = approveLoadingId === g.firstId;
+                        return (
+                          <tr key={g.firstId}>
+                            <td data-label="Staff">
+                              <PersonRow
+                                name={g.user.name}
+                                department={g.user.department ?? undefined}
+                                size="sm"
+                              />
+                            </td>
+                            <td data-label="Date" style={{ whiteSpace: "nowrap" }}>{g.dateRange}</td>
+                            <td data-label="Requested">
+                              <StatusPill
+                                status={g.requestedStatus.toLowerCase() === "present" ? "present" : "pending"}
+                                label={label}
+                              />
+                            </td>
+                            <td data-label="Note" className="text-muted">{g.note || "\u2014"}</td>
+                            <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
+                              {firstRecord.attachmentUrl && (
+                                <div className="mb-1 flex-row gap-sm">
+                                  <a
+                                    href={`/api/attachments?url=${encodeURIComponent(firstRecord.attachmentUrl)}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="btn btn-ghost btn-sm"
+                                  >
+                                    View
+                                  </a>
+                                  <a
+                                    href={`/api/attachments?url=${encodeURIComponent(firstRecord.attachmentUrl)}&download=1`}
+                                    className="btn btn-ghost btn-sm"
+                                  >
+                                    Download
+                                  </a>
+                                </div>
+                              )}
+                              {warning && (
+                                <div className="mb-1">
+                                  <span className="status-pill status-pill--danger" style={{ fontSize: "0.7rem" }}>
+                                    {warning}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="flex-row gap-sm">
+                                <button
+                                  onClick={() => handleApproveAction(g.firstId, "approve")}
+                                  disabled={isLoading}
+                                  className="btn btn-success btn-sm"
+                                >
+                                  {isLoading ? "…" : "Approve"}
+                                </button>
+                                <button
+                                  onClick={() => handleApproveAction(g.firstId, "reject")}
+                                  disabled={isLoading}
+                                  className="btn btn-danger btn-sm"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
+        {/* Right column */}
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-brand)", margin: 0 }}>
-              Your Leave
-            </h2>
+          {/* Action buttons */}
+          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+            <button
+              onClick={() => { setShowLeaveForm(!showLeaveForm); setShowFieldWorkForm(false); }}
+              disabled={loading}
+              className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem", borderRadius: "0.75rem", fontWeight: 800 }}
+            >
+              <span className="material-symbols-outlined" style={{ color: "#D9A441", fontSize: "1.2rem" }}>event_note</span>
+              Request leave
+            </button>
+            <button
+              onClick={() => { setShowFieldWorkForm(!showFieldWorkForm); setShowLeaveForm(false); }}
+              disabled={loading}
+              className={showFieldWorkForm ? "btn btn-ghost" : "btn btn-secondary"}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem", borderRadius: "0.75rem", fontWeight: 800 }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "1.2rem" }}>explore</span>
+              Field Work
+            </button>
           </div>
-          <Card hover>
+
+          {/* Your Leave */}
+          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem" }}>
+            <span className="section-label" style={{ color: "#1F6B4D", display: "block", marginBottom: "1.5rem" }}>YOUR LEAVE</span>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
               <RadialGauge
                 value={totalOwnRemaining}
@@ -1235,198 +1362,82 @@ export default function AttendanceClient({
                 </>
               )}
             </div>
-          </Card>
-        </div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.75rem" }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-accent)", margin: 0 }}>
-          Pending Approvals
-        </h2>
-      </div>
-
-      {batchGroups.length === 0 ? (
-        <Card>
-          <p className="text-muted text-center" style={{ padding: "1.5rem 0", margin: 0 }}>
-            No pending attendance records.
-          </p>
-        </Card>
-      ) : (
-        <>
-          {approveError && <p className="form-error mb-1">{approveError}</p>}
-          <Card style={{ padding: 0, overflow: "hidden" }}>
-          <div className="table-responsive">
-          <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
-            <thead>
-              <tr>
-                <th>Staff</th>
-                <th>Date</th>
-                <th>Requested</th>
-                <th>Note</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {batchGroups.map((g) => {
-                const firstRecord = g.records[0];
-                const warning = getBalanceWarning(firstRecord);
-                const displayStatus = firstRecord.requestedStatus === "FIELD_WORK"
-                  ? "Field Work"
-                  : g.leaveTypeId
-                    ? getLeaveTypeName(g.leaveTypeId) ?? g.requestedStatus
-                    : g.requestedStatus;
-                const label = g.count > 1
-                  ? `${displayStatus} (${g.count} days)`
-                  : displayStatus;
-                const isLoading = approveLoadingId === g.firstId;
-                return (
-                  <tr key={g.firstId}>
-                    <td data-label="Staff">
-                      <PersonRow
-                        name={g.user.name}
-                        department={g.user.department ?? undefined}
-                        size="sm"
-                      />
-                    </td>
-                    <td data-label="Date" style={{ whiteSpace: "nowrap" }}>{g.dateRange}</td>
-                    <td data-label="Requested">
-                      <StatusPill
-                        status={g.requestedStatus.toLowerCase() === "present" ? "present" : "pending"}
-                        label={label}
-                      />
-                    </td>
-                    <td data-label="Note" className="text-muted">{g.note || "\u2014"}</td>
-                    <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
-                      {firstRecord.attachmentUrl && (
-                        <div className="mb-1 flex-row gap-sm">
-                          <a
-                            href={`/api/attachments?url=${encodeURIComponent(firstRecord.attachmentUrl)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn btn-ghost btn-sm"
-                          >
-                            View
-                          </a>
-                          <a
-                            href={`/api/attachments?url=${encodeURIComponent(firstRecord.attachmentUrl)}&download=1`}
-                            className="btn btn-ghost btn-sm"
-                          >
-                            Download
-                          </a>
-                        </div>
-                      )}
-                      {warning && (
-                        <div className="mb-1">
-                          <span className="status-pill status-pill--danger" style={{ fontSize: "0.7rem" }}>
-                            {warning}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex-row gap-sm">
-                        <button
-                          onClick={() => handleApproveAction(g.firstId, "approve")}
-                          disabled={isLoading}
-                          className="btn btn-success btn-sm"
-                        >
-                          {isLoading ? "…" : "Approve"}
-                        </button>
-                        <button
-                          onClick={() => handleApproveAction(g.firstId, "reject")}
-                          disabled={isLoading}
-                          className="btn btn-danger btn-sm"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          </div>
-        </Card>
-        </>
-      )}
-
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", margin: "2rem 0 0.75rem" }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--color-brand)", margin: 0 }}>
-          Monthly Attendance Report
-        </h2>
-      </div>
-
-      <Card style={{ marginBottom: "1.25rem" }}>
-        <div className="flex-row gap-lg flex-wrap">
-          <div>
-            <label className="form-label">Month</label>
-            <select
-              value={reportMonth}
-              onChange={(e) => { setReportMonth(Number(e.target.value)); setReportLoaded(false); }}
-              className="form-select"
-              style={{ minWidth: 150 }}
-            >
-              {MONTH_NAMES.map((name, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {name}
-                </option>
-              ))}
-            </select>
           </div>
 
-          <div>
-            <label className="form-label">Year</label>
-            <select
-              value={reportYear}
-              onChange={(e) => { setReportYear(Number(e.target.value)); setReportLoaded(false); }}
-              className="form-select"
-              style={{ minWidth: 110 }}
-            >
-              {Array.from({ length: 6 }, (_, i) => reportYear - 2 + i).map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Monthly Report */}
+          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem" }}>
+            <span className="section-label" style={{ color: "#1F6B4D", display: "block", marginBottom: "1rem" }}>MONTHLY REPORT</span>
+            <div className="flex-row gap-md flex-wrap">
+              <div>
+                <label className="form-label">Month</label>
+                <select
+                  value={reportMonth}
+                  onChange={(e) => { setReportMonth(Number(e.target.value)); setReportLoaded(false); }}
+                  className="form-select"
+                  style={{ minWidth: 150 }}
+                >
+                  {MONTH_NAMES.map((name, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {reportLoaded && reportStaff.length > 0 && (
-            <div>
-              <label className="form-label">Staff (optional)</label>
-              <select
-                value={reportStaffId}
-                onChange={(e) => setReportStaffId(e.target.value)}
-                className="form-select"
-                style={{ minWidth: 180 }}
-              >
-                <option value="">All staff</option>
-                {reportStaff.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="form-label">Year</label>
+                <select
+                  value={reportYear}
+                  onChange={(e) => { setReportYear(Number(e.target.value)); setReportLoaded(false); }}
+                  className="form-select"
+                  style={{ minWidth: 110 }}
+                >
+                  {Array.from({ length: 6 }, (_, i) => reportYear - 2 + i).map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {reportLoaded && reportStaff.length > 0 && (
+                <div>
+                  <label className="form-label">Staff (optional)</label>
+                  <select
+                    value={reportStaffId}
+                    onChange={(e) => setReportStaffId(e.target.value)}
+                    className="form-select"
+                    style={{ minWidth: 180 }}
+                  >
+                    <option value="">All staff</option>
+                    {reportStaff.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="flex-row gap-md mt-2">
-          <button
-            onClick={fetchReport}
-            disabled={reportLoading}
-            className="btn btn-primary"
-          >
-            {reportLoading ? "Loading..." : "View Report"}
-          </button>
+            <div className="flex-row gap-md mt-2">
+              <button
+                onClick={fetchReport}
+                disabled={reportLoading}
+                className="btn btn-primary"
+              >
+                {reportLoading ? "Loading..." : "View Report"}
+              </button>
 
-          {reportLoaded && (
-            <a href={xlsxUrl} className="btn btn-success">
-              Download report
-            </a>
-          )}
+              {reportLoaded && (
+                <a href={xlsxUrl} className="btn btn-success">
+                  Download report
+                </a>
+              )}
+            </div>
+          </div>
         </div>
-      </Card>
+      </div>
 
       {reportError && (
         <p className="form-error mb-2">{reportError}</p>
