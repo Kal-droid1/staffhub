@@ -4,10 +4,67 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 
+interface ParticipantRow {
+  fcpId: string;
+  fcpName: string;
+  localParticipantId: string;
+  name: string;
+  gradeLevel: string;
+  gender: string;
+  ageText: string;
+  communityName: string;
+  status: string;
+}
+
+const BATCH_SIZE = 25;
+
+function parseHtmlTable(html: string): ParticipantRow[] {
+  const tableMatch = html.match(/<table[\s\S]*?<\/table>/i);
+  if (!tableMatch) return [];
+
+  const tableHtml = tableMatch[0];
+  const rowRegex = /<tr[\s\S]*?<\/tr>/gi;
+  const rows: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = rowRegex.exec(tableHtml)) !== null) {
+    rows.push(m[0]);
+  }
+
+  if (rows.length < 2) return [];
+
+  const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+
+  const results: ParticipantRow[] = [];
+
+  for (let i = 1; i < rows.length; i++) {
+    const cells: string[] = [];
+    let cm: RegExpExecArray | null;
+    while ((cm = cellRegex.exec(rows[i])) !== null) {
+      cells.push(cm[1].replace(/<[^>]+>/g, "").trim());
+    }
+    if (cells.length < 9) continue;
+
+    results.push({
+      fcpId: cells[0],
+      fcpName: cells[1],
+      localParticipantId: cells[2],
+      name: cells[3],
+      gradeLevel: cells[4] || "",
+      gender: cells[5] || "",
+      ageText: cells[6] || "",
+      communityName: cells[7],
+      status: cells[8] || "Active",
+    });
+  }
+
+  return results;
+}
+
 export default function ImportClient() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [result, setResult] = useState<{ created: number; updated: number; total: number; errors: string[] } | null>(null);
   const [error, setError] = useState("");
 
@@ -21,24 +78,48 @@ export default function ImportClient() {
 
     try {
       const html = await file.text();
-      const res = await fetch("/api/participants/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Import failed");
-      } else {
-        setResult(data);
+      const allRows = parseHtmlTable(html);
+      if (allRows.length === 0) {
+        setError("No participant rows found in uploaded file.");
+        setUploading(false);
+        return;
       }
+
+      setProgress({ done: 0, total: allRows.length });
+
+      let totalCreated = 0;
+      let totalUpdated = 0;
+      const allErrors: string[] = [];
+
+      for (let start = 0; start < allRows.length; start += BATCH_SIZE) {
+        const batch = allRows.slice(start, start + BATCH_SIZE);
+        const res = await fetch("/api/participants/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rows: batch }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          allErrors.push(data.error || "Batch failed");
+        } else {
+          totalCreated += data.created ?? 0;
+          totalUpdated += data.updated ?? 0;
+          if (data.errors?.length) allErrors.push(...data.errors);
+        }
+
+        setProgress({ done: Math.min(start + BATCH_SIZE, allRows.length), total: allRows.length });
+      }
+
+      setResult({ created: totalCreated, updated: totalUpdated, total: allRows.length, errors: allErrors });
     } catch {
       setError("Failed to read file or upload.");
     }
 
     setUploading(false);
   }
+
+  const pctDone = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
 
   return (
     <div className="page-container" style={{ maxWidth: 700 }}>
@@ -67,6 +148,7 @@ export default function ImportClient() {
               accept=".xls,.xlsx,.html,.htm"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
               className="form-input"
+              disabled={uploading}
             />
           </div>
 
@@ -78,6 +160,26 @@ export default function ImportClient() {
             {uploading ? "Importing..." : "Import"}
           </button>
         </form>
+
+        {uploading && (
+          <div style={{ marginTop: "1rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.35rem", fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+              <span>Processing...</span>
+              <span>{pctDone}% ({progress.done}/{progress.total})</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 3, backgroundColor: "var(--color-border)", overflow: "hidden" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: `${pctDone}%`,
+                  backgroundColor: "var(--color-brand)",
+                  borderRadius: 3,
+                  transition: "width 0.2s ease",
+                }}
+              />
+            </div>
+          </div>
+        )}
       </Card>
 
       {error && (
