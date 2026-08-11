@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Card from "@/modules/core/components/card";
 
 interface Participant {
@@ -17,6 +18,8 @@ interface Participant {
 
 export default function ParticipantsClient() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isManager = session?.user?.role === "MANAGER" || session?.user?.role === "ADMIN";
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Participant[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -53,7 +56,14 @@ export default function ParticipantsClient() {
 
   return (
     <div className="page-container" style={{ maxWidth: 960 }}>
-      <h1 className="page-title">Participants</h1>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+        <h1 className="page-title" style={{ margin: 0 }}>Participants</h1>
+        {isManager && (
+          <a href="/participants/import" className="btn btn-primary" style={{ textDecoration: "none" }}>
+            Import
+          </a>
+        )}
+      </div>
 
       <Card style={{ marginBottom: "1.5rem" }}>
         <form onSubmit={handleSearch}>

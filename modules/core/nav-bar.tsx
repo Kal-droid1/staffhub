@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { signOut, useSession } from "next-auth/react";
 
 export default function NavBar() {
@@ -24,6 +25,16 @@ export default function NavBar() {
   return (
     <nav className="navbar">
       <div className="navbar-inner">
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+          <Image
+            src="/staffhub-logo-512.png"
+            alt="StaffHub"
+            width={28}
+            height={28}
+            style={{ borderRadius: 6 }}
+          />
+          <span style={{ color: "white", fontWeight: 600, fontSize: "1rem" }}>StaffHub</span>
+        </div>
         <button
           className="navbar-hamburger"
           onClick={() => setMenuOpen(!menuOpen)}
@@ -45,11 +56,6 @@ export default function NavBar() {
             <Link href="/participants" style={linkStyle} onClick={() => setMenuOpen(false)}>
               Participants
             </Link>
-            {isManager && (
-              <Link href="/participants/import" style={linkStyle} onClick={() => setMenuOpen(false)}>
-                Import
-              </Link>
-            )}
             {isManager && (
               <Link href="/leave-types" style={linkStyle} onClick={() => setMenuOpen(false)}>
                 Leave Types
