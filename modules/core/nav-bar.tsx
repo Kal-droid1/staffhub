@@ -29,6 +29,7 @@ export default function NavBar() {
   };
 
   const navItems = [
+    { href: "/dashboard", label: "Dashboard" },
     { href: "/attendance", label: "Attendance" },
     { href: "/participants", label: "Participants" },
     ...(isManager ? [{ href: "/leave-types", label: "Leave Types" }] : []),
