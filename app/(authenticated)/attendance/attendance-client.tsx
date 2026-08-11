@@ -633,9 +633,9 @@ export default function AttendanceClient({
         <div style={{
           background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
           borderRadius: "12px",
-          padding: "2rem",
+          padding: "1.5rem",
           color: "#fff",
-          marginBottom: "1.5rem",
+          marginBottom: "1rem",
           position: "relative",
           overflow: "hidden",
           boxShadow: "0 20px 40px rgba(31,107,77,0.4)",
@@ -661,9 +661,9 @@ export default function AttendanceClient({
       const heroDoneStyle: React.CSSProperties = {
         background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
         borderRadius: "12px",
-        padding: "2rem 2rem 1.75rem",
+        padding: "1.5rem 1.5rem 1.25rem",
         color: "#fff",
-        marginBottom: "1.5rem",
+        marginBottom: "1rem",
         position: "relative",
         overflow: "hidden",
         boxShadow: "0 20px 40px rgba(31,107,77,0.4)",
@@ -690,7 +690,7 @@ export default function AttendanceClient({
             <span className="material-symbols-outlined" style={{ fontSize: "2.5rem", color: "#D9A441", textShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>how_to_reg</span>
           </div>
 
-          <div style={{ marginTop: "1.25rem", padding: "1rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div style={{ marginTop: "1rem", padding: "0.75rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65, fontWeight: 700 }}>Requested vs Status</p>
               <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#fff" }}>
@@ -722,9 +722,9 @@ export default function AttendanceClient({
     const heroStyle: React.CSSProperties = {
       background: "linear-gradient(135deg, #1F6B4D 0%, #18573d 100%)",
       borderRadius: "12px",
-      padding: "2rem 2rem 1.75rem",
+      padding: "1.5rem 1.5rem 1.25rem",
       color: "#fff",
-      marginBottom: "1.5rem",
+      marginBottom: "1rem",
       position: "relative",
       overflow: "hidden",
       boxShadow: "0 20px 40px rgba(31,107,77,0.4)",
@@ -775,7 +775,7 @@ export default function AttendanceClient({
         </div>
 
         {!cutoffPassed && (
-          <div style={{ marginTop: "1.5rem", padding: "1.25rem 1.5rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1 }}>
+          <div style={{ marginTop: "1rem", padding: "0.75rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1 }}>
             <div style={{ display: "flex", alignItems: "flex-end", gap: "1.5rem", flexWrap: "wrap" }}>
               <div>
                 <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 600, opacity: 0.6, textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-mono)" }}>Sign-in Closes In</p>
@@ -799,7 +799,7 @@ export default function AttendanceClient({
         )}
 
         {cutoffPassed && (
-          <div style={{ marginTop: "1.25rem", padding: "1rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1 }}>
+          <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1 }}>
             <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "#fca5a5" }}>
               Sign-in closed for today (cutoff was {cutoffTime}).
             </p>
@@ -816,181 +816,6 @@ export default function AttendanceClient({
         )}
 
         {error && <p style={{ marginTop: "1rem", color: "#fca5a5", fontWeight: 500, position: "relative", zIndex: 1 }}>{error}</p>}
-      </div>
-    );
-  }
-
-  function renderLeaveRequest() {
-    return (
-      <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem", marginTop: "1.5rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1rem" }}>
-          <span className="section-label" style={{ color: "#1F6B4D" }}>REQUEST</span>
-        </div>
-        <div className="flex-row gap-sm">
-          <button
-            onClick={() => { setShowLeaveForm(!showLeaveForm); setShowFieldWorkForm(false); }}
-            disabled={loading}
-            className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", borderRadius: "0.75rem", fontWeight: 800 }}
-          >
-            <span className="material-symbols-outlined" style={{ color: "#D9A441", fontSize: "1.2rem" }}>event_note</span>
-            Request leave
-          </button>
-          <button
-            onClick={() => { setShowFieldWorkForm(!showFieldWorkForm); setShowLeaveForm(false); }}
-            disabled={loading}
-            className={showFieldWorkForm ? "btn btn-ghost" : "btn btn-secondary"}
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.75rem 1.5rem", borderRadius: "0.75rem", fontWeight: 800 }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "1.2rem" }}>explore</span>
-            Field Work
-          </button>
-        </div>
-
-        {showLeaveForm && (
-          <Card
-            style={{ marginTop: "1rem", padding: "1.25rem", border: "1px solid var(--color-border)" }}
-          >
-            <form onSubmit={handleLeaveRequest}>
-              <div style={{ marginBottom: "1rem" }}>
-                <label className="form-label">Leave type</label>
-                <select
-                  value={leaveTypeId}
-                  onChange={(e) => {
-                    const selected = leaveTypes.find((lt) => lt.id === e.target.value);
-                    if (selected) {
-                      setLeaveTypeId(selected.id);
-                      setLeaveType(selected.mappedStatus);
-                    }
-                  }}
-                  className="form-select"
-                >
-                  {leaveTypes.map((lt) => (
-                    <option key={lt.id} value={lt.id}>
-                      {lt.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {ownBalances.find((b) => b.leaveTypeId === leaveTypeId && b.remaining <= 0) && (
-                <p className="form-error mb-2" style={{ fontSize: "0.8rem" }}>
-                  You have no remaining balance for this leave type.
-                </p>
-              )}
-              <div className="flex-row gap-md mb-2 flex-wrap">
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <label className="form-label">Start date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={leaveStartDate}
-                    onChange={(e) => setLeaveStartDate(e.target.value)}
-                  />
-                </div>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <label className="form-label">End date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={leaveEndDate}
-                    onChange={(e) => setLeaveEndDate(e.target.value)}
-                  />
-                </div>
-              </div>
-              <p className="form-hint mb-2">
-                Leave the dates empty to request a single day. Multi-day requests skip weekends.
-              </p>
-              <div style={{ marginBottom: "1rem" }}>
-                <label className="form-label">Note (optional)</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={leaveNote}
-                  onChange={(e) => setLeaveNote(e.target.value)}
-                  placeholder="Reason for leave..."
-                />
-              </div>
-
-              {selectedLeaveType?.requiresAttachment && (
-                <div style={{ marginBottom: "1rem" }}>
-                  <label className="form-label">Signed attachment (required)</label>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => setLeaveFile(e.target.files?.[0] || null)}
-                    className="form-input"
-                  />
-                  {leaveFile && (
-                    <p className="form-hint">{leaveFile.name}</p>
-                  )}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={loading || (selectedLeaveType?.requiresAttachment && !leaveFile)}
-                className="btn btn-primary"
-              >
-                {loading ? "Submitting..." : "Submit request"}
-              </button>
-            </form>
-          </Card>
-        )}
-
-        {showFieldWorkForm && (
-          <Card
-            style={{ marginTop: "1rem", padding: "1.25rem", border: "1px solid var(--color-border)" }}
-          >
-            <h3 style={{ fontSize: "0.9rem", fontWeight: 600, margin: "0 0 1rem", color: "var(--color-brand)" }}>
-              Field Work Request
-            </h3>
-            <form onSubmit={handleFieldWorkRequest}>
-              <div className="flex-row gap-md mb-2 flex-wrap">
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <label className="form-label">Start date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={fieldWorkStartDate}
-                    onChange={(e) => setFieldWorkStartDate(e.target.value)}
-                  />
-                </div>
-                <div style={{ flex: 1, minWidth: 140 }}>
-                  <label className="form-label">End date</label>
-                  <input
-                    type="date"
-                    className="form-input"
-                    value={fieldWorkEndDate}
-                    onChange={(e) => setFieldWorkEndDate(e.target.value)}
-                  />
-                </div>
-              </div>
-              <p className="form-hint mb-2">
-                Defaults to today if left empty. Multi-day requests skip weekends.
-              </p>
-              <div style={{ marginBottom: "1rem" }}>
-                <label className="form-label">Where / Why</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={fieldWorkNote}
-                  onChange={(e) => setFieldWorkNote(e.target.value)}
-                  placeholder="e.g. Client visit at Bole..."
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn btn-primary"
-              >
-                {loading ? "Submitting..." : "Submit field work"}
-              </button>
-            </form>
-          </Card>
-        )}
-
-        {error && <p className="form-error mt-2">{error}</p>}
-        {success && <p className="form-success mt-2">{success}</p>}
       </div>
     );
   }
@@ -1093,7 +918,114 @@ export default function AttendanceClient({
       <div className="page-container" style={{ maxWidth: 520 }}>
         <h1 className="page-title">Attendance</h1>
         {renderAttendance()}
-        {renderLeaveRequest()}
+
+        <div className="glass-card" style={{ borderRadius: "12px", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
+          <button
+            onClick={() => { setShowLeaveForm(!showLeaveForm); setShowFieldWorkForm(false); }}
+            disabled={loading}
+            className={showLeaveForm ? "btn btn-ghost" : "btn btn-primary"}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.65rem", borderRadius: "0.75rem", fontWeight: 800 }}
+          >
+            <span className="material-symbols-outlined" style={{ color: "#D9A441", fontSize: "1.2rem" }}>event_note</span>
+            Request leave
+          </button>
+          <button
+            onClick={() => { setShowFieldWorkForm(!showFieldWorkForm); setShowLeaveForm(false); }}
+            disabled={loading}
+            className={showFieldWorkForm ? "btn btn-ghost" : "btn btn-secondary"}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.65rem", borderRadius: "0.75rem", fontWeight: 800 }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "1.2rem" }}>explore</span>
+            Field Work
+          </button>
+        </div>
+
+        {showLeaveForm && (
+          <Card style={{ marginBottom: "1rem", padding: "1rem", border: "1px solid var(--color-border)" }}>
+            <form onSubmit={handleLeaveRequest}>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Leave type</label>
+                <select
+                  value={leaveTypeId}
+                  onChange={(e) => {
+                    const selected = leaveTypes.find((lt) => lt.id === e.target.value);
+                    if (selected) {
+                      setLeaveTypeId(selected.id);
+                      setLeaveType(selected.mappedStatus);
+                    }
+                  }}
+                  className="form-select"
+                >
+                  {leaveTypes.map((lt) => (
+                    <option key={lt.id} value={lt.id}>
+                      {lt.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {ownBalances.find((b) => b.leaveTypeId === leaveTypeId && b.remaining <= 0) && (
+                <p className="form-error mb-2" style={{ fontSize: "0.8rem" }}>
+                  You have no remaining balance for this leave type.
+                </p>
+              )}
+              <div className="flex-row gap-md mb-2 flex-wrap">
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">Start date</label>
+                  <input type="date" className="form-input" value={leaveStartDate} onChange={(e) => setLeaveStartDate(e.target.value)} />
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">End date</label>
+                  <input type="date" className="form-input" value={leaveEndDate} onChange={(e) => setLeaveEndDate(e.target.value)} />
+                </div>
+              </div>
+              <p className="form-hint mb-2">Leave the dates empty to request a single day. Multi-day requests skip weekends.</p>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Note (optional)</label>
+                <input type="text" className="form-input" value={leaveNote} onChange={(e) => setLeaveNote(e.target.value)} placeholder="Reason for leave..." />
+              </div>
+              {selectedLeaveType?.requiresAttachment && (
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Signed attachment (required)</label>
+                  <input type="file" accept="image/*,.pdf" onChange={(e) => setLeaveFile(e.target.files?.[0] || null)} className="form-input" />
+                  {leaveFile && <p className="form-hint">{leaveFile.name}</p>}
+                </div>
+              )}
+              <button type="submit" disabled={loading || (selectedLeaveType?.requiresAttachment && !leaveFile)} className="btn btn-primary">
+                {loading ? "Submitting..." : "Submit request"}
+              </button>
+            </form>
+          </Card>
+        )}
+
+        {showFieldWorkForm && (
+          <Card style={{ marginBottom: "1rem", padding: "1rem", border: "1px solid var(--color-border)" }}>
+            <h3 style={{ fontSize: "0.9rem", fontWeight: 600, margin: "0 0 0.75rem", color: "var(--color-brand)" }}>Field Work Request</h3>
+            <form onSubmit={handleFieldWorkRequest}>
+              <div className="flex-row gap-md mb-2 flex-wrap">
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">Start date</label>
+                  <input type="date" className="form-input" value={fieldWorkStartDate} onChange={(e) => setFieldWorkStartDate(e.target.value)} />
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">End date</label>
+                  <input type="date" className="form-input" value={fieldWorkEndDate} onChange={(e) => setFieldWorkEndDate(e.target.value)} />
+                </div>
+              </div>
+              <p className="form-hint mb-2">Defaults to today if left empty. Multi-day requests skip weekends.</p>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Where / Why</label>
+                <input type="text" className="form-input" value={fieldWorkNote} onChange={(e) => setFieldWorkNote(e.target.value)} placeholder="e.g. Client visit at Bole..." />
+              </div>
+              <button type="submit" disabled={loading} className="btn btn-primary">
+                {loading ? "Submitting..." : "Submit field work"}
+              </button>
+            </form>
+          </Card>
+        )}
+
+        {error && <p className="form-error mt-2">{error}</p>}
+        {success && <p className="form-success mt-2">{success}</p>}
+
         {renderMyPendingRequests()}
       </div>
     );
@@ -1103,22 +1035,21 @@ export default function AttendanceClient({
     <div className="page-container">
       <h1 className="page-title">Operations</h1>
 
-      <div className="card-grid" style={{ marginBottom: "1.5rem" }}>
+      <div className="card-grid" style={{ gap: "1rem", marginBottom: "1rem" }}>
         {/* Left column */}
         <div>
           {renderAttendance()}
-          {renderLeaveRequest()}
           {renderMyPendingRequests()}
 
           {/* Admin Settings */}
-          <div className="glass-card" style={{ borderRadius: "12px", padding: "2rem", marginTop: "1.5rem" }}>
+          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem", marginTop: "1rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
               <span className="material-symbols-outlined" style={{ fontSize: "1.25rem", color: "#D9A441" }}>settings</span>
               <span className="section-label" style={{ color: "#1F6B4D" }}>ADMIN SETTINGS</span>
             </div>
             <form onSubmit={handleSettingsSave}>
               <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.65rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     <div>
@@ -1137,7 +1068,7 @@ export default function AttendanceClient({
                   />
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.65rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     <div>
@@ -1167,7 +1098,7 @@ export default function AttendanceClient({
                   </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.9rem 0" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.65rem 0" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/></svg>
                     <div>
@@ -1195,7 +1126,7 @@ export default function AttendanceClient({
           </div>
 
           {/* Pending Approvals */}
-          <div style={{ marginTop: "1.5rem" }}>
+          <div style={{ marginTop: "1rem" }}>
             <div className="glass-card" style={{ borderRadius: "12px", padding: batchGroups.length > 0 ? "0" : "2rem", overflow: "hidden" }}>
               {batchGroups.length === 0 ? (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: 200 }}>
@@ -1305,7 +1236,7 @@ export default function AttendanceClient({
         {/* Right column */}
         <div>
           {/* Action buttons */}
-          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem", marginBottom: "1.5rem" }}>
+          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.75rem", marginBottom: "1rem" }}>
             <button
               onClick={() => { setShowLeaveForm(!showLeaveForm); setShowFieldWorkForm(false); }}
               disabled={loading}
@@ -1326,9 +1257,154 @@ export default function AttendanceClient({
             </button>
           </div>
 
+          {showLeaveForm && (
+            <Card
+              style={{ marginTop: "0.75rem", padding: "1rem", border: "1px solid var(--color-border)" }}
+            >
+              <form onSubmit={handleLeaveRequest}>
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Leave type</label>
+                  <select
+                    value={leaveTypeId}
+                    onChange={(e) => {
+                      const selected = leaveTypes.find((lt) => lt.id === e.target.value);
+                      if (selected) {
+                        setLeaveTypeId(selected.id);
+                        setLeaveType(selected.mappedStatus);
+                      }
+                    }}
+                    className="form-select"
+                  >
+                    {leaveTypes.map((lt) => (
+                      <option key={lt.id} value={lt.id}>
+                        {lt.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {ownBalances.find((b) => b.leaveTypeId === leaveTypeId && b.remaining <= 0) && (
+                  <p className="form-error mb-2" style={{ fontSize: "0.8rem" }}>
+                    You have no remaining balance for this leave type.
+                  </p>
+                )}
+                <div className="flex-row gap-md mb-2 flex-wrap">
+                  <div style={{ flex: 1, minWidth: 140 }}>
+                    <label className="form-label">Start date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={leaveStartDate}
+                      onChange={(e) => setLeaveStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 140 }}>
+                    <label className="form-label">End date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={leaveEndDate}
+                      onChange={(e) => setLeaveEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="form-hint mb-2">
+                  Leave the dates empty to request a single day. Multi-day requests skip weekends.
+                </p>
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Note (optional)</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={leaveNote}
+                    onChange={(e) => setLeaveNote(e.target.value)}
+                    placeholder="Reason for leave..."
+                  />
+                </div>
+
+                {selectedLeaveType?.requiresAttachment && (
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <label className="form-label">Signed attachment (required)</label>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setLeaveFile(e.target.files?.[0] || null)}
+                      className="form-input"
+                    />
+                    {leaveFile && (
+                      <p className="form-hint">{leaveFile.name}</p>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading || (selectedLeaveType?.requiresAttachment && !leaveFile)}
+                  className="btn btn-primary"
+                >
+                  {loading ? "Submitting..." : "Submit request"}
+                </button>
+              </form>
+            </Card>
+          )}
+
+          {showFieldWorkForm && (
+            <Card
+              style={{ marginTop: "0.75rem", padding: "1rem", border: "1px solid var(--color-border)" }}
+            >
+              <h3 style={{ fontSize: "0.9rem", fontWeight: 600, margin: "0 0 0.75rem", color: "var(--color-brand)" }}>
+                Field Work Request
+              </h3>
+              <form onSubmit={handleFieldWorkRequest}>
+                <div className="flex-row gap-md mb-2 flex-wrap">
+                  <div style={{ flex: 1, minWidth: 140 }}>
+                    <label className="form-label">Start date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={fieldWorkStartDate}
+                      onChange={(e) => setFieldWorkStartDate(e.target.value)}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 140 }}>
+                    <label className="form-label">End date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={fieldWorkEndDate}
+                      onChange={(e) => setFieldWorkEndDate(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="form-hint mb-2">
+                  Defaults to today if left empty. Multi-day requests skip weekends.
+                </p>
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Where / Why</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={fieldWorkNote}
+                    onChange={(e) => setFieldWorkNote(e.target.value)}
+                    placeholder="e.g. Client visit at Bole..."
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn btn-primary"
+                >
+                  {loading ? "Submitting..." : "Submit field work"}
+                </button>
+              </form>
+            </Card>
+          )}
+
+          {error && <p className="form-error mt-2">{error}</p>}
+          {success && <p className="form-success mt-2">{success}</p>}
+
           {/* Your Leave */}
-          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem" }}>
-            <span className="section-label" style={{ color: "#1F6B4D", display: "block", marginBottom: "1.5rem" }}>YOUR LEAVE</span>
+          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
+            <span className="section-label" style={{ color: "#1F6B4D", display: "block", marginBottom: "1rem" }}>YOUR LEAVE</span>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
               <RadialGauge
                 value={totalOwnRemaining}
@@ -1365,7 +1441,7 @@ export default function AttendanceClient({
           </div>
 
           {/* Monthly Report */}
-          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.5rem" }}>
+          <div className="glass-card" style={{ borderRadius: "12px", padding: "1.25rem" }}>
             <span className="section-label" style={{ color: "#1F6B4D", display: "block", marginBottom: "1rem" }}>MONTHLY REPORT</span>
             <div className="flex-row gap-md flex-wrap">
               <div>
