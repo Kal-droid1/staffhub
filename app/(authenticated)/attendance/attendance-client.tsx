@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 import StatusPill from "@/modules/core/components/status-pill";
 import PersonRow from "@/modules/core/components/person-row";
-import RadialGauge from "@/modules/core/components/radial-gauge";
 import { formatDays, formatDaysLabel } from "@/lib/format";
 import { haversineDistance } from "@/lib/geo";
 
@@ -1390,37 +1389,70 @@ export default function AttendanceClient({
           {/* Your Leave */}
           <div className="glass-card" style={{ borderRadius: "12px", padding: "1.25rem", marginBottom: "1rem" }}>
             <span className="section-label" style={{ color: "#1F6B4D", display: "block", marginBottom: "1rem" }}>YOUR LEAVE</span>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-              <RadialGauge
-                value={totalOwnRemaining}
-                max={maxOwnGranted}
-                size={160}
-                strokeWidth={14}
-                label="Days Remaining"
-              />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" }}>
+              {/* Radial gauge with teal→amber gradient stroke, label inside the ring */}
+              <div style={{ position: "relative", width: 160, height: 160, margin: "0 auto" }}>
+                <svg width={160} height={160} style={{ display: "block", transform: "rotate(-90deg)" }}>
+                  <defs>
+                    <linearGradient id="leaveGaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#1F6B4D" />
+                      <stop offset="100%" stopColor="#D9A441" />
+                    </linearGradient>
+                  </defs>
+                  <circle
+                    cx={80}
+                    cy={80}
+                    r={73}
+                    fill="none"
+                    stroke="var(--color-border-light)"
+                    strokeWidth={14}
+                  />
+                  {maxOwnGranted > 0 && (() => {
+                    const ratio = Math.min(Math.max(totalOwnRemaining / maxOwnGranted, 0), 1);
+                    const radius = 73;
+                    const circumference = 2 * Math.PI * radius;
+                    const dashOffset = circumference * (1 - ratio);
+                    return (
+                      <circle
+                        cx={80}
+                        cy={80}
+                        r={radius}
+                        fill="none"
+                        stroke="url(#leaveGaugeGradient)"
+                        strokeWidth={14}
+                        strokeLinecap="round"
+                        strokeDasharray={circumference}
+                        strokeDashoffset={dashOffset}
+                        style={{ transition: "stroke-dashoffset 0.4s ease" }}
+                      />
+                    );
+                  })()}
+                </svg>
+                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                  <span style={{ fontSize: "1.75rem", fontWeight: 800, color: "#1F6B4D", lineHeight: 1, fontFamily: "var(--font-sans)" }}>
+                    {formatDays(totalOwnRemaining)}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.65rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#1F6B4D", opacity: 0.7, marginTop: "0.15rem" }}>
+                    DAYS REMAINING
+                  </span>
+                </div>
+              </div>
+
               {ownBalances.length > 0 && (
-                <>
-                  <div style={{ display: "flex", gap: "2rem", marginTop: "0.25rem" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ margin: 0, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-text-muted)" }}>Total</p>
-                      <p style={{ margin: "0.15rem 0 0", fontSize: "1rem", fontWeight: 700, color: "var(--color-text)" }}>{formatDays(maxOwnGranted)}</p>
-                    </div>
-                    <div style={{ textAlign: "center" }}>
-                      <p style={{ margin: 0, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-text-muted)" }}>Used</p>
-                      <p style={{ margin: "0.15rem 0 0", fontSize: "1rem", fontWeight: 700, color: "var(--color-danger)" }}>{formatDays(maxOwnGranted - totalOwnRemaining)}</p>
-                    </div>
+                <div style={{ width: "100%", marginTop: "0.25rem" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid rgba(31,107,77,0.1)" }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1F6B4D", opacity: 0.8 }}>Total</span>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#1F6B4D" }}>{formatDays(maxOwnGranted)}</span>
                   </div>
-                  <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
-                    {ownBalances.slice(0, 3).map((b) => (
-                      <div key={b.leaveTypeId} style={{ textAlign: "center" }}>
-                        <div className="text-sm text-muted">{b.leaveTypeName}</div>
-                        <div style={{ fontWeight: 600, color: b.remaining <= 0 ? "var(--color-danger)" : "var(--color-success)" }}>
-                          {formatDays(b.remaining)}
-                        </div>
-                      </div>
-                    ))}
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid rgba(31,107,77,0.1)" }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1F6B4D", opacity: 0.8 }}>Used</span>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#1F6B4D" }}>{formatDays(maxOwnGranted - totalOwnRemaining)}</span>
                   </div>
-                </>
+                  <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0" }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#1F6B4D", opacity: 0.8 }}>Annual leave</span>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 800, color: "#1F6B4D" }}>{formatDays(ownBalances[0]?.granted ?? 0)}</span>
+                  </div>
+                </div>
               )}
             </div>
           </div>
