@@ -1048,15 +1048,9 @@ export default function AttendanceClient({
               <span className="section-label" style={{ color: "#1F6B4D" }}>ADMIN SETTINGS</span>
             </div>
             <form onSubmit={handleSettingsSave}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.65rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>Cutoff Time</p>
-                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.7rem", color: "var(--color-text-muted)" }}>Daily sign-in window closes at (HH:MM)</p>
-                    </div>
-                  </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem", marginBottom: "1rem" }}>
+                <div>
+                  <label className="form-label" style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1F6B4D" }}>Cutoff Time</label>
                   <input
                     id="cutoffTime"
                     type="text"
@@ -1064,18 +1058,12 @@ export default function AttendanceClient({
                     value={cutoff}
                     onChange={(e) => setCutoff(e.target.value)}
                     placeholder="09:00"
-                    style={{ width: 70, textAlign: "center", fontSize: "0.85rem", fontWeight: 600 }}
+                    style={{ textAlign: "center", fontSize: "0.85rem", fontWeight: 600 }}
                   />
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.65rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>Office Location</p>
-                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.7rem", color: "var(--color-text-muted)" }}>Lat / Lng coordinates for GPS check</p>
-                    </div>
-                  </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1F6B4D" }}>Office Location</label>
                   <div style={{ display: "flex", gap: "0.4rem" }}>
                     <input
                       type="number"
@@ -1084,7 +1072,7 @@ export default function AttendanceClient({
                       value={officeLat}
                       onChange={(e) => setOfficeLat(e.target.value)}
                       placeholder="Lat"
-                      style={{ width: 85, fontSize: "0.8rem", padding: "0.3rem 0.4rem" }}
+                      style={{ fontSize: "0.8rem" }}
                     />
                     <input
                       type="number"
@@ -1093,25 +1081,19 @@ export default function AttendanceClient({
                       value={officeLng}
                       onChange={(e) => setOfficeLng(e.target.value)}
                       placeholder="Lng"
-                      style={{ width: 85, fontSize: "0.8rem", padding: "0.3rem 0.4rem" }}
+                      style={{ fontSize: "0.8rem" }}
                     />
                   </div>
                 </div>
 
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.65rem 0" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flex: 1 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/></svg>
-                    <div>
-                      <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 600 }}>Allowed Radius</p>
-                      <p style={{ margin: "0.1rem 0 0", fontSize: "0.7rem", color: "var(--color-text-muted)" }}>Max distance from office (meters)</p>
-                    </div>
-                  </div>
+                <div>
+                  <label className="form-label" style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1F6B4D" }}>Allowed Radius (m)</label>
                   <input
                     type="number"
                     className="form-input"
                     value={radiusM}
                     onChange={(e) => setRadiusM(e.target.value)}
-                    style={{ width: 85, textAlign: "center", fontSize: "0.85rem", fontWeight: 600 }}
+                    style={{ textAlign: "center", fontSize: "0.85rem", fontWeight: 600 }}
                   />
                 </div>
               </div>
