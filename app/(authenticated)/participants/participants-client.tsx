@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 
 interface Participant {
@@ -15,6 +16,7 @@ interface Participant {
 }
 
 export default function ParticipantsClient() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Participant[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,11 @@ export default function ParticipantsClient() {
               </thead>
               <tbody>
                 {results.map((p) => (
-                  <tr key={p.id}>
+                  <tr
+                    key={p.id}
+                    onClick={() => router.push(`/participants/${p.id}`)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <td data-label="Name" style={{ fontWeight: 600 }}>{p.name}</td>
                     <td data-label="ID" style={{ fontFamily: "monospace", fontSize: "0.85rem" }}>
                       {p.localParticipantId}

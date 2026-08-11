@@ -46,6 +46,11 @@ export default function NavBar() {
               Participants
             </Link>
             {isManager && (
+              <Link href="/participants/import" style={linkStyle} onClick={() => setMenuOpen(false)}>
+                Import
+              </Link>
+            )}
+            {isManager && (
               <Link href="/leave-types" style={linkStyle} onClick={() => setMenuOpen(false)}>
                 Leave Types
               </Link>
