@@ -674,15 +674,16 @@ export default function AttendanceClient({
           <div style={{ position: "absolute", top: 0, right: 0, width: "16rem", height: "16rem", background: "rgba(255,255,255,0.05)", borderRadius: "50%", filter: "blur(48px)", transform: "translate(5rem, -5rem)", pointerEvents: "none" }} />
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem", position: "relative", zIndex: 1 }}>
             <div>
-              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#D9A441", display: "block", marginBottom: "0.25rem" }}>
+              <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", color: "#D9A441", display: "block", marginBottom: "0.5rem" }}>
                 TODAY&apos;S ATTENDANCE
               </span>
-              <p style={{ fontSize: "0.85rem", opacity: 0.7, margin: "0 0 0.25rem" }}>Attendance recorded for today.</p>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginTop: "0.5rem", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "#6ee7b7" }}>✓ Signed In</span>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+                <span style={{ background: "#D9A441", color: "#0A261B", padding: "0.15rem 0.75rem", borderRadius: "999px", fontSize: "0.8rem", fontWeight: 800, letterSpacing: "0.03em", whiteSpace: "nowrap" }}>
+                  {record.status}
+                </span>
                 {record.signInTime && (
-                  <span style={{ fontSize: "0.75rem", opacity: 0.6 }}>
-                    at {new Date(record.signInTime).toLocaleTimeString()}
+                  <span style={{ fontSize: "0.9rem", fontWeight: 700, opacity: 0.9 }}>
+                    Sign-in: {new Date(record.signInTime).toLocaleTimeString()}
                   </span>
                 )}
               </div>
@@ -694,7 +695,7 @@ export default function AttendanceClient({
             <div>
               <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65, fontWeight: 700 }}>Requested vs Status</p>
               <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#fff" }}>
-                {record.requestedStatus}
+                {record.requestedStatus === record.status ? "Matched" : record.requestedStatus}
               </p>
             </div>
             <div>
