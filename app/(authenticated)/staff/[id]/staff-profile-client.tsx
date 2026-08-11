@@ -620,18 +620,31 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                   {isExpanded && hasHistory && (
                     <div style={{ marginTop: "0.4rem", paddingLeft: "0.5rem", borderLeft: "2px solid var(--color-border)" }}>
                       {cat.files.slice(1).map((f) => (
-                        <div key={f.id} style={{ fontSize: "0.78rem", padding: "0.15rem 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <a
-                            href={`/api/attachments?url=${encodeURIComponent(f.fileUrl)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ color: "var(--color-brand)", fontWeight: 600 }}
-                          >
-                            {f.fileName}
-                          </a>
-                          <span style={{ color: "var(--color-text-light)" }}>
-                            {new Date(f.uploadedAt).toLocaleDateString()}
-                          </span>
+                        <div key={f.id} style={{ fontSize: "0.78rem", padding: "0.25rem 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
+                          <div style={{ minWidth: 0 }}>
+                            <span style={{ color: "var(--color-text)", fontWeight: 600 }}>{f.fileName}</span>
+                            <span style={{ color: "var(--color-text-light)", marginLeft: "0.4rem" }}>
+                              {new Date(f.uploadedAt).toLocaleDateString()} by {f.uploadedByName}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", gap: "0.35rem", flexShrink: 0 }}>
+                            <a
+                              href={`/api/attachments?url=${encodeURIComponent(f.fileUrl)}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: "0.7rem", padding: "0.2rem 0.5rem" }}
+                            >
+                              View
+                            </a>
+                            <a
+                              href={`/api/attachments?url=${encodeURIComponent(f.fileUrl)}&download=1`}
+                              className="btn btn-ghost btn-sm"
+                              style={{ fontSize: "0.7rem", padding: "0.2rem 0.5rem" }}
+                            >
+                              Download
+                            </a>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -639,14 +652,22 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0, marginLeft: "0.75rem" }}>
                   {latest && (
-                    <a
-                      href={`/api/attachments?url=${encodeURIComponent(latest.fileUrl)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn btn-ghost btn-sm"
-                    >
-                      View
-                    </a>
+                    <>
+                      <a
+                        href={`/api/attachments?url=${encodeURIComponent(latest.fileUrl)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-ghost btn-sm"
+                      >
+                        View
+                      </a>
+                      <a
+                        href={`/api/attachments?url=${encodeURIComponent(latest.fileUrl)}&download=1`}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        Download
+                      </a>
+                    </>
                   )}
                   <label className="btn btn-primary btn-sm" style={{ cursor: "pointer", position: "relative" }}>
                     {uploadingCategory === cat.category ? "Uploading..." : latest ? "Replace" : "Upload"}
