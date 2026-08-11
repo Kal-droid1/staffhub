@@ -4,6 +4,18 @@ import { getLeaveBalances } from "@/modules/leave/queries";
 import { getLeaveGrants } from "@/modules/leave/queries";
 import StaffProfileClient from "./staff-profile-client";
 
+const DOCUMENT_CATEGORIES = [
+  "Marriage Certificate",
+  "Number of Kids",
+  "Employment Contract",
+  "Job Description",
+  "Education Certificate",
+  "Leave Permission",
+  "Statement of Commitment to Child Protection",
+  "Sick Leave",
+  "Other",
+];
+
 interface PageProps {
   params: Promise<{ id: string }>;
 }
@@ -49,6 +61,32 @@ export default async function StaffProfilePage({ params }: PageProps) {
 
   const grants = await getLeaveGrants(id);
 
+  const docs = await prisma.staffDocument.findMany({
+    where: { userId: id },
+    orderBy: { uploadedAt: "desc" },
+    select: {
+      id: true,
+      category: true,
+      fileName: true,
+      fileUrl: true,
+      uploadedAt: true,
+      uploadedBy: { select: { name: true } },
+    },
+  });
+
+  const documentsJson = DOCUMENT_CATEGORIES.map((category) => ({
+    category,
+    files: docs
+      .filter((d) => d.category === category)
+      .map((d) => ({
+        id: d.id,
+        fileName: d.fileName,
+        fileUrl: d.fileUrl,
+        uploadedAt: d.uploadedAt.toISOString(),
+        uploadedByName: d.uploadedBy.name,
+      })),
+  }));
+
   const userJson = {
     id: user.id,
     name: user.name,
@@ -91,6 +129,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
       balances={JSON.parse(JSON.stringify(balances))}
       records={JSON.parse(JSON.stringify(recordsJson))}
       grants={JSON.parse(JSON.stringify(grantsJson))}
+      documents={JSON.parse(JSON.stringify(documentsJson))}
     />
   );
 }

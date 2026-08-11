@@ -53,11 +53,25 @@ interface GrantRow {
   expiresAt: string | null;
 }
 
+interface DocumentFile {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  uploadedAt: string;
+  uploadedByName: string;
+}
+
+interface DocumentCategory {
+  category: string;
+  files: DocumentFile[];
+}
+
 interface Props {
   staff: StaffMember;
   balances: Balance[];
   records: RecordRow[];
   grants: GrantRow[];
+  documents: DocumentCategory[];
 }
 
 const ROLE_OPTIONS = ["STAFF", "MANAGER", "ADMIN"];
@@ -68,7 +82,7 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default function StaffProfileClient({ staff, balances, records, grants }: Props) {
+export default function StaffProfileClient({ staff, balances, records, grants, documents: initialDocuments }: Props) {
   const router = useRouter();
 
   const [showEdit, setShowEdit] = useState(false);
@@ -92,6 +106,11 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
   const [filterFromDate, setFilterFromDate] = useState("");
   const [filterToDate, setFilterToDate] = useState("");
   const [page, setPage] = useState(0);
+
+  const [documents, setDocuments] = useState<DocumentCategory[]>(initialDocuments);
+  const [uploadingCategory, setUploadingCategory] = useState<string | null>(null);
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [docError, setDocError] = useState("");
 
   interface GroupedRecord {
     firstId: string;
@@ -265,6 +284,26 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
     if (res.ok) router.push("/staff");
     setActingId(null);
     setShowConfirmation(null);
+  }
+
+  async function handleDocumentUpload(category: string, file: File) {
+    setUploadingCategory(category);
+    setDocError("");
+    const formData = new FormData();
+    formData.append("userId", staff.id);
+    formData.append("category", category);
+    formData.append("file", file);
+
+    const res = await fetch("/api/staff-documents", { method: "POST", body: formData });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setDocError(data.error || "Upload failed");
+      setUploadingCategory(null);
+      return;
+    }
+
+    router.refresh();
+    setUploadingCategory(null);
   }
 
   function getApprovalStatus(status: string, reviewedBy: { id: string; name: string } | null): string {
@@ -524,6 +563,95 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
           })}
         </div>
       )}
+
+      {/* Documents — manager only */}
+      <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>
+        Documents
+      </h2>
+
+      {docError && <p className="form-error mb-2">{docError}</p>}
+
+      <Card style={{ marginBottom: "1.25rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+          {documents.map((cat) => {
+            const latest = cat.files[0] ?? null;
+            const hasHistory = cat.files.length > 1;
+            const isExpanded = expandedCategory === cat.category;
+            return (
+              <div key={cat.category} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.65rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "var(--color-text)" }}>{cat.category}</p>
+                  {latest ? (
+                    <div style={{ marginTop: "0.2rem" }}>
+                      <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>{latest.fileName}</span>
+                      <span style={{ fontSize: "0.7rem", color: "var(--color-text-light)", marginLeft: "0.5rem" }}>
+                        {new Date(latest.uploadedAt).toLocaleDateString()} by {latest.uploadedByName}
+                      </span>
+                    </div>
+                  ) : (
+                    <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "var(--color-text-light)", fontStyle: "italic" }}>
+                      Not uploaded yet
+                    </p>
+                  )}
+                  {hasHistory && (
+                    <button
+                      onClick={() => setExpandedCategory(isExpanded ? null : cat.category)}
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", color: "var(--color-brand)", fontWeight: 600, padding: 0, marginTop: "0.15rem" }}
+                    >
+                      {isExpanded ? "Hide" : `View ${cat.files.length - 1} previous versions`}
+                    </button>
+                  )}
+                  {isExpanded && hasHistory && (
+                    <div style={{ marginTop: "0.4rem", paddingLeft: "0.5rem", borderLeft: "2px solid var(--color-border)" }}>
+                      {cat.files.slice(1).map((f) => (
+                        <div key={f.id} style={{ fontSize: "0.78rem", padding: "0.15rem 0", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <a
+                            href={`/api/attachments?url=${encodeURIComponent(f.fileUrl)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{ color: "var(--color-brand)", fontWeight: 600 }}
+                          >
+                            {f.fileName}
+                          </a>
+                          <span style={{ color: "var(--color-text-light)" }}>
+                            {new Date(f.uploadedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0, marginLeft: "0.75rem" }}>
+                  {latest && (
+                    <a
+                      href={`/api/attachments?url=${encodeURIComponent(latest.fileUrl)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-ghost btn-sm"
+                    >
+                      View
+                    </a>
+                  )}
+                  <label className="btn btn-primary btn-sm" style={{ cursor: "pointer", position: "relative" }}>
+                    {uploadingCategory === cat.category ? "Uploading..." : latest ? "Replace" : "Upload"}
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
+                      disabled={uploadingCategory === cat.category}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleDocumentUpload(cat.category, f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.75rem" }}>
         <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: 0, paddingTop: "0.35rem" }}>

@@ -39,6 +39,8 @@ model User {
   attendance      AttendanceRecord[] @relation("UserAttendance")
   reviewed        AttendanceRecord[] @relation("ReviewedBy")
   leaveGrants     LeaveGrant[]
+  documents       StaffDocument[]    @relation("StaffDocuments")
+  uploadedDocs    StaffDocument[]    @relation("UploadedDocuments")
 }
 
 model Settings {
@@ -122,4 +124,18 @@ model Participant {
 
   @@index([name])
   @@index([localParticipantId])
+}
+
+model StaffDocument {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation("StaffDocuments", fields: [userId], references: [id])
+  category     String
+  fileUrl      String
+  fileName     String
+  uploadedById String
+  uploadedBy   User     @relation("UploadedDocuments", fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
+
+  @@index([userId, category])
 }
