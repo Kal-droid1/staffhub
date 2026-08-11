@@ -63,8 +63,6 @@ interface Props {
 const ROLE_OPTIONS = ["STAFF", "MANAGER", "ADMIN"];
 const PAGE_SIZE = 12;
 
-const NON_ROUTINE_STATUSES = new Set(["ABSENT", "PENDING", "PERMISSION", "ANNUAL_LEAVE", "OTHER", "FIELD_WORK"]);
-
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -89,7 +87,10 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1);
   const [summaryYear, setSummaryYear] = useState(now.getFullYear());
 
-  const [filterStatus, setFilterStatus] = useState("notable");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterFromDate, setFilterFromDate] = useState("");
+  const [filterToDate, setFilterToDate] = useState("");
   const [page, setPage] = useState(0);
 
   interface GroupedRecord {
@@ -162,10 +163,36 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
   }, [records, summaryMonth, summaryYear]);
 
   const filteredRecords = useMemo(() => {
-    if (filterStatus === "all") return groupedRecords;
-    if (filterStatus === "notable") return groupedRecords.filter((r) => NON_ROUTINE_STATUSES.has(r.status));
-    return groupedRecords.filter((r) => r.status === filterStatus);
-  }, [groupedRecords, filterStatus]);
+    let result = groupedRecords;
+
+    if (filterType !== "all") {
+      result = result.filter((r) => r.requestedStatus === filterType);
+    }
+
+    if (filterStatus !== "all") {
+      result = result.filter((r) => getApprovalStatus(r.status, r.reviewedBy) === filterStatus);
+    }
+
+    if (filterFromDate) {
+      const from = new Date(filterFromDate);
+      result = result.filter((r) => {
+        const d = new Date(r.dateRange.split(" \u2013 ")[0]);
+        return d >= from;
+      });
+    }
+
+    if (filterToDate) {
+      const to = new Date(filterToDate);
+      to.setHours(23, 59, 59, 999);
+      result = result.filter((r) => {
+        const rangeEnd = r.dateRange.split(" \u2013 ");
+        const d = new Date(rangeEnd[rangeEnd.length - 1]);
+        return d <= to;
+      });
+    }
+
+    return result;
+  }, [groupedRecords, filterType, filterStatus, filterFromDate, filterToDate]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRecords.length / PAGE_SIZE));
   const clampedPage = Math.min(page, totalPages - 1);
@@ -240,18 +267,26 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
     setShowConfirmation(null);
   }
 
-  function getStatusVariant(status: string): "present" | "absent" | "pending" | "leave" {
-    if (status === "PENDING") return "pending";
-    if (status === "PRESENT" || status === "FIELD_WORK") return "present";
-    if (status === "ABSENT") return "absent";
-    return "leave";
-  }
-
-  function getStatusLabel(status: string, reviewedBy: { id: string; name: string } | null): string {
+  function getApprovalStatus(status: string, reviewedBy: { id: string; name: string } | null): string {
     if (status === "PENDING") return "Pending";
     if (status === "PRESENT" || status === "FIELD_WORK") return "Present";
     if (status === "ABSENT") return reviewedBy ? "Rejected" : "Absent";
-    return reviewedBy ? "Approved" : status;
+    if (status === "PERMISSION" || status === "ANNUAL_LEAVE" || status === "OTHER") {
+      return reviewedBy ? "Approved" : "Pending";
+    }
+    return "Unknown";
+  }
+
+  function getStatusLabel(status: string, reviewedBy: { id: string; name: string } | null): string {
+    return getApprovalStatus(status, reviewedBy);
+  }
+
+  function getStatusVariant(status: string, reviewedBy: { id: string; name: string } | null): "approved" | "rejected" | "pending" {
+    const approval = getApprovalStatus(status, reviewedBy);
+    if (approval === "Pending") return "pending";
+    if (approval === "Approved" || approval === "Present") return "approved";
+    if (approval === "Rejected" || approval === "Absent") return "rejected";
+    return "pending";
   }
 
   const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
@@ -490,29 +525,64 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
         </div>
       )}
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.5rem" }}>
-        <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: 0 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.75rem" }}>
+        <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: 0, paddingTop: "0.35rem" }}>
           Request History
         </h2>
-        <div className="flex-row gap-sm">
-          <select
-            value={filterStatus}
-            onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
-            className="form-select"
-            style={{ maxWidth: 180, fontSize: "0.8125rem" }}
-          >
-            <option value="notable">Notable events</option>
-            <option value="all">All records</option>
-            <option value="PRESENT">Present</option>
-            <option value="ABSENT">Absent</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="PERMISSION">Permission</option>
-            <option value="ANNUAL_LEAVE">Annual Leave</option>
-            <option value="OTHER">Other</option>
-            <option value="FIELD_WORK">Field Work</option>
-          </select>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: "0.5rem", flexWrap: "wrap" }}>
+          <div>
+            <label className="form-label" style={{ fontSize: "0.7rem", marginBottom: 2 }}>Type</label>
+            <select
+              value={filterType}
+              onChange={(e) => { setFilterType(e.target.value); setPage(0); }}
+              className="form-select"
+              style={{ minWidth: 120, fontSize: "0.8125rem" }}
+            >
+              <option value="all">All types</option>
+              <option value="PRESENT">Present</option>
+              <option value="ABSENT">Absent</option>
+              <option value="PERMISSION">Permission</option>
+              <option value="ANNUAL_LEAVE">Annual Leave</option>
+              <option value="OTHER">Other</option>
+              <option value="FIELD_WORK">Field Work</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label" style={{ fontSize: "0.7rem", marginBottom: 2 }}>Status</label>
+            <select
+              value={filterStatus}
+              onChange={(e) => { setFilterStatus(e.target.value); setPage(0); }}
+              className="form-select"
+              style={{ minWidth: 110, fontSize: "0.8125rem" }}
+            >
+              <option value="all">All statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Approved">Approved</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Present">Present</option>
+              <option value="Absent">Absent</option>
+            </select>
+          </div>
+          <div>
+            <label className="form-label" style={{ fontSize: "0.7rem", marginBottom: 2 }}>From</label>
+            <input
+              type="date"
+              className="form-input"
+              value={filterFromDate}
+              onChange={(e) => { setFilterFromDate(e.target.value); setPage(0); }}
+              style={{ minWidth: 135, fontSize: "0.8125rem", padding: "0.35rem 0.5rem" }}
+            />
+          </div>
+          <div>
+            <label className="form-label" style={{ fontSize: "0.7rem", marginBottom: 2 }}>To</label>
+            <input
+              type="date"
+              className="form-input"
+              value={filterToDate}
+              onChange={(e) => { setFilterToDate(e.target.value); setPage(0); }}
+              style={{ minWidth: 135, fontSize: "0.8125rem", padding: "0.35rem 0.5rem" }}
+            />
+          </div>
         </div>
       </div>
 
@@ -544,7 +614,7 @@ export default function StaffProfileClient({ staff, balances, records, grants }:
                   <td data-label="Date" style={{ whiteSpace: "nowrap" }}>{r.dateRange}</td>
                   <td data-label="Type">{label}</td>
                   <td data-label="Status" style={{ textAlign: "center" }}>
-                    <StatusPill status={getStatusVariant(r.status)} label={getStatusLabel(r.status, r.reviewedBy)} />
+                    <StatusPill status={getStatusVariant(r.status, r.reviewedBy)} label={getStatusLabel(r.status, r.reviewedBy)} />
                   </td>
                   <td data-label="Note" className="text-muted">{r.note || "\u2014"}</td>
                   <td data-label="Attachment">
