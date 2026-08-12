@@ -490,6 +490,7 @@ body {
   align-items: center;
   justify-content: space-between;
   flex: 1;
+  padding-left: 2rem;
 }
 
 .navbar-links {

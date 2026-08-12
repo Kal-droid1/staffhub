@@ -49,6 +49,7 @@ export default function NavBar() {
               style={{ borderRadius: 6, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}
             />
             <span style={{ color: "white", fontWeight: 800, fontSize: "1.25rem", letterSpacing: "-0.01em", textShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>StaffHub</span>
+            <span style={{ width: 1, height: 24, background: "rgba(255,255,255,0.2)", alignSelf: "center" }} />
           </div>
         </div>
         <button
