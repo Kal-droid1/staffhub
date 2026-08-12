@@ -29,8 +29,8 @@ interface Props {
   initialStaff: StaffMember[];
 }
 
-const ROLE_OPTIONS = ["STAFF", "MANAGER", "ADMIN"];
 const PAGE_SIZE = 10;
+const ROLE_OVERRIDE_OPTIONS = ["MANAGER", "ADMIN"];
 
 function getInitials(name: string): string {
   return name
@@ -42,10 +42,21 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function autoRole(jobTitleName: string | undefined | null): string {
+  if (jobTitleName === "Director") return "ADMIN";
+  return "STAFF";
+}
+
 const ROLE_STYLE: Record<string, { bg: string; text: string; shadow: string }> = {
   STAFF: { bg: "var(--color-muted)", text: "var(--color-text)", shadow: "none" },
   MANAGER: { bg: "#D9A441", text: "#fff", shadow: "0 2px 8px rgba(217,164,65,0.4)" },
   ADMIN: { bg: "#1F6B4D", text: "#fff", shadow: "0 2px 8px rgba(31,107,77,0.4)" },
+};
+
+const AVATAR_BG: Record<string, string> = {
+  STAFF: "#6b7b6f",
+  MANAGER: "#D9A441",
+  ADMIN: "#1F6B4D",
 };
 
 export default function StaffClient({ initialStaff }: Props) {
@@ -56,8 +67,9 @@ export default function StaffClient({ initialStaff }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("STAFF");
   const [jobTitleId, setJobTitleId] = useState("");
+  const [grantElevated, setGrantElevated] = useState(false);
+  const [overrideRole, setOverrideRole] = useState("MANAGER");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -81,13 +93,20 @@ export default function StaffClient({ initialStaff }: Props) {
   const showingFrom = staff.length === 0 ? 0 : clampedPage * PAGE_SIZE + 1;
   const showingTo = Math.min((clampedPage + 1) * PAGE_SIZE, staff.length);
 
+  function computedRole(): string {
+    if (grantElevated) return overrideRole;
+    const jt = jobTitles.find((t) => t.id === jobTitleId);
+    return autoRole(jt?.name);
+  }
+
   function resetForm() {
     setShowForm(false);
     setEditingId(null);
     setName("");
     setEmail("");
-    setRole("STAFF");
     setJobTitleId("");
+    setGrantElevated(false);
+    setOverrideRole("MANAGER");
     setPassword("");
     setError("");
   }
@@ -96,8 +115,9 @@ export default function StaffClient({ initialStaff }: Props) {
     setEditingId(s.id);
     setName(s.name);
     setEmail(s.email);
-    setRole(s.role);
     setJobTitleId(s.jobTitleId ?? "");
+    setGrantElevated(s.role === "MANAGER" || s.role === "ADMIN");
+    setOverrideRole(s.role === "MANAGER" || s.role === "ADMIN" ? s.role : "MANAGER");
     setPassword("");
     setShowForm(true);
   }
@@ -112,6 +132,7 @@ export default function StaffClient({ initialStaff }: Props) {
     setSaving(true);
     setError("");
 
+    const role = computedRole();
     const isNew = !editingId;
     const payload: Record<string, unknown> = {
       name: name.trim(),
@@ -245,126 +266,192 @@ export default function StaffClient({ initialStaff }: Props) {
             <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>delete</span>
             Trash
           </Link>
-          {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.5rem 1.5rem",
-                background: "#1F6B4D",
-                color: "#fff",
-                border: "none",
-                borderRadius: "0.5rem",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                cursor: "pointer",
-                boxShadow: "0 4px 15px rgba(217,164,65,0.4)",
-                transition: "all 0.3s",
-                fontFamily: "inherit",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#155038";
-                e.currentTarget.style.boxShadow = "0 6px 20px rgba(217,164,65,0.5)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#1F6B4D";
-                e.currentTarget.style.boxShadow = "0 4px 15px rgba(217,164,65,0.4)";
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>add</span>
-              Add Staff
-            </button>
-          )}
+          <button
+            onClick={() => setShowForm(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              padding: "0.5rem 1.5rem",
+              background: "#1F6B4D",
+              color: "#fff",
+              border: "none",
+              borderRadius: "0.5rem",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              boxShadow: "0 4px 15px rgba(217,164,65,0.4)",
+              transition: "all 0.3s",
+              fontFamily: "inherit",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "#155038";
+              e.currentTarget.style.boxShadow = "0 6px 20px rgba(217,164,65,0.5)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "#1F6B4D";
+              e.currentTarget.style.boxShadow = "0 4px 15px rgba(217,164,65,0.4)";
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>add</span>
+            Add Staff
+          </button>
         </div>
       </div>
 
+      {/* Modal overlay for Add/Edit form */}
       {showForm && (
-        <Card style={{ marginBottom: "1.5rem" }}>
-          <form onSubmit={handleSave}>
-            <h3 style={{ marginTop: 0, color: "var(--color-brand)", fontSize: "1rem" }}>
-              {editingId ? "Edit Staff" : "New Staff"}
-            </h3>
-
-            <div style={{ marginBottom: "0.75rem" }}>
-              <label className="form-label">Name</label>
-              <input
-                type="text"
-                className="form-input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-
-            <div style={{ marginBottom: "0.75rem" }}>
-              <label className="form-label">Email</label>
-              <input
-                type="email"
-                className="form-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <div style={{ marginBottom: "0.75rem" }}>
-              <label className="form-label">Role</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="form-select"
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={resetForm}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 500,
+              width: "calc(100% - 2rem)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.1rem", fontWeight: 700 }}>
+                {editingId ? "Edit Staff" : "New Staff"}
+              </h3>
+              <button
+                onClick={resetForm}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1.5rem",
+                  color: "#1F6B4D",
+                  lineHeight: 1,
+                  padding: "0.25rem",
+                }}
+                aria-label="Close"
               >
-                {ROLE_OPTIONS.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
+                ✕
+              </button>
             </div>
 
-            <div style={{ marginBottom: "0.75rem" }}>
-              <label className="form-label">Job Title</label>
-              <select
-                value={jobTitleId}
-                onChange={(e) => setJobTitleId(e.target.value)}
-                className="form-select"
-              >
-                <option value="">— None —</option>
-                {jobTitles.map((jt) => (
-                  <option key={jt.id} value={jt.id}>
-                    {jt.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {!editingId && (
+            <form onSubmit={handleSave}>
               <div style={{ marginBottom: "0.75rem" }}>
-                <label className="form-label">Initial Password</label>
+                <label className="form-label">Name</label>
                 <input
                   type="text"
                   className="form-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   required
                 />
               </div>
-            )}
 
-            {error && <p className="form-error mb-1">{error}</p>}
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  className="form-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
 
-            <div className="flex-row gap-sm">
-              <button type="submit" disabled={saving} className="btn btn-success">
-                {saving ? "Saving..." : "Save"}
-              </button>
-              <button type="button" onClick={resetForm} className="btn btn-ghost">
-                Cancel
-              </button>
-            </div>
-          </form>
-        </Card>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Job Title</label>
+                <select
+                  value={jobTitleId}
+                  onChange={(e) => setJobTitleId(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="">— Select a job title —</option>
+                  {jobTitles.map((jt) => (
+                    <option key={jt.id} value={jt.id}>
+                      {jt.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="form-hint" style={{ marginTop: "0.35rem" }}>
+                  Role will be set automatically: Director → ADMIN, all others → STAFF
+                </p>
+              </div>
+
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem", fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    checked={grantElevated}
+                    onChange={(e) => setGrantElevated(e.target.checked)}
+                  />
+                  Grant elevated access
+                </label>
+                {grantElevated && (
+                  <div style={{ marginTop: "0.5rem", marginLeft: "1.5rem" }}>
+                    <label className="form-label">Override Role</label>
+                    <select
+                      value={overrideRole}
+                      onChange={(e) => setOverrideRole(e.target.value)}
+                      className="form-select"
+                    >
+                      {ROLE_OVERRIDE_OPTIONS.map((r) => (
+                        <option key={r} value={r}>
+                          {r}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {!editingId && (
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Initial Password</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+
+              {error && <p className="form-error mb-1">{error}</p>}
+
+              <div className="flex-row gap-sm" style={{ marginTop: "0.25rem" }}>
+                <button type="submit" disabled={saving} className="btn btn-success">
+                  {saving ? "Saving..." : "Save"}
+                </button>
+                <button type="button" onClick={resetForm} className="btn btn-ghost">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Glass-card table container */}
@@ -450,6 +537,7 @@ export default function StaffClient({ initialStaff }: Props) {
           <tbody style={{ fontSize: "0.875rem" }}>
             {pagedStaff.map((s) => {
               const roleStyle = ROLE_STYLE[s.role] ?? ROLE_STYLE.STAFF;
+              const avatarBg = AVATAR_BG[s.role] ?? AVATAR_BG.STAFF;
               return (
                 <tr
                   key={s.id}
@@ -479,7 +567,7 @@ export default function StaffClient({ initialStaff }: Props) {
                         width: 48,
                         height: 48,
                         borderRadius: "50%",
-                        background: s.role === "MANAGER" ? "#D9A441" : s.role === "ADMIN" ? "#1F6B4D" : "var(--color-muted)",
+                        background: avatarBg,
                         color: "#fff",
                         border: "2px solid #fff",
                         boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
@@ -809,6 +897,8 @@ export default function StaffClient({ initialStaff }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Deactivate confirmation (keep outside modal) */}
     </div>
   );
 }
