@@ -6,6 +6,7 @@ interface RadialGaugeProps {
   size?: number;
   strokeWidth?: number;
   label?: string;
+  gradient?: boolean;
 }
 
 export default function RadialGauge({
@@ -14,8 +15,11 @@ export default function RadialGauge({
   size = 100,
   strokeWidth = 8,
   label,
+  gradient = false,
 }: RadialGaugeProps) {
   const ratio = Math.min(Math.max(max > 0 ? value / max : 0, 0), 1);
+  const gradientId = `rg-grad-${Math.random().toString(36).slice(2, 8)}`;
+
   const colorVar =
     ratio > 0.5
       ? "var(--color-success)"
@@ -32,6 +36,14 @@ export default function RadialGauge({
   return (
     <div className="radial-gauge">
       <svg width={size} height={size} style={{ display: "block" }}>
+        {gradient && (
+          <defs>
+            <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#1F6B4D" />
+              <stop offset="100%" stopColor="#D9A441" />
+            </linearGradient>
+          </defs>
+        )}
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -45,7 +57,7 @@ export default function RadialGauge({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={colorVar}
+          stroke={gradient ? `url(#${gradientId})` : colorVar}
           strokeWidth={strokeWidth}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -58,7 +70,7 @@ export default function RadialGauge({
           y={size / 2 + 2}
           textAnchor="middle"
           dominantBaseline="middle"
-          fill={colorVar}
+          fill={gradient ? "#1F6B4D" : colorVar}
           fontWeight={800}
           fontSize={fontSize}
           fontFamily="system-ui, -apple-system, sans-serif"

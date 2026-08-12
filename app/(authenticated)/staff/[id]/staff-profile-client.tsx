@@ -851,7 +851,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
               const maxVal = Math.max(b.granted, b.remaining + b.used);
               return (
                 <div key={b.leaveTypeId} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <RadialGauge value={b.remaining} max={maxVal} size={180} strokeWidth={10} />
+                  <RadialGauge value={b.remaining} max={maxVal} size={180} strokeWidth={10} gradient />
                   <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: "0.5rem", marginBottom: "0.25rem" }}>
                     Days Left
                   </div>

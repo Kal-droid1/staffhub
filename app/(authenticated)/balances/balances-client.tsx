@@ -251,7 +251,7 @@ export default function BalancesClient({ initialSummary, leaveTypes, initialGran
                           </span>
                         )}
                       </div>
-                      <RadialGauge value={b.remaining} max={maxVal} size={120} strokeWidth={9} />
+                      <RadialGauge value={b.remaining} max={maxVal} size={120} strokeWidth={9} gradient />
                       <div className="flex-row gap-lg" style={{ justifyContent: "center" }}>
                         <div style={{ textAlign: "center" }}>
                           <div className="text-sm text-muted">Granted</div>
