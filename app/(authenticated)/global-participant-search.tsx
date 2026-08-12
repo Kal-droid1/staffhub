@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
 
 interface Participant {
   id: string;
@@ -19,6 +20,8 @@ interface ParticipantDetail extends Participant {
 }
 
 export default function GlobalParticipantSearch() {
+  const { data: session } = useSession();
+  const isManager = session?.user?.role === "MANAGER";
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Participant[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -211,12 +214,39 @@ export default function GlobalParticipantSearch() {
                 right: 8,
                 top: "50%",
                 transform: "translateY(-50%)",
-                fontSize: "0.65rem",
-                color: "var(--color-text-muted)",
+                width: 14,
+                height: 14,
+                border: "2px solid rgba(31,107,77,0.15)",
+                borderTopColor: "#1F6B4D",
+                borderRadius: "50%",
+                animation: "spin 0.6s linear infinite",
               }}
+            />
+          )}
+
+          {isManager && (
+            <a
+              href="/participants/import"
+              style={{
+                position: "absolute",
+                right: loading ? 30 : 8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#1F6B4D",
+                fontSize: "0.65rem",
+                fontWeight: 600,
+                textDecoration: "none",
+                padding: "0.15rem 0.4rem",
+                borderRadius: "0.25rem",
+                display: loading ? "none" : "flex",
+                alignItems: "center",
+                gap: "0.2rem",
+              }}
+              title="Import participants"
             >
-              …
-            </span>
+              <span className="material-symbols-outlined" style={{ fontSize: "0.85rem" }}>upload</span>
+              Import
+            </a>
           )}
 
           {/* Results dropdown */}
