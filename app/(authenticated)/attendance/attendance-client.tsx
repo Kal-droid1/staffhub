@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 import StatusPill from "@/modules/core/components/status-pill";
 import PersonRow from "@/modules/core/components/person-row";
-import { formatDays, formatDaysLabel, formatAttendanceStatus } from "@/lib/format";
+import { formatDays, formatDaysLabel, formatAttendanceStatus, formatDate } from "@/lib/format";
 import { haversineDistance } from "@/lib/geo";
 
 interface TodayRecord {
@@ -564,8 +564,8 @@ export default function AttendanceClient({
       const first = recs[0];
       const last = recs[recs.length - 1];
       const dateRange = recs.length > 1
-        ? `${new Date(first.date).toLocaleDateString()} - ${new Date(last.date).toLocaleDateString()}`
-        : new Date(first.date).toLocaleDateString();
+        ? `${formatDate(first.date)} - ${formatDate(last.date)}`
+        : formatDate(first.date);
 
       result.push({
         firstId: first.id,
@@ -706,7 +706,7 @@ export default function AttendanceClient({
                 <>
                   <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65, fontWeight: 700 }}>On leave until</p>
                   <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 600, color: "#D9A441", fontFamily: "var(--font-mono)" }}>
-                    {new Date(ongoingLeaveUntil).toLocaleDateString()}
+                    {formatDate(ongoingLeaveUntil)}
                   </p>
                 </>
               ) : secondsUntilTomorrow > 0 ? (
@@ -809,7 +809,7 @@ export default function AttendanceClient({
             </p>
             {ongoingLeaveUntil ? (
               <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem", opacity: 0.6 }}>
-                You&apos;re on leave until {new Date(ongoingLeaveUntil).toLocaleDateString()}.
+                You&apos;re on leave until {formatDate(ongoingLeaveUntil)}.
               </p>
             ) : secondsUntilTomorrow > 0 ? (
               <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem", opacity: 0.7 }}>
@@ -842,8 +842,8 @@ export default function AttendanceClient({
       const first = recs[0];
       const last = recs[recs.length - 1];
       const dateRange = recs.length > 1
-        ? `${new Date(first.date).toLocaleDateString()} \u2013 ${new Date(last.date).toLocaleDateString()}`
-        : new Date(first.date).toLocaleDateString();
+        ? `${formatDate(first.date)} \u2013 ${formatDate(last.date)}`
+        : formatDate(first.date);
 
       result.push({
         firstId: first.id,
@@ -1721,7 +1721,7 @@ export default function AttendanceClient({
                                       ) : (
                                         filteredRecords.map((r, i) => (
                                         <tr key={i}>
-                                          <td data-label="Date" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>{new Date(r.date).toLocaleDateString()}</td>
+                                          <td data-label="Date" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>{formatDate(r.date)}</td>
                                           <td data-label="Status" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)" }}>
                                             <StatusPill
                                               status={

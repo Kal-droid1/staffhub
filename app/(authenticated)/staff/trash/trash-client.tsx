@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Card from "@/modules/core/components/card";
+import { formatDate } from "@/lib/format";
 
 interface TrashMember {
   id: string;
@@ -55,14 +56,9 @@ export default function TrashClient({ initialTrash }: Props) {
     router.refresh();
   }
 
-  function formatDeletedDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  function formatTrashDate(dateStr: string) {
+    const d = new Date(dateStr);
+    return `${formatDate(d)}, ${d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
   }
 
   return (
@@ -116,7 +112,7 @@ export default function TrashClient({ initialTrash }: Props) {
                   </td>
                   <td data-label="Job Title">{s.jobTitle?.name || "\u2014"}</td>
                   <td data-label="Deleted" style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
-                    {formatDeletedDate(s.deletedAt)}
+                    {formatTrashDate(s.deletedAt)}
                   </td>
                   <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                     <div className="flex-row gap-sm">

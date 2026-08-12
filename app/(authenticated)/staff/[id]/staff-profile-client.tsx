@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import StatusPill from "@/modules/core/components/status-pill";
 import RadialGauge from "@/modules/core/components/radial-gauge";
-import { formatDays, formatAttendanceStatus } from "@/lib/format";
+import { formatDays, formatAttendanceStatus, formatDate } from "@/lib/format";
 
 interface StaffMember {
   id: string;
@@ -168,8 +168,8 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
       const first = recs[0];
       const last = recs[recs.length - 1];
       const dateRange = recs.length > 1
-        ? `${new Date(first.date).toLocaleDateString()} \u2013 ${new Date(last.date).toLocaleDateString()}`
-        : new Date(first.date).toLocaleDateString();
+        ? `${formatDate(first.date)} \u2013 ${formatDate(last.date)}`
+        : formatDate(first.date);
 
       result.push({
         firstId: first.id,
@@ -577,7 +577,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(191,201,193,0.3)" }}>
               <span style={{ fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>Joined</span>
-              <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>{new Date(staff.createdAt).toLocaleDateString()}</span>
+              <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>{formatDate(staff.createdAt)}</span>
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(191,201,193,0.3)" }}>
@@ -928,7 +928,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                           {latest.fileName}
                         </div>
                         <div style={{ color: "var(--color-text-muted)" }}>
-                          {new Date(latest.uploadedAt).toLocaleDateString()} by {latest.uploadedByName}
+                          {formatDate(latest.uploadedAt)} by {latest.uploadedByName}
                         </div>
                         {hasHistory && (
                           <div style={{ marginTop: "0.2rem", color: "#1F6B4D", fontWeight: 600, fontSize: "0.65rem" }}>
@@ -1078,7 +1078,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                                     {f.fileName}
                                   </div>
                                   <div style={{ color: "var(--color-text-light)" }}>
-                                    {new Date(f.uploadedAt).toLocaleDateString()} by {f.uploadedByName}
+                                    {formatDate(f.uploadedAt)} by {f.uploadedByName}
                                   </div>
                                   <div style={{ display: "flex", gap: "0.25rem" }}>
                                     <a

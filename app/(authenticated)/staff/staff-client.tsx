@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { formatDate } from "@/lib/format";
 
 interface StaffMember {
   id: string;
@@ -272,13 +273,8 @@ export default function StaffClient({ initialStaff }: Props) {
   }
 
   function formatTrashDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const d = new Date(dateStr);
+    return `${formatDate(d)}, ${d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
   }
 
   return (

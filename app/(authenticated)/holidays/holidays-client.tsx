@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
+import { formatDate } from "@/lib/format";
 
 interface Holiday {
   id: string;
@@ -197,7 +198,7 @@ export default function HolidaysClient({ initialHolidays: initialData, initialYe
               {holidays.map((h) => (
                 <tr key={h.id}>
                   <td data-label="Date" style={{ whiteSpace: "nowrap" }}>
-                    {new Date(h.date).toLocaleDateString()}
+                    {formatDate(h.date)}
                   </td>
                   <td data-label="Name" style={{ fontWeight: 600 }}>{h.name}</td>
                   <td data-label="Type" style={{ textAlign: "center" }}>
