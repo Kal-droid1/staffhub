@@ -848,7 +848,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
           )}
         </section>
 
-        {/* Documents — keep entirely untouched */}
+        {/* Documents — card-grid layout */}
         <section>
           <h2 style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", margin: "0 0 0.75rem" }}>
             Documents
@@ -858,112 +858,294 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
           {docSuccess && <p className="form-success mb-2">{docSuccess}</p>}
 
           <div style={{
-            background: "rgba(250, 247, 240, 0.85)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255, 255, 255, 0.4)",
-            borderRadius: "0.75rem",
-            boxShadow: "0 8px 32px rgba(31, 107, 77, 0.08), 0 2px 8px rgba(0,0,0,0.04)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+            gap: "0.75rem",
             marginBottom: "1.25rem",
           }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
-              {documents.map((cat) => {
-                const latest = cat.files[0] ?? null;
-                const hasHistory = cat.files.length > 1;
-                const isExpanded = expandedCategory === cat.category;
-                return (
-                  <div key={cat.category} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.65rem 0", borderBottom: "1px solid var(--color-border-light)" }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: 700, color: "var(--color-text)" }}>{cat.category}</p>
-                      {latest ? (
-                        <div style={{ marginTop: "0.2rem" }}>
-                          <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>{latest.fileName}</span>
-                          <span style={{ fontSize: "0.7rem", color: "var(--color-text-light)", marginLeft: "0.5rem" }}>
-                            {new Date(latest.uploadedAt).toLocaleDateString()} by {latest.uploadedByName}
-                          </span>
-                        </div>
-                      ) : (
-                        <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "var(--color-text-light)", fontStyle: "italic" }}>
-                          Not uploaded yet
-                        </p>
-                      )}
-                      {hasHistory && (
-                        <button
-                          onClick={() => setExpandedCategory(isExpanded ? null : cat.category)}
-                          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.75rem", color: "var(--color-brand)", fontWeight: 600, padding: 0, marginTop: "0.15rem" }}
-                        >
-                          {isExpanded ? "Hide" : `View ${cat.files.length - 1} previous versions`}
-                        </button>
-                      )}
-                      {isExpanded && hasHistory && (
-                        <div style={{ marginTop: "0.4rem", paddingLeft: "0.5rem", borderLeft: "2px solid var(--color-border)" }}>
-                          {cat.files.slice(1).map((f) => (
-                            <div key={f.id} style={{ fontSize: "0.78rem", padding: "0.25rem 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem" }}>
-                              <div style={{ minWidth: 0 }}>
-                                <span style={{ color: "var(--color-text)", fontWeight: 600 }}>{f.fileName}</span>
-                                <span style={{ color: "var(--color-text-light)", marginLeft: "0.4rem" }}>
-                                  {new Date(f.uploadedAt).toLocaleDateString()} by {f.uploadedByName}
-                                </span>
-                              </div>
-                              <div style={{ display: "flex", gap: "0.35rem", flexShrink: 0 }}>
-                                <a
-                                  href={`/api/attachments?url=${encodeURIComponent(f.fileUrl)}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ fontSize: "0.7rem", padding: "0.2rem 0.5rem" }}
-                                >
-                                  View
-                                </a>
-                                <a
-                                  href={`/api/attachments?url=${encodeURIComponent(f.fileUrl)}&download=1`}
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ fontSize: "0.7rem", padding: "0.2rem 0.5rem" }}
-                                >
-                                  Download
-                                </a>
-                                <button
-                                  onClick={() => setDeleteTarget({ docId: f.id, category: cat.category, isLatest: false, hasPrevious: false })}
-                                  disabled={deletingId === f.id}
-                                  className="btn btn-ghost btn-sm"
-                                  style={{ fontSize: "0.7rem", padding: "0.2rem 0.5rem", color: "var(--color-danger)" }}
-                                >
-                                  {deletingId === f.id ? "…" : "Delete"}
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+            {documents.map((cat) => {
+              const latest = cat.files[0] ?? null;
+              const hasHistory = cat.files.length > 1;
+              const isExpanded = expandedCategory === cat.category;
+              const isUploaded = !!latest;
+
+              return (
+                <div
+                  key={cat.category}
+                  style={{
+                    background: isUploaded ? "rgba(250, 247, 240, 0.85)" : "rgba(250, 247, 240, 0.5)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                    border: isUploaded
+                      ? "1px solid rgba(255, 255, 255, 0.4)"
+                      : "1px dashed rgba(217, 164, 65, 0.4)",
+                    borderLeft: isUploaded ? "3px solid #1F6B4D" : "3px solid #D9A441",
+                    borderRadius: "0.5rem",
+                    boxShadow: isUploaded
+                      ? "0 4px 16px rgba(31, 107, 77, 0.06), 0 2px 4px rgba(0,0,0,0.03)"
+                      : "none",
+                    padding: "1rem",
+                    transition: "all 0.2s ease",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                  }}
+                >
+                  {/* Category header */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                    <div style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "6px",
+                      background: isUploaded ? "#1F6B4D" : "rgba(217,164,65,0.15)",
+                      color: isUploaded ? "#fff" : "#D9A441",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: "0.85rem",
+                      flexShrink: 0,
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>
+                        {isUploaded ? "description" : "upload_file"}
+                      </span>
                     </div>
-                    <div style={{ display: "flex", gap: "0.35rem", flexShrink: 0, marginLeft: "0.75rem" }}>
-                      {latest && (
+                    <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 700, color: isUploaded ? "#1F6B4D" : "var(--color-text)", lineHeight: 1.3 }}>
+                      {cat.category}
+                    </p>
+                  </div>
+
+                  {isUploaded ? (
+                    <>
+                      {/* File info */}
+                      <div style={{
+                        background: "rgba(255,255,255,0.6)",
+                        borderRadius: "0.35rem",
+                        padding: "0.5rem 0.6rem",
+                        fontSize: "0.7rem",
+                        border: "1px solid rgba(191,201,193,0.2)",
+                      }}>
+                        <div style={{ fontWeight: 600, color: "var(--color-text)", marginBottom: "0.15rem", wordBreak: "break-all" }}>
+                          {latest.fileName}
+                        </div>
+                        <div style={{ color: "var(--color-text-muted)" }}>
+                          {new Date(latest.uploadedAt).toLocaleDateString()} by {latest.uploadedByName}
+                        </div>
+                        {hasHistory && (
+                          <div style={{ marginTop: "0.2rem", color: "#1F6B4D", fontWeight: 600, fontSize: "0.65rem" }}>
+                            +{cat.files.length - 1} older version{cat.files.length > 2 ? "s" : ""}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions row */}
+                      <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+                        <a
+                          href={`/api/attachments?url=${encodeURIComponent(latest.fileUrl)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.2rem",
+                            padding: "0.3rem 0.5rem",
+                            background: "none",
+                            border: "1px solid rgba(191,201,193,0.4)",
+                            borderRadius: "0.35rem",
+                            color: "#1F6B4D",
+                            fontSize: "0.65rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            textDecoration: "none",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(31,107,77,0.06)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "0.85rem" }}>visibility</span>
+                          View
+                        </a>
+                        <a
+                          href={`/api/attachments?url=${encodeURIComponent(latest.fileUrl)}&download=1`}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.2rem",
+                            padding: "0.3rem 0.5rem",
+                            background: "none",
+                            border: "1px solid rgba(191,201,193,0.4)",
+                            borderRadius: "0.35rem",
+                            color: "#1F6B4D",
+                            fontSize: "0.65rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            textDecoration: "none",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(31,107,77,0.06)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "0.85rem" }}>download</span>
+                          Download
+                        </a>
+                        <button
+                          onClick={() => setDeleteTarget({ docId: latest.id, category: cat.category, isLatest: true, hasPrevious: cat.files.length > 1 })}
+                          disabled={deletingId === latest.id}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "0.2rem",
+                            padding: "0.3rem 0.5rem",
+                            background: "none",
+                            border: "1px solid rgba(186,26,26,0.3)",
+                            borderRadius: "0.35rem",
+                            color: "#ba1a1a",
+                            fontSize: "0.65rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(186,26,26,0.06)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "0.85rem" }}>delete</span>
+                          {deletingId === latest.id ? "…" : "Delete"}
+                        </button>
+                        <label style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.2rem",
+                          padding: "0.3rem 0.5rem",
+                          background: "#1F6B4D",
+                          color: "#fff",
+                          border: "none",
+                          borderRadius: "0.35rem",
+                          fontSize: "0.65rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          boxShadow: "0 1px 3px rgba(31,107,77,0.2)",
+                          position: "relative",
+                          transition: "background 0.15s",
+                        }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: "0.85rem" }}>swap_horiz</span>
+                          {uploadingCategory === cat.category ? "Uploading..." : "Replace"}
+                          <input
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            style={{ position: "absolute", inset: 0, opacity: 0, cursor: "pointer" }}
+                            disabled={uploadingCategory === cat.category}
+                            data-category={cat.category}
+                            onChange={(e) => {
+                              const f = e.target.files?.[0];
+                              if (f) handleDocumentUpload(cat.category, f);
+                              e.target.value = "";
+                            }}
+                          />
+                        </label>
+                      </div>
+
+                      {/* Version history toggle */}
+                      {hasHistory && (
                         <>
-                          <a
-                            href={`/api/attachments?url=${encodeURIComponent(latest.fileUrl)}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="btn btn-ghost btn-sm"
-                          >
-                            View
-                          </a>
-                          <a
-                            href={`/api/attachments?url=${encodeURIComponent(latest.fileUrl)}&download=1`}
-                            className="btn btn-ghost btn-sm"
-                          >
-                            Download
-                          </a>
                           <button
-                            onClick={() => setDeleteTarget({ docId: latest.id, category: cat.category, isLatest: true, hasPrevious: cat.files.length > 1 })}
-                            disabled={deletingId === latest.id}
-                            className="btn btn-danger btn-sm"
+                            onClick={() => setExpandedCategory(isExpanded ? null : cat.category)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              fontSize: "0.65rem",
+                              color: "#1F6B4D",
+                              fontWeight: 600,
+                              padding: 0,
+                              textAlign: "left",
+                              fontFamily: "inherit",
+                            }}
                           >
-                            {deletingId === latest.id ? "…" : "Delete"}
+                            {isExpanded ? "Hide version history" : `View ${cat.files.length - 1} previous version${cat.files.length > 2 ? "s" : ""}`} →
                           </button>
+                          {isExpanded && (
+                            <div style={{
+                              borderLeft: "2px solid rgba(31,107,77,0.2)",
+                              paddingLeft: "0.6rem",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "0.35rem",
+                            }}>
+                              {cat.files.slice(1).map((f) => (
+                                <div key={f.id} style={{ fontSize: "0.65rem", display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                                  <div style={{ fontWeight: 600, color: "var(--color-text)", wordBreak: "break-all" }}>
+                                    {f.fileName}
+                                  </div>
+                                  <div style={{ color: "var(--color-text-light)" }}>
+                                    {new Date(f.uploadedAt).toLocaleDateString()} by {f.uploadedByName}
+                                  </div>
+                                  <div style={{ display: "flex", gap: "0.25rem" }}>
+                                    <a
+                                      href={`/api/attachments?url=${encodeURIComponent(f.fileUrl)}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      style={{ fontSize: "0.6rem", color: "#1F6B4D", textDecoration: "none", fontWeight: 600 }}
+                                    >
+                                      View
+                                    </a>
+                                    <a
+                                      href={`/api/attachments?url=${encodeURIComponent(f.fileUrl)}&download=1`}
+                                      style={{ fontSize: "0.6rem", color: "#1F6B4D", textDecoration: "none", fontWeight: 600 }}
+                                    >
+                                      Download
+                                    </a>
+                                    <button
+                                      onClick={() => setDeleteTarget({ docId: f.id, category: cat.category, isLatest: false, hasPrevious: false })}
+                                      disabled={deletingId === f.id}
+                                      style={{
+                                        background: "none",
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontSize: "0.6rem",
+                                        color: "#ba1a1a",
+                                        fontWeight: 600,
+                                        padding: 0,
+                                        fontFamily: "inherit",
+                                      }}
+                                    >
+                                      {deletingId === f.id ? "…" : "Delete"}
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </>
                       )}
-                      <label className="btn btn-primary btn-sm" style={{ cursor: "pointer", position: "relative" }}>
-                        {uploadingCategory === cat.category ? "Uploading..." : latest ? "Replace" : "Upload"}
+                    </>
+                  ) : (
+                    /* Empty state */
+                    <>
+                      <p style={{ margin: 0, fontSize: "0.7rem", color: "var(--color-text-light)", fontStyle: "italic" }}>
+                        Not uploaded yet
+                      </p>
+                      <label style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "0.3rem",
+                        padding: "0.5rem 0.75rem",
+                        background: "#D9A441",
+                        color: "#0A261B",
+                        border: "none",
+                        borderRadius: "0.35rem",
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        boxShadow: "0 2px 8px rgba(217,164,65,0.3)",
+                        position: "relative",
+                        marginTop: "0.25rem",
+                        transition: "background 0.15s",
+                      }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: "0.9rem" }}>upload</span>
+                        {uploadingCategory === cat.category ? "Uploading..." : "Upload"}
                         <input
                           type="file"
                           accept=".pdf,.jpg,.jpeg,.png"
@@ -977,11 +1159,11 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                           }}
                         />
                       </label>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {deleteTarget && (
