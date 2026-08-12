@@ -81,7 +81,7 @@ interface Props {
 }
 
 const ROLE_OPTIONS = ["STAFF", "MANAGER"];
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 5;
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
@@ -824,10 +824,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
               return (
                 <div key={b.leaveTypeId} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                   <RadialGauge value={b.remaining} max={maxVal} size={180} strokeWidth={10} />
-                  <div style={{ fontSize: "2.5rem", fontWeight: 800, color: "#1F6B4D", position: "relative", marginTop: "-7rem", marginBottom: "2rem" }}>
-                    {formatDays(b.remaining)}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: "2.5rem", marginBottom: "0.25rem" }}>
+                  <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: "0.5rem", marginBottom: "0.25rem" }}>
                     Days Left
                   </div>
                   <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "#1F6B4D", marginBottom: "0.25rem" }}>
@@ -1240,7 +1237,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                     <td data-label="Note" style={{ padding: "1rem 1.5rem", color: "var(--color-text-muted)", maxWidth: "15rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.note || "\u2014"}</td>
                     <td data-label="Attachment" style={{ padding: "1rem 1.5rem", textAlign: "right" }}>
                       {r.attachmentUrl ? (
-                        <div className="flex-row gap-sm" style={{ justifyContent: "flex-end" }}>
+                        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
                           <a
                             href={`/api/attachments?url=${encodeURIComponent(r.attachmentUrl)}`}
                             target="_blank"
@@ -1257,7 +1254,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                           </a>
                         </div>
                       ) : (
-                        <span className="text-muted">{"\u2014"}</span>
+                        <span style={{ color: "var(--color-text-light)" }}>{"\u2014"}</span>
                       )}
                     </td>
                   </tr>
