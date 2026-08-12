@@ -154,53 +154,87 @@ export default function NavBar() {
 function ProfilePictureUpload({ onClose }: { onClose: () => void }) {
   const { data: session } = useSession();
   const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (!f.type.startsWith("image/")) { setError("Please select an image file."); return; }
+    if (f.size > 5 * 1024 * 1024) { setError("File must be under 5MB."); return; }
+    setError("");
+    setFile(f);
+    setAvatarUrl(null);
+    setPreviewUrl(URL.createObjectURL(f));
+  }
+
+  async function handleConfirm() {
     if (!file) return;
-    if (!file.type.startsWith("image/")) { setError("Please select an image file."); return; }
     setUploading(true); setError("");
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch("/api/account/avatar", { method: "POST", body: formData });
-    if (!res.ok) { setError("Upload failed."); setUploading(false); return; }
-    const data = await res.json();
-    setAvatarUrl(data.avatarUrl);
+    try {
+      const res = await fetch("/api/account/avatar", { method: "POST", body: formData });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error || `Upload failed (${res.status}).`); setUploading(false); return; }
+      setAvatarUrl(data.avatarUrl);
+      URL.revokeObjectURL(previewUrl!);
+      setPreviewUrl(null);
+      setFile(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Network error.");
+    }
     setUploading(false);
   }
+
+  const displayUrl = avatarUrl || previewUrl;
 
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
         <div style={{
           width: 80, height: 80, borderRadius: "50%",
-          background: avatarUrl ? `url(${avatarUrl}) center/cover` : "#6b7b6f",
+          background: displayUrl ? `url(${displayUrl}) center/cover` : "#6b7b6f",
           color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: "1.5rem", fontWeight: 700,
           border: "3px solid #fff", boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          transition: "background 0.2s",
         }}>
-          {!avatarUrl && (session?.user?.name?.charAt(0)?.toUpperCase() ?? "?")}
+          {!displayUrl && (session?.user?.name?.charAt(0)?.toUpperCase() ?? "?")}
         </div>
         <div>
-          <p style={{ margin: "0 0 0.35rem", fontWeight: 600, fontSize: "0.9rem" }}>
-            {avatarUrl ? "Photo updated!" : "Upload a new photo"}
-          </p>
+          {avatarUrl ? (
+            <p style={{ margin: "0 0 0.35rem", fontWeight: 600, fontSize: "0.9rem", color: "#1F6B4D" }}>Picture updated!</p>
+          ) : previewUrl ? (
+            <p style={{ margin: "0 0 0.35rem", fontWeight: 600, fontSize: "0.9rem" }}>Preview — confirm or change</p>
+          ) : (
+            <p style={{ margin: "0 0 0.35rem", fontWeight: 600, fontSize: "0.9rem" }}>Upload a new photo</p>
+          )}
           <label style={{
             display: "inline-block", padding: "0.4rem 1rem", background: "#1F6B4D",
             color: "#fff", borderRadius: "0.35rem", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer",
           }}>
-            {uploading ? "Uploading..." : avatarUrl ? "Change Photo" : "Choose file"}
-            <input type="file" accept="image/*" style={{ position: "absolute", opacity: 0, width: 0, height: 0 }} onChange={handleUpload} disabled={uploading} />
+            {uploading ? "Uploading..." : previewUrl ? "Choose a different photo" : "Choose file"}
+            <input type="file" accept="image/*" style={{ position: "absolute", opacity: 0, width: 0, height: 0 }} onChange={handleFileSelect} disabled={uploading} />
           </label>
         </div>
       </div>
       {error && <p className="form-error mb-1">{error}</p>}
       <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.25rem" }}>
+        {previewUrl && (
+          <button
+            onClick={handleConfirm}
+            disabled={uploading}
+            style={{ padding: "0.4rem 1rem", background: "#1F6B4D", color: "#fff", border: "none", borderRadius: "0.35rem", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {uploading ? "Saving…" : "Save"}
+          </button>
+        )}
         <button
           onClick={onClose}
-          style={{ padding: "0.4rem 1rem", background: "#1F6B4D", color: "#fff", border: "none", borderRadius: "0.35rem", fontWeight: 600, fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit" }}
+          style={{ padding: "0.4rem 1rem", background: "none", border: "1px solid var(--color-border)", borderRadius: "0.35rem", fontWeight: 500, fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit", color: "var(--color-text)" }}
         >
           {avatarUrl ? "Done" : "Close"}
         </button>
