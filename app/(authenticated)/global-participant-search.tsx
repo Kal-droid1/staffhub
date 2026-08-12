@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Participant {
   id: string;
@@ -14,6 +15,7 @@ interface Participant {
 }
 
 export default function GlobalParticipantSearch() {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Participant[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,6 +33,12 @@ export default function GlobalParticipantSearch() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [query]);
+
+  function selectParticipant(id: string) {
+    setResults(null);
+    setQuery("");
+    router.push(`/participants/${id}`);
+  }
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -161,6 +169,7 @@ export default function GlobalParticipantSearch() {
                 {results.map((p) => (
                   <div
                     key={p.id}
+                    onClick={() => selectParticipant(p.id)}
                     style={{
                       display: "flex",
                       alignItems: "center",
