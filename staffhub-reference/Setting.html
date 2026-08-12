@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StaffHub - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600&amp;family=Manrope:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-background": "#1c1c18",
+                      "surface-container": "#f0eee7",
+                      "surface-dim": "#dcdad3",
+                      "on-secondary": "#ffffff",
+                      "outline": "#6f7973",
+                      "primary-fixed": "#a8f2cc",
+                      "tertiary-fixed": "#d2e7dd",
+                      "on-secondary-fixed-variant": "#5f4100",
+                      "on-tertiary": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "primary-container": "#1f6b4d",
+                      "on-tertiary-fixed-variant": "#384b43",
+                      "tertiary-container": "#50635b",
+                      "surface-tint": "#1f6b4d",
+                      "secondary-fixed-dim": "#f5bd58",
+                      "inverse-on-surface": "#f3f0ea",
+                      "on-surface-variant": "#3f4943",
+                      "on-primary": "#ffffff",
+                      "on-tertiary-container": "#c9ded4",
+                      "background": "#fcf9f2",
+                      "on-primary-fixed-variant": "#005237",
+                      "on-primary-container": "#9ee9c3",
+                      "on-tertiary-fixed": "#0d1f19",
+                      "tertiary": "#394b44",
+                      "secondary-fixed": "#ffdeaa",
+                      "primary-fixed-dim": "#8cd6b1",
+                      "inverse-surface": "#31312c",
+                      "outline-variant": "#bfc9c1",
+                      "secondary-container": "#ffc55f",
+                      "on-error": "#ffffff",
+                      "on-secondary-container": "#755100",
+                      "inverse-primary": "#8cd6b1",
+                      "surface-variant": "#e5e2db",
+                      "tertiary-fixed-dim": "#b7cbc1",
+                      "surface-container-highest": "#e5e2db",
+                      "error": "#ba1a1a",
+                      "on-primary-fixed": "#002114",
+                      "on-error-container": "#93000a",
+                      "error-container": "#ffdad6",
+                      "primary": "#005237",
+                      "surface": "#fcf9f2",
+                      "surface-container-high": "#ebe8e1",
+                      "surface-bright": "#fcf9f2",
+                      "surface-container-low": "#f6f3ec",
+                      "on-surface": "#1c1c18",
+                      "on-secondary-fixed": "#271900",
+                      "secondary": "#7d5700"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "unit": "8px",
+                      "margin-sm": "16px",
+                      "margin-md": "24px",
+                      "container-padding": "32px",
+                      "margin-lg": "48px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Manrope"],
+                      "title-md": ["Manrope"],
+                      "label-caps": ["JetBrains Mono"],
+                      "body-lg": ["Manrope"],
+                      "headline-xl": ["Manrope"],
+                      "headline-lg": ["Manrope"],
+                      "body-sm": ["Manrope"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+              }
+            }
+          }
+        }
+      </script>
+<style>
+        .glass-panel {
+            background: rgba(252, 249, 242, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 12px 32px rgba(31, 107, 77, 0.08);
+        }
+        
+        .mesh-bg {
+            background-color: #FAF7F0;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(31, 107, 77, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(217, 164, 65, 0.12) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(140, 214, 177, 0.15) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        .input-glow:focus-within {
+            box-shadow: 0 0 0 2px rgba(31, 107, 77, 0.2);
+            border-color: #1f6b4d;
+        }
+      </style>
+</head>
+<body class="mesh-bg text-on-surface min-h-screen font-body-lg text-body-lg flex flex-col">
+<!-- TopNavBar -->
+<nav class="flex justify-between items-center w-full px-container-padding h-16 fixed top-0 z-50 bg-primary dark:bg-primary-container shadow-md">
+<div class="flex items-center gap-8">
+<span class="font-headline-lg text-headline-lg font-extrabold text-on-primary">StaffHub</span>
+<div class="hidden md:flex gap-6 h-full items-center">
+<a class="text-on-primary/80 font-medium hover:text-on-primary h-full flex items-center px-2 hover:bg-primary-container/20 transition-colors" href="#">Attendance</a>
+<!-- TODO: "Participants" nav link removed in real app — global search bar replaces it. Mockup artifact. -->
+<a class="text-on-primary/80 font-medium hover:text-on-primary h-full flex items-center px-2 hover:bg-primary-container/20 transition-colors" href="#">Participants</a>
+<!-- TODO: "Leave Types" nav link removed in real app — now lives in Settings gear icon. -->
+<a class="text-on-primary/80 font-medium hover:text-on-primary h-full flex items-center px-2 hover:bg-primary-container/20 transition-colors" href="#">Leave Types</a>
+<a class="text-on-primary font-bold border-b-2 border-secondary-container pb-1 h-full flex items-center px-2 hover:bg-primary-container/20 transition-colors opacity-90 transition-opacity" href="#">Staff</a>
+<a class="text-on-primary/80 font-medium hover:text-on-primary h-full flex items-center px-2 hover:bg-primary-container/20 transition-colors" href="#">Balances</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<!-- TODO: "Change Password" text link replaced by gear icon in real app, which links to /settings. Mockup artifact. -->
+<button class="text-on-primary/80 hover:text-on-primary font-medium hover:bg-primary-container/20 transition-colors px-3 py-2 rounded-lg">Change Password</button>
+<button class="text-on-primary font-bold hover:bg-primary-container/20 transition-colors px-3 py-2 rounded-lg border border-on-primary/30">Log out</button>
+</div>
+</nav>
+<!-- Main Content -->
+<main class="flex-grow pt-24 pb-12 px-margin-sm md:px-margin-md lg:px-container-padding max-w-7xl mx-auto w-full">
+<!-- Header -->
+<header class="mb-10">
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-2">Settings</h1>
+<p class="text-on-surface-variant">Manage your account, leave types, and job titles.</p>
+</header>
+<div class="flex flex-col lg:flex-row gap-gutter">
+<!-- Side Navigation (Settings Categories) -->
+<aside class="w-full lg:w-64 flex-shrink-0 mb-8 lg:mb-0">
+<nav class="flex lg:flex-col gap-2 overflow-x-auto pb-4 lg:pb-0 scrollbar-hide border-b lg:border-b-0 lg:border-l border-outline-variant/30 lg:pl-4">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-surface-container-highest text-on-surface font-label-caps text-label-caps relative whitespace-nowrap lg:whitespace-normal" href="#">
+<span class="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-lg lg:rounded-none lg:-left-[17px] lg:w-[2px] lg:h-full lg:rounded-full"></span>
+<span class="material-symbols-outlined text-[18px]">lock</span>
+                        CHANGE PASSWORD
+                    </a>
+<!-- TODO: "Profile Picture" tab removed in real app — moved to nav avatar popup. Mockup artifact. -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-highest/50 font-label-caps text-label-caps transition-colors whitespace-nowrap lg:whitespace-normal" href="#">
+<span class="material-symbols-outlined text-[18px]">event_note</span>
+                        LEAVE TYPES
+                    </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-highest/50 font-label-caps text-label-caps transition-colors whitespace-nowrap lg:whitespace-normal" href="#">
+<span class="material-symbols-outlined text-[18px]">work_outline</span>
+                        JOB TITLES
+                    </a>
+</nav>
+</aside>
+<!-- Settings Canvas -->
+<div class="flex-grow">
+<div class="glass-panel rounded-xl p-6 md:p-8 relative overflow-hidden">
+<!-- Amber Accent Line -->
+<div class="absolute top-0 left-0 w-full h-1 bg-secondary-container"></div>
+<h2 class="font-title-md text-title-md text-on-surface mb-6">
+                        Update Password
+                    </h2>
+<form class="max-w-md space-y-6">
+<!-- Current Password -->
+<div class="space-y-1">
+<label class="block font-label-caps text-label-caps text-tertiary" for="current_password">Current Password</label>
+<div class="relative">
+<input class="w-full bg-white border border-outline-variant rounded-lg px-4 py-3 text-on-surface focus:outline-none input-glow transition-all" id="current_password" placeholder="Enter current password" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- New Password -->
+<div class="space-y-1">
+<label class="block font-label-caps text-label-caps text-tertiary" for="new_password">New Password</label>
+<div class="relative">
+<input class="w-full bg-white border border-outline-variant rounded-lg px-4 py-3 text-on-surface focus:outline-none input-glow transition-all" id="new_password" placeholder="Enter new password" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility_off</span>
+</button>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant/80 mt-1">Must be at least 6 characters long.</p>
+</div>
+<!-- Confirm New Password -->
+<div class="space-y-1">
+<label class="block font-label-caps text-label-caps text-tertiary" for="confirm_password">Confirm New Password</label>
+<div class="relative">
+<input class="w-full bg-white border border-outline-variant rounded-lg px-4 py-3 text-on-surface focus:outline-none input-glow transition-all" id="confirm_password" placeholder="Confirm new password" type="password"/>
+<button class="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Action -->
+<div class="pt-4 border-t border-outline-variant/30">
+<button class="bg-primary text-on-primary font-title-md text-title-md px-6 py-3 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all w-full md:w-auto" type="button">
+                                Change Password
+                            </button>
+</div>
+</form>
+<!-- TODO: Decorative Stitch preview chrome / reference image — not part of the actual UI. -->
+<img alt="Reference Content" class="hidden" data-alt="A screenshot of a basic web settings page interface showing a form to change password with fields for current password, new password, and confirm new password. The layout is plain with a white background and blue navigation tabs." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHTPhFY1_fj9gfWQcckroqoo8di_jDMKMtqyKzv4cOoD7-iNNR2L2MkXDccUif9cE6BPoxzhwQ3WQ5ZhOK7zAtX4pVeijxwxCkSj3FARjbShnYi5ADvAXgXiAyh3t5puijfXimLJxjObiNuF1Y0rULKfdaPmXRr5kViaAXCERzunjov9BfbyG4jUpoXE8sviZtGliVIe_guMT78Jf-dqTNO3qNHpAIvL-FioteSdY3_M1f9y2UkIiE1qk7ZFtxbP408A"/>
+</div>
+</div>
+</div>
+</main>
+</body></html>
