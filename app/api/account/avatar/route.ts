@@ -10,6 +10,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+    return NextResponse.json({ error: "Blob storage is not configured (BLOB_READ_WRITE_TOKEN missing)." }, { status: 500 });
+  }
+
   let formData: FormData;
   let file: File | null;
 
