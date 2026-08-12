@@ -11,6 +11,7 @@ interface TrashMember {
   email: string;
   role: string;
   department: string | null;
+  jobTitle: { id: string; name: string } | null;
   deletedAt: string;
 }
 
@@ -88,7 +89,7 @@ export default function TrashClient({ initialTrash }: Props) {
                 <th>Name</th>
                 <th>Email</th>
                 <th style={{ textAlign: "center" }}>Role</th>
-                <th>Department</th>
+                <th>Job Title</th>
                 <th>Deleted</th>
                 <th>Actions</th>
               </tr>
@@ -118,7 +119,7 @@ export default function TrashClient({ initialTrash }: Props) {
                       {s.role}
                     </span>
                   </td>
-                  <td data-label="Department">{s.department || "\u2014"}</td>
+                  <td data-label="Job Title">{s.jobTitle?.name || "\u2014"}</td>
                   <td data-label="Deleted" style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
                     {formatDeletedDate(s.deletedAt)}
                   </td>

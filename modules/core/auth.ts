@@ -8,6 +8,7 @@ declare module "next-auth" {
   interface User {
     role: Role;
     department: string | null;
+    jobTitleName: string | null;
   }
   interface Session {
     user: {
@@ -16,6 +17,7 @@ declare module "next-auth" {
       email: string;
       role: Role;
       department: string | null;
+      jobTitleName: string | null;
     };
   }
 }
@@ -25,6 +27,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: Role;
     department: string | null;
+    jobTitleName: string | null;
   }
 }
 
@@ -43,6 +46,16 @@ export const authOptions: AuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            department: true,
+            isActive: true,
+            password: true,
+            jobTitle: { select: { name: true } },
+          },
         });
 
         if (!user) {
@@ -64,6 +77,7 @@ export const authOptions: AuthOptions = {
           email: user.email,
           role: user.role,
           department: user.department,
+          jobTitleName: user.jobTitle?.name ?? null,
         };
       },
     }),
@@ -77,6 +91,7 @@ export const authOptions: AuthOptions = {
         token.id = user.id;
         token.role = user.role;
         token.department = user.department;
+        token.jobTitleName = user.jobTitleName;
       }
       return token;
     },
@@ -85,6 +100,7 @@ export const authOptions: AuthOptions = {
         session.user.id = token.id;
         session.user.role = token.role;
         session.user.department = token.department;
+        session.user.jobTitleName = token.jobTitleName;
       }
       return session;
     },

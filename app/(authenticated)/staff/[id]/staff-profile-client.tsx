@@ -14,6 +14,8 @@ interface StaffMember {
   email: string;
   role: string;
   department: string | null;
+  jobTitleId: string | null;
+  jobTitle: { id: string; name: string } | null;
   isActive: boolean;
   hideFromReports: boolean;
   deactivatedAt: string | null;
@@ -66,6 +68,11 @@ interface DocumentCategory {
   files: DocumentFile[];
 }
 
+interface JobTitleOption {
+  id: string;
+  name: string;
+}
+
 interface Props {
   staff: StaffMember;
   balances: Balance[];
@@ -85,11 +92,13 @@ const MONTH_NAMES = [
 export default function StaffProfileClient({ staff, balances, records, grants, documents: initialDocuments }: Props) {
   const router = useRouter();
 
+  const [jobTitles, setJobTitles] = useState<JobTitleOption[]>([]);
+
   const [showEdit, setShowEdit] = useState(false);
   const [editingName, setEditingName] = useState(staff.name);
   const [editingEmail, setEditingEmail] = useState(staff.email);
   const [editingRole, setEditingRole] = useState(staff.role);
-  const [editingDepartment, setEditingDepartment] = useState(staff.department ?? "");
+  const [editingJobTitleId, setEditingJobTitleId] = useState(staff.jobTitleId ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -118,6 +127,15 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
   useEffect(() => {
     setDocuments(initialDocuments);
   }, [initialDocuments]);
+
+  useEffect(() => {
+    fetch("/api/job-titles")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setJobTitles(data);
+      })
+      .catch(() => {});
+  }, []);
 
   interface GroupedRecord {
     firstId: string;
@@ -242,7 +260,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
         name: editingName.trim(),
         email: editingEmail.trim(),
         role: editingRole,
-        department: editingDepartment || undefined,
+        jobTitleId: editingJobTitleId || null,
       }),
     });
     const data = await res.json();
@@ -496,8 +514,8 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
               <span style={{ fontWeight: 500 }}>{staff.email}</span>
             </div>
             <div className="flex-row" style={{ justifyContent: "space-between" }}>
-              <span className="text-sm text-muted">Department</span>
-              <span style={{ fontWeight: 500 }}>{staff.department || "—"}</span>
+              <span className="text-sm text-muted">Job Title</span>
+              <span style={{ fontWeight: 500 }}>{staff.jobTitle?.name || "—"}</span>
             </div>
             <div className="flex-row" style={{ justifyContent: "space-between" }}>
               <span className="text-sm text-muted">Status</span>
@@ -605,8 +623,13 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
               </select>
             </div>
             <div style={{ marginBottom: "0.75rem" }}>
-              <label className="form-label">Department</label>
-              <input type="text" className="form-input" value={editingDepartment} onChange={(e) => setEditingDepartment(e.target.value)} />
+              <label className="form-label">Job Title</label>
+              <select value={editingJobTitleId} onChange={(e) => setEditingJobTitleId(e.target.value)} className="form-select">
+                <option value="">— None —</option>
+                {jobTitles.map((jt) => (
+                  <option key={jt.id} value={jt.id}>{jt.name}</option>
+                ))}
+              </select>
             </div>
             {error && <p className="form-error mb-1">{error}</p>}
             <div className="flex-row gap-sm">

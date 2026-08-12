@@ -7,20 +7,23 @@ export interface SessionUser {
   email: string;
   role: Role;
   department: string | null;
+  jobTitleName: string | null;
 }
 
 export async function getUserByEmail(email: string): Promise<SessionUser | null> {
   const user = await prisma.user.findUnique({
     where: { email },
-    select: { id: true, name: true, email: true, role: true, department: true },
+    select: { id: true, name: true, email: true, role: true, department: true, jobTitle: { select: { name: true } } },
   });
-  return user;
+  if (!user) return null;
+  return { ...user, jobTitleName: user.jobTitle?.name ?? null };
 }
 
 export async function getUserById(id: string): Promise<SessionUser | null> {
   const user = await prisma.user.findUnique({
     where: { id },
-    select: { id: true, name: true, email: true, role: true, department: true },
+    select: { id: true, name: true, email: true, role: true, department: true, jobTitle: { select: { name: true } } },
   });
-  return user;
+  if (!user) return null;
+  return { ...user, jobTitleName: user.jobTitle?.name ?? null };
 }

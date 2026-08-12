@@ -14,6 +14,17 @@ const testUsers = [
 async function main() {
   const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 12);
 
+  const jobTitleSeeds = ["Director", "Project Accountant", "CSP", "Health Worker", "Social Worker"];
+
+  for (const name of jobTitleSeeds) {
+    await prisma.jobTitle.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+  }
+  console.log(`Job titles seeded: ${jobTitleSeeds.join(", ")}\n`);
+
   for (const user of testUsers) {
     await prisma.user.upsert({
       where: { email: user.email },

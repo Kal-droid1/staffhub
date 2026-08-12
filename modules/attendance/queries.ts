@@ -173,7 +173,7 @@ export async function createFieldWorkRequest(
   return prisma.attendanceRecord.findFirst({
     where: { batchId },
     include: {
-      user: { select: { id: true, name: true, email: true, department: true } },
+      user: { select: { id: true, name: true, email: true, department: true, jobTitle: { select: { name: true } } } },
     },
   });
 }
@@ -226,7 +226,7 @@ export async function createLeaveRequestBatch(
   return prisma.attendanceRecord.findFirst({
     where: { batchId },
     include: {
-      user: { select: { id: true, name: true, email: true, department: true } },
+      user: { select: { id: true, name: true, email: true, department: true, jobTitle: { select: { name: true } } } },
     },
   });
 }
@@ -235,7 +235,7 @@ export async function getPendingRecords() {
   return prisma.attendanceRecord.findMany({
     where: { status: "PENDING" },
     include: {
-      user: { select: { id: true, name: true, email: true, department: true } },
+      user: { select: { id: true, name: true, email: true, department: true, jobTitle: { select: { name: true } } } },
     },
     orderBy: [{ batchId: "asc" }, { date: "asc" }],
   });

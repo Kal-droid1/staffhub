@@ -33,6 +33,7 @@ export default function NavBar() {
     { href: "/attendance", label: "Attendance" },
     { href: "/participants", label: "Participants" },
     ...(isManager ? [{ href: "/leave-types", label: "Leave Types" }] : []),
+    ...(isManager ? [{ href: "/job-titles", label: "Job Titles" }] : []),
     ...(isManager ? [{ href: "/staff", label: "Staff" }] : []),
     ...(isManager ? [{ href: "/balances", label: "Balances" }] : []),
   ];

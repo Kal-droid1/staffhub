@@ -1,12 +1,44 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+const userSelect = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  department: true,
+  jobTitleId: true,
+  jobTitle: { select: { id: true, name: true } },
+  isActive: true,
+  hideFromReports: true,
+  deactivatedAt: true,
+  deletedAt: true,
+  createdAt: true,
+};
+
+const userSelectSerialized = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  department: true,
+  jobTitleId: true,
+  jobTitle: { select: { id: true, name: true } },
+  isActive: true,
+  hideFromReports: true,
+  deactivatedAt: true,
+  deletedAt: true,
+  createdAt: true,
+};
+
 export interface StaffRow {
   id: string;
   name: string;
   email: string;
   role: string;
   department: string | null;
+  jobTitleId: string | null;
+  jobTitle: { id: string; name: string } | null;
   isActive: boolean;
   hideFromReports: boolean;
   deactivatedAt: string | null;
@@ -17,18 +49,7 @@ export interface StaffRow {
 export async function getAllStaff(): Promise<StaffRow[]> {
   const rows = await prisma.user.findMany({
     where: { deletedAt: null },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      department: true,
-      isActive: true,
-      hideFromReports: true,
-      deactivatedAt: true,
-      deletedAt: true,
-      createdAt: true,
-    },
+    select: userSelect,
     orderBy: { name: "asc" },
   });
   return rows as unknown as StaffRow[];
@@ -37,18 +58,7 @@ export async function getAllStaff(): Promise<StaffRow[]> {
 export async function getTrashedStaff(): Promise<StaffRow[]> {
   const rows = await prisma.user.findMany({
     where: { deletedAt: { not: null } },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      department: true,
-      isActive: true,
-      hideFromReports: true,
-      deactivatedAt: true,
-      deletedAt: true,
-      createdAt: true,
-    },
+    select: userSelect,
     orderBy: { deletedAt: "desc" },
   });
   return rows as unknown as StaffRow[];
@@ -60,6 +70,7 @@ export async function createStaffAccount(data: {
   password: string;
   role: string;
   department?: string;
+  jobTitleId?: string | null;
 }) {
   const hashed = await bcrypt.hash(data.password, 12);
   return prisma.user.create({
@@ -69,19 +80,9 @@ export async function createStaffAccount(data: {
       password: hashed,
       role: data.role as "STAFF" | "MANAGER" | "ADMIN",
       department: data.department || null,
+      jobTitleId: data.jobTitleId || null,
     },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      department: true,
-      isActive: true,
-      hideFromReports: true,
-      deactivatedAt: true,
-      deletedAt: true,
-      createdAt: true,
-    },
+    select: userSelect,
   });
 }
 
@@ -92,6 +93,7 @@ export async function updateStaffAccount(
     email?: string;
     role?: string;
     department?: string;
+    jobTitleId?: string | null;
   }
 ) {
   const updateData: Record<string, unknown> = {};
@@ -99,22 +101,12 @@ export async function updateStaffAccount(
   if (data.email !== undefined) updateData.email = data.email;
   if (data.role !== undefined) updateData.role = data.role;
   if (data.department !== undefined) updateData.department = data.department || null;
+  if (data.jobTitleId !== undefined) updateData.jobTitleId = data.jobTitleId || null;
 
   return prisma.user.update({
     where: { id },
     data: updateData,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      department: true,
-      isActive: true,
-      hideFromReports: true,
-      deactivatedAt: true,
-      deletedAt: true,
-      createdAt: true,
-    },
+    select: userSelect,
   });
 }
 
@@ -122,18 +114,7 @@ export async function deactivateUser(id: string, hideFromReports: boolean) {
   return prisma.user.update({
     where: { id },
     data: { isActive: false, hideFromReports, deactivatedAt: new Date() },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      department: true,
-      isActive: true,
-      hideFromReports: true,
-      deactivatedAt: true,
-      deletedAt: true,
-      createdAt: true,
-    },
+    select: userSelect,
   });
 }
 
@@ -141,18 +122,7 @@ export async function reactivateUser(id: string) {
   return prisma.user.update({
     where: { id },
     data: { isActive: true, hideFromReports: false, deactivatedAt: null },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      department: true,
-      isActive: true,
-      hideFromReports: true,
-      deactivatedAt: true,
-      deletedAt: true,
-      createdAt: true,
-    },
+    select: userSelect,
   });
 }
 
@@ -160,18 +130,7 @@ export async function deleteUser(id: string) {
   return prisma.user.update({
     where: { id },
     data: { isActive: false, hideFromReports: true, deletedAt: new Date() },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      department: true,
-      isActive: true,
-      hideFromReports: true,
-      deactivatedAt: true,
-      deletedAt: true,
-      createdAt: true,
-    },
+    select: userSelect,
   });
 }
 
@@ -179,18 +138,7 @@ export async function restoreUser(id: string) {
   return prisma.user.update({
     where: { id },
     data: { isActive: true, hideFromReports: false, deactivatedAt: null, deletedAt: null },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      department: true,
-      isActive: true,
-      hideFromReports: true,
-      deactivatedAt: true,
-      deletedAt: true,
-      createdAt: true,
-    },
+    select: userSelect,
   });
 }
 

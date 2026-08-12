@@ -40,7 +40,7 @@ export default async function DashboardPage() {
           </p>
           <p className="text-sm text-muted" style={{ marginTop: "0.15rem" }}>
             {user.email}
-            {user.department ? ` · ${user.department}` : ""}
+            {user.jobTitleName ? ` · ${user.jobTitleName}` : user.department ? ` · ${user.department}` : ""}
           </p>
         </Card>
 

@@ -32,6 +32,7 @@ interface PendingRecord {
     name: string;
     email: string;
     department: string | null;
+    jobTitleName: string | null;
   };
 }
 
@@ -56,6 +57,7 @@ interface StaffMember {
   name: string;
   email: string;
   department: string | null;
+  jobTitleName: string | null;
 }
 
 interface DailyRecord {
@@ -535,7 +537,7 @@ export default function AttendanceClient({
   interface BatchGroup {
     firstId: string;
     batchId: string | null;
-    user: { id: string; name: string; email: string; department: string | null };
+    user: { id: string; name: string; email: string; department: string | null; jobTitleName: string | null };
     requestedStatus: string;
     leaveTypeId: string | null;
     note: string | null;
@@ -1150,7 +1152,7 @@ export default function AttendanceClient({
                             <td data-label="Staff">
                               <PersonRow
                                 name={g.user.name}
-                                department={g.user.department ?? undefined}
+                                jobTitleName={g.user.jobTitleName}
                                 size="sm"
                               />
                             </td>

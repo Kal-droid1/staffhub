@@ -2,6 +2,7 @@ interface PersonRowProps {
   name: string;
   role?: string;
   department?: string;
+  jobTitleName?: string | null;
   size?: "sm" | "md";
 }
 
@@ -15,7 +16,7 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
-export default function PersonRow({ name, role, department, size = "md" }: PersonRowProps) {
+export default function PersonRow({ name, role, department, jobTitleName, size = "md" }: PersonRowProps) {
   const dim = size === "sm" ? 30 : 36;
   const fontSize = size === "sm" ? "0.7rem" : "0.8rem";
 
@@ -40,9 +41,9 @@ export default function PersonRow({ name, role, department, size = "md" }: Perso
       </div>
       <div>
         <div style={{ fontWeight: 600, lineHeight: 1.3 }}>{name}</div>
-        {(role || department) && (
+        {(role || jobTitleName) && (
           <div className="text-sm text-muted">
-            {[role, department].filter(Boolean).join(" · ")}
+            {[role, jobTitleName].filter(Boolean).join(" · ")}
           </div>
         )}
       </div>

@@ -23,6 +23,13 @@ enum AttendanceStatus {
   FIELD_WORK
 }
 
+model JobTitle {
+  id        String @id @default(uuid())
+  name      String @unique
+  createdAt DateTime @default(now())
+  users     User[]
+}
+
 model User {
   id              String             @id @default(uuid())
   name            String
@@ -30,6 +37,8 @@ model User {
   password        String
   role            Role               @default(STAFF)
   department      String?
+  jobTitleId      String?
+  jobTitle        JobTitle?          @relation(fields: [jobTitleId], references: [id])
   isActive        Boolean            @default(true)
   hideFromReports Boolean            @default(false)
   deactivatedAt   DateTime?

@@ -58,6 +58,7 @@ export default async function AttendancePage() {
       name: string;
       email: string;
       department: string | null;
+      jobTitleName: string | null;
     };
   }[] = [];
   let balancesMap: Record<string, { leaveTypeId: string; leaveTypeName: string; isAnnualRecurring: boolean; granted: number; used: number; remaining: number }[]> = {};
@@ -78,6 +79,7 @@ export default async function AttendancePage() {
         name: r.user.name,
         email: r.user.email,
         department: r.user.department,
+        jobTitleName: r.user.jobTitle?.name ?? null,
       },
     }));
 

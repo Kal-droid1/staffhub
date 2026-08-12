@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Card from "@/modules/core/components/card";
@@ -11,11 +11,18 @@ interface StaffMember {
   email: string;
   role: string;
   department: string | null;
+  jobTitleId: string | null;
+  jobTitle: { id: string; name: string } | null;
   isActive: boolean;
   hideFromReports: boolean;
   deactivatedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
+}
+
+interface JobTitle {
+  id: string;
+  name: string;
 }
 
 interface Props {
@@ -27,12 +34,13 @@ const ROLE_OPTIONS = ["STAFF", "MANAGER", "ADMIN"];
 export default function StaffClient({ initialStaff }: Props) {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
+  const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("STAFF");
-  const [department, setDepartment] = useState("");
+  const [jobTitleId, setJobTitleId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -40,13 +48,22 @@ export default function StaffClient({ initialStaff }: Props) {
   const [deactivateTarget, setDeactivateTarget] = useState<string | null>(null);
   const [hideFromReports, setHideFromReports] = useState(false);
 
+  useEffect(() => {
+    fetch("/api/job-titles")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setJobTitles(data);
+      })
+      .catch(() => {});
+  }, []);
+
   function resetForm() {
     setShowForm(false);
     setEditingId(null);
     setName("");
     setEmail("");
     setRole("STAFF");
-    setDepartment("");
+    setJobTitleId("");
     setPassword("");
     setError("");
   }
@@ -56,7 +73,7 @@ export default function StaffClient({ initialStaff }: Props) {
     setName(s.name);
     setEmail(s.email);
     setRole(s.role);
-    setDepartment(s.department ?? "");
+    setJobTitleId(s.jobTitleId ?? "");
     setPassword("");
     setShowForm(true);
   }
@@ -72,15 +89,19 @@ export default function StaffClient({ initialStaff }: Props) {
     setError("");
 
     const isNew = !editingId;
+    const payload: Record<string, unknown> = {
+      name: name.trim(),
+      email: email.trim(),
+      role,
+      jobTitleId: jobTitleId || null,
+    };
+    if (isNew) (payload as { password: string }).password = password;
+    if (!isNew) payload.id = editingId;
 
     const res = await fetch("/api/staff", {
       method: isNew ? "POST" : "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        isNew
-          ? { name: name.trim(), email: email.trim(), password, role, department: department || undefined }
-          : { id: editingId, name: name.trim(), email: email.trim(), role, department: department || undefined }
-      ),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
 
@@ -208,13 +229,19 @@ export default function StaffClient({ initialStaff }: Props) {
             </div>
 
             <div style={{ marginBottom: "0.75rem" }}>
-              <label className="form-label">Department (optional)</label>
-              <input
-                type="text"
-                className="form-input"
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-              />
+              <label className="form-label">Job Title</label>
+              <select
+                value={jobTitleId}
+                onChange={(e) => setJobTitleId(e.target.value)}
+                className="form-select"
+              >
+                <option value="">— None —</option>
+                {jobTitles.map((jt) => (
+                  <option key={jt.id} value={jt.id}>
+                    {jt.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {!editingId && (
@@ -252,7 +279,7 @@ export default function StaffClient({ initialStaff }: Props) {
               <th>Name</th>
               <th>Email</th>
               <th style={{ textAlign: "center" }}>Role</th>
-              <th>Department</th>
+              <th>Job Title</th>
               <th style={{ textAlign: "center" }}>Active</th>
               <th>Actions</th>
             </tr>
@@ -286,7 +313,7 @@ export default function StaffClient({ initialStaff }: Props) {
                     {s.role}
                   </span>
                 </td>
-                <td data-label="Department">{s.department || "\u2014"}</td>
+                <td data-label="Job Title">{s.jobTitle?.name || "\u2014"}</td>
                 <td data-label="Active" style={{ textAlign: "center" }}>
                   <span
                     style={{
