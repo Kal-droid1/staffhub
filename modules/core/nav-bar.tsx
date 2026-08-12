@@ -14,10 +14,9 @@ export default function NavBar() {
   if (!session) return null;
 
   const role = session.user?.role as string;
-  const isManager = role === "MANAGER" || role === "ADMIN";
+  const isManager = role === "MANAGER";
   const userName = session.user?.name ?? "";
   const userRoleLabel =
-    role === "ADMIN" ? "Administrator" :
     role === "MANAGER" ? "Manager" :
     "Staff";
 

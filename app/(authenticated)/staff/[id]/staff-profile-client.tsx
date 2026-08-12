@@ -81,7 +81,7 @@ interface Props {
   documents: DocumentCategory[];
 }
 
-const ROLE_OPTIONS = ["STAFF", "MANAGER", "ADMIN"];
+const ROLE_OPTIONS = ["STAFF", "MANAGER"];
 const PAGE_SIZE = 12;
 
 const MONTH_NAMES = [
@@ -476,7 +476,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
             borderRadius: "var(--radius-sm)",
             fontSize: "0.75rem",
             fontWeight: 600,
-            backgroundColor: staff.role === "ADMIN" ? "var(--color-danger)" : staff.role === "MANAGER" ? "var(--color-accent)" : "var(--color-muted)",
+            backgroundColor: staff.role === "MANAGER" ? "var(--color-accent)" : "var(--color-muted)",
             color: staff.role === "STAFF" ? "var(--color-text)" : "#fff",
             marginLeft: "0.75rem",
             verticalAlign: "middle",

@@ -19,7 +19,7 @@ interface Participant {
 export default function ParticipantsClient() {
   const router = useRouter();
   const { data: session } = useSession();
-  const isManager = session?.user?.role === "MANAGER" || session?.user?.role === "ADMIN";
+  const isManager = session?.user?.role === "MANAGER";
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Participant[] | null>(null);
   const [loading, setLoading] = useState(false);

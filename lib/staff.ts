@@ -78,7 +78,7 @@ export async function createStaffAccount(data: {
       name: data.name,
       email: data.email,
       password: hashed,
-      role: data.role as "STAFF" | "MANAGER" | "ADMIN",
+      role: data.role as "STAFF" | "MANAGER",
       department: data.department || null,
       jobTitleId: data.jobTitleId || null,
     },

@@ -63,7 +63,7 @@ export default async function AttendancePage() {
   }[] = [];
   let balancesMap: Record<string, { leaveTypeId: string; leaveTypeName: string; isAnnualRecurring: boolean; granted: number; used: number; remaining: number }[]> = {};
 
-  if (user.role === "MANAGER" || user.role === "ADMIN") {
+  if (user.role === "MANAGER") {
     const pendingRecords = await getPendingRecords();
     pending = pendingRecords.map((r) => ({
       id: r.id,

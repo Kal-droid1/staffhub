@@ -119,7 +119,7 @@ function getStatusVariant(status: string): "present" | "absent" | "pending" | "l
   return "leave";
 }
 
-const isManager = (role: string) => role === "MANAGER" || role === "ADMIN";
+const isManager = (role: string) => role === "MANAGER";
 
 function getCurrentMonthDefault(): { month: number; year: number } {
   const now = new Date();

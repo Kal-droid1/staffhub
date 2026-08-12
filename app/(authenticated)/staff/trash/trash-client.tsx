@@ -108,9 +108,7 @@ export default function TrashClient({ initialTrash }: Props) {
                         fontSize: "0.75rem",
                         fontWeight: 600,
                         backgroundColor:
-                          s.role === "ADMIN"
-                            ? "var(--color-danger)"
-                            : s.role === "MANAGER"
+                            s.role === "MANAGER"
                               ? "var(--color-accent)"
                               : "var(--color-muted)",
                         color: s.role === "STAFF" ? "var(--color-text)" : "#fff",

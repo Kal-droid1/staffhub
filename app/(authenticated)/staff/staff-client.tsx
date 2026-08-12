@@ -30,7 +30,7 @@ interface Props {
 }
 
 const PAGE_SIZE = 10;
-const ROLE_OVERRIDE_OPTIONS = ["MANAGER", "ADMIN"];
+const ROLE_OVERRIDE_OPTIONS = ["MANAGER"];
 
 function getInitials(name: string): string {
   return name
@@ -43,20 +43,18 @@ function getInitials(name: string): string {
 }
 
 function autoRole(jobTitleName: string | undefined | null): string {
-  if (jobTitleName === "Director") return "ADMIN";
+  if (jobTitleName === "Director") return "MANAGER";
   return "STAFF";
 }
 
 const ROLE_STYLE: Record<string, { bg: string; text: string; shadow: string }> = {
   STAFF: { bg: "var(--color-muted)", text: "var(--color-text)", shadow: "none" },
   MANAGER: { bg: "#D9A441", text: "#fff", shadow: "0 2px 8px rgba(217,164,65,0.4)" },
-  ADMIN: { bg: "#1F6B4D", text: "#fff", shadow: "0 2px 8px rgba(31,107,77,0.4)" },
 };
 
 const AVATAR_BG: Record<string, string> = {
   STAFF: "#6b7b6f",
   MANAGER: "#D9A441",
-  ADMIN: "#1F6B4D",
 };
 
 export default function StaffClient({ initialStaff }: Props) {
@@ -116,8 +114,8 @@ export default function StaffClient({ initialStaff }: Props) {
     setName(s.name);
     setEmail(s.email);
     setJobTitleId(s.jobTitleId ?? "");
-    setGrantElevated(s.role === "MANAGER" || s.role === "ADMIN");
-    setOverrideRole(s.role === "MANAGER" || s.role === "ADMIN" ? s.role : "MANAGER");
+    setGrantElevated(s.role === "MANAGER");
+    setOverrideRole("MANAGER");
     setPassword("");
     setShowForm(true);
   }
