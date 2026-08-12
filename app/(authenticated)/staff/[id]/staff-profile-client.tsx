@@ -457,7 +457,6 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
     return "pending";
   }
 
-  const yearOptions = Array.from({ length: 5 }, (_, i) => now.getFullYear() - 2 + i);
   const monthOptions = Array.from({ length: 12 }, (_, i) => i + 1);
 
   return (
@@ -719,24 +718,53 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
                 >
                   {monthOptions.map((m) => (<option key={m} value={m} style={{color:"#000"}}>{MONTH_NAMES[m - 1]}</option>))}
                 </select>
-                <select
-                  value={summaryYear}
-                  onChange={(e) => { setSummaryYear(Number(e.target.value)); setPage(0); }}
-                  style={{
-                    appearance: "none",
-                    background: "rgba(255,255,255,0.1)",
-                    color: "#fff",
-                    border: "1px solid rgba(255,255,255,0.2)",
-                    borderRadius: "0.25rem",
-                    padding: "0.35rem 2rem 0.35rem 0.75rem",
-                    fontSize: "0.8125rem",
-                    fontFamily: "inherit",
-                    cursor: "pointer",
-                    outline: "none",
-                  }}
-                >
-                  {yearOptions.map((y) => (<option key={y} value={y} style={{color:"#000"}}>{y}</option>))}
-                </select>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.15rem" }}>
+                  <button
+                    onClick={() => { setSummaryYear(summaryYear - 1); setPage(0); }}
+                    style={{
+                      background: "rgba(255,255,255,0.1)",
+                      color: "#fff",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: "0.25rem",
+                      width: 28,
+                      height: 28,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      fontFamily: "inherit",
+                      outline: "none",
+                    }}
+                    aria-label="Previous year"
+                  >
+                    ←
+                  </button>
+                  <span style={{ color: "#fff", fontWeight: 700, fontSize: "0.8125rem", minWidth: "2.5rem", textAlign: "center" }}>
+                    {summaryYear}
+                  </span>
+                  <button
+                    onClick={() => { setSummaryYear(summaryYear + 1); setPage(0); }}
+                    style={{
+                      background: "rgba(255,255,255,0.1)",
+                      color: "#fff",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      borderRadius: "0.25rem",
+                      width: 28,
+                      height: 28,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      fontSize: "0.85rem",
+                      fontFamily: "inherit",
+                      outline: "none",
+                    }}
+                    aria-label="Next year"
+                  >
+                    →
+                  </button>
+                </div>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
