@@ -6,7 +6,7 @@ import Link from "next/link";
 import Card from "@/modules/core/components/card";
 import StatusPill from "@/modules/core/components/status-pill";
 import RadialGauge from "@/modules/core/components/radial-gauge";
-import { formatDays } from "@/lib/format";
+import { formatDays, formatAttendanceStatus } from "@/lib/format";
 
 interface StaffMember {
   id: string;
@@ -975,7 +975,7 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
               {pagedRecords.map((r) => {
                 const displayType = r.requestedStatus === "FIELD_WORK"
                   ? "Field Work"
-                  : r.leaveTypeName ?? r.requestedStatus;
+                  : r.leaveTypeName ?? formatAttendanceStatus(r.requestedStatus);
                 const label = r.count > 1
                   ? `${displayType} (${r.count} days)`
                   : displayType;

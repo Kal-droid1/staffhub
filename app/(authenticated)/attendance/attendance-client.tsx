@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 import StatusPill from "@/modules/core/components/status-pill";
 import PersonRow from "@/modules/core/components/person-row";
-import { formatDays, formatDaysLabel } from "@/lib/format";
+import { formatDays, formatDaysLabel, formatAttendanceStatus } from "@/lib/format";
 import { haversineDistance } from "@/lib/geo";
 
 interface TodayRecord {
@@ -680,7 +680,7 @@ export default function AttendanceClient({
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
                 <span style={{ background: "#D9A441", color: "#0A261B", padding: "0.15rem 0.75rem", borderRadius: "999px", fontSize: "0.8rem", fontWeight: 800, letterSpacing: "0.03em", whiteSpace: "nowrap" }}>
-                  {record.status}
+                  {formatAttendanceStatus(record.status)}
                 </span>
                 {record.signInTime && (
                   <span style={{ fontSize: "0.9rem", fontWeight: 700, opacity: 0.9 }}>
@@ -696,7 +696,7 @@ export default function AttendanceClient({
             <div>
               <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65, fontWeight: 700 }}>Requested vs Status</p>
               <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#fff" }}>
-                {record.requestedStatus === record.status ? "Matched" : record.requestedStatus}
+                {record.requestedStatus === record.status ? "Matched" : formatAttendanceStatus(record.requestedStatus)}
               </p>
             </div>
             <div>
@@ -892,8 +892,8 @@ export default function AttendanceClient({
               const displayStatus = g.requestedStatus === "FIELD_WORK"
                 ? "Field Work"
                 : g.leaveTypeId
-                  ? leaveTypes.find((lt) => lt.id === g.leaveTypeId)?.name ?? g.requestedStatus
-                  : g.requestedStatus;
+                  ? leaveTypes.find((lt) => lt.id === g.leaveTypeId)?.name ?? formatAttendanceStatus(g.requestedStatus)
+                  : formatAttendanceStatus(g.requestedStatus);
               const label = g.count > 1
                 ? `${displayStatus} (${g.count} days)`
                 : displayStatus;
@@ -1139,8 +1139,8 @@ export default function AttendanceClient({
                         const displayStatus = firstRecord.requestedStatus === "FIELD_WORK"
                           ? "Field Work"
                           : g.leaveTypeId
-                            ? getLeaveTypeName(g.leaveTypeId) ?? g.requestedStatus
-                            : g.requestedStatus;
+                            ? getLeaveTypeName(g.leaveTypeId) ?? formatAttendanceStatus(g.requestedStatus)
+                            : formatAttendanceStatus(g.requestedStatus);
                         const label = g.count > 1
                           ? `${displayStatus} (${g.count} days)`
                           : displayStatus;
@@ -1727,7 +1727,7 @@ export default function AttendanceClient({
                                                 r.status === "ABSENT" || r.status === "REJECTED" ? "absent" :
                                                 r.status === "PENDING" ? "pending" : "leave"
                                               }
-                                              label={r.status}
+                                              label={formatAttendanceStatus(r.status)}
                                             />
                                           </td>
                                           <td data-label="Note" style={{ padding: "0.35rem 0.75rem", fontSize: "0.8125rem", borderBottom: "1px solid var(--color-border-light)", color: "var(--color-text-muted)" }}>{r.note || "\u2014"}</td>
