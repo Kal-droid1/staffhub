@@ -10,22 +10,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const formData = await req.formData();
-  const file = formData.get("file") as File | null;
+  let formData: FormData;
+  let file: File | null;
+
+  try {
+    formData = await req.formData();
+  } catch {
+    return NextResponse.json({ error: "Invalid form data. Ensure Content-Type is multipart/form-data." }, { status: 400 });
+  }
+
+  file = formData.get("file") as File | null;
 
   if (!file || file.size === 0) {
     return NextResponse.json({ error: "File is required" }, { status: 400 });
   }
 
-  const blob = await put(`avatars/${session.user.id}/${file.name}`, file, {
-    access: "public",
-    addRandomSuffix: true,
-  });
+  let blob;
+  try {
+    blob = await put(`avatars/${session.user.id}/${file.name}`, file, {
+      access: "public",
+      addRandomSuffix: true,
+    });
+  } catch (e) {
+    console.error("Blob upload error:", e);
+    return NextResponse.json({ error: "File upload to storage failed." }, { status: 500 });
+  }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { avatarUrl: blob.url },
-  });
+  try {
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { avatarUrl: blob.url },
+    });
+  } catch (e) {
+    console.error("User update error:", e);
+    return NextResponse.json({ error: "Failed to save avatar URL to database." }, { status: 500 });
+  }
 
   return NextResponse.json({ avatarUrl: blob.url });
 }
