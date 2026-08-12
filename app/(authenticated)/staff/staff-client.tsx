@@ -24,6 +24,16 @@ interface JobTitle {
   name: string;
 }
 
+interface TrashMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  department: string | null;
+  jobTitle: { id: string; name: string } | null;
+  deletedAt: string;
+}
+
 interface Props {
   initialStaff: StaffMember[];
 }
@@ -75,6 +85,12 @@ export default function StaffClient({ initialStaff }: Props) {
   const [hideFromReports, setHideFromReports] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null);
   const [page, setPage] = useState(0);
+  const [showTrash, setShowTrash] = useState(false);
+  const [trash, setTrash] = useState<TrashMember[] | null>(null);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<TrashMember | null>(null);
+  const [deletingPerm, setDeletingPerm] = useState(false);
 
   useEffect(() => {
     fetch("/api/job-titles")
@@ -212,8 +228,62 @@ export default function StaffClient({ initialStaff }: Props) {
     router.refresh();
   }
 
+  async function openTrash() {
+    setShowTrash(true);
+    setTrash(null);
+    setTrashLoading(true);
+    try {
+      const res = await fetch("/api/staff/trash");
+      if (res.ok) {
+        const data = await res.json();
+        setTrash(data);
+      }
+    } catch {}
+    setTrashLoading(false);
+  }
+
+  async function handleTrashRestore(id: string) {
+    setRestoringId(id);
+    const res = await fetch("/api/staff", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "restore" }),
+    });
+    if (res.ok) {
+      setTrash((prev) => prev ? prev.filter((s) => s.id !== id) : null);
+      router.refresh();
+    }
+    setRestoringId(null);
+  }
+
+  async function handleTrashPermanentDelete(id: string) {
+    setDeletingPerm(true);
+    const res = await fetch("/api/staff", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, action: "permanent-delete", confirmation: "DELETE" }),
+    });
+    if (res.ok) {
+      setTrash((prev) => prev ? prev.filter((s) => s.id !== id) : null);
+      setPermanentDeleteTarget(null);
+    }
+    setDeletingPerm(false);
+    router.refresh();
+  }
+
+  function formatTrashDate(dateStr: string) {
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
   return (
-    <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+    <>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
       {/* Header area */}
       <div style={{
         display: "flex",
@@ -240,8 +310,8 @@ export default function StaffClient({ initialStaff }: Props) {
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <Link
-            href="/staff/trash"
+          <button
+            onClick={openTrash}
             style={{
               display: "flex",
               alignItems: "center",
@@ -254,16 +324,16 @@ export default function StaffClient({ initialStaff }: Props) {
               color: "#1F6B4D",
               fontWeight: 600,
               fontSize: "0.875rem",
-              textDecoration: "none",
               cursor: "pointer",
               transition: "background 0.15s",
+              fontFamily: "inherit",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(31,107,77,0.08)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
           >
             <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>delete</span>
             Trash
-          </Link>
+          </button>
           <button
             onClick={() => setShowForm(true)}
             style={{
@@ -1047,5 +1117,208 @@ export default function StaffClient({ initialStaff }: Props) {
         </div>
       </div>
     </div>
+
+      {/* Trash modal */}
+      {showTrash && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => { setShowTrash(false); setPermanentDeleteTarget(null); }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 800,
+              width: "calc(100% - 2rem)",
+              maxHeight: "80vh",
+              display: "flex",
+              flexDirection: "column",
+              margin: "0 1rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.25rem 1.5rem 0", flexShrink: 0 }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.1rem", fontWeight: 700 }}>Trash</h3>
+              <button
+                onClick={() => { setShowTrash(false); setPermanentDeleteTarget(null); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1, padding: "1rem 1.5rem 1.5rem" }}>
+              {trashLoading ? (
+                <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>Loading…</p>
+              ) : !trash || trash.length === 0 ? (
+                <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>Trash is empty.</p>
+              ) : (
+                <div className="table-responsive">
+                <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0, width: "100%" }}>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th style={{ textAlign: "center" }}>Role</th>
+                      <th>Job Title</th>
+                      <th>Deleted</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trash.map((s) => (
+                      <tr key={s.id}>
+                        <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
+                        <td data-label="Email">{s.email}</td>
+                        <td data-label="Role" style={{ textAlign: "center" }}>
+                          <span style={{
+                            display: "inline-block",
+                            padding: "0.15rem 0.5rem",
+                            borderRadius: "var(--radius-sm)",
+                            fontSize: "0.75rem",
+                            fontWeight: 600,
+                            backgroundColor: s.role === "MANAGER" ? "var(--color-accent)" : "var(--color-muted)",
+                            color: s.role === "STAFF" ? "var(--color-text)" : "#fff",
+                          }}>
+                            {s.role}
+                          </span>
+                        </td>
+                        <td data-label="Job Title">{s.jobTitle?.name || "\u2014"}</td>
+                        <td data-label="Deleted" style={{ fontSize: "0.8rem", color: "var(--color-muted)" }}>
+                          {formatTrashDate(s.deletedAt)}
+                        </td>
+                        <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
+                          <div className="flex-row gap-sm">
+                            <button
+                              onClick={() => handleTrashRestore(s.id)}
+                              disabled={restoringId === s.id}
+                              className="btn btn-success btn-sm"
+                            >
+                              {restoringId === s.id ? "…" : "Restore"}
+                            </button>
+                            <button
+                              onClick={() => setPermanentDeleteTarget(s)}
+                              className="btn btn-danger btn-sm"
+                            >
+                              Delete Forever
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Permanent Delete confirmation modal (above trash) */}
+          {permanentDeleteTarget && (
+            <div
+              style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 110,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "rgba(0, 0, 0, 0.2)",
+                }}
+                onClick={() => setPermanentDeleteTarget(null)}
+              />
+              <div
+                style={{
+                  position: "relative",
+                  background: "#FAF7F0",
+                  borderRadius: "12px",
+                  border: "1px solid rgba(255, 255, 255, 0.4)",
+                  boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+                  borderTop: "4px solid #ba1a1a",
+                  maxWidth: 440,
+                  width: "calc(100% - 2rem)",
+                  margin: "0 1rem",
+                  padding: "1.5rem",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                  <h3 style={{ margin: 0, color: "#ba1a1a", fontSize: "1.05rem", fontWeight: 700 }}>Permanent Delete</h3>
+                  <button
+                    onClick={() => setPermanentDeleteTarget(null)}
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                    aria-label="Close"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+                  Permanently delete <strong>{permanentDeleteTarget.name}</strong>? This cannot be undone.
+                </p>
+                <div className="flex-row gap-sm">
+                  <button
+                    onClick={() => handleTrashPermanentDelete(permanentDeleteTarget.id)}
+                    disabled={deletingPerm}
+                    style={{
+                      padding: "0.4rem 1rem",
+                      background: "#ba1a1a",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "0.5rem",
+                      fontWeight: 600,
+                      fontSize: "0.8125rem",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    {deletingPerm ? "Deleting…" : "Permanently Delete"}
+                  </button>
+                  <button
+                    onClick={() => setPermanentDeleteTarget(null)}
+                    style={{
+                      padding: "0.4rem 1rem",
+                      background: "none",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "0.5rem",
+                      fontWeight: 500,
+                      fontSize: "0.8125rem",
+                      cursor: "pointer",
+                      color: "var(--color-text)",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
   );
 }
