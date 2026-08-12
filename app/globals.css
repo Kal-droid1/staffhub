@@ -56,7 +56,7 @@ body {
   background-image: radial-gradient(circle at 100% 0%, rgba(31, 107, 77, 0.08) 0%, transparent 35%),
                     radial-gradient(circle at 0% 100%, rgba(31, 107, 77, 0.08) 0%, transparent 35%);
   background-attachment: fixed;
-  padding-top: 64px;
+  padding-top: 106px;
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: 0.9375rem;
@@ -443,7 +443,7 @@ body {
   color: white;
   box-shadow: 0 4px 20px rgba(31, 107, 77, 0.3);
   position: fixed;
-  top: 0;
+  top: 42px;
   left: 0;
   right: 0;
   z-index: 50;

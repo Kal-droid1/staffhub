@@ -1,5 +1,6 @@
 import { getSession } from "@/modules/core/session";
 import NavBar from "@/modules/core/nav-bar";
+import GlobalParticipantSearch from "./global-participant-search";
 import SessionProvider from "./session-provider";
 
 export default async function AuthenticatedLayout({
@@ -11,6 +12,7 @@ export default async function AuthenticatedLayout({
 
   return (
     <SessionProvider session={session}>
+      <GlobalParticipantSearch />
       <div style={{ position: "relative" }}>
         <NavBar />
         {children}
