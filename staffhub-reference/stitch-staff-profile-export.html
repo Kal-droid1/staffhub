@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StaffHub - Staff Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#c9ded4",
+                        "inverse-primary": "#8cd6b1",
+                        "on-primary-fixed-variant": "#005237",
+                        "secondary-fixed": "#ffdeaa",
+                        "on-secondary-fixed-variant": "#5f4100",
+                        "on-tertiary-fixed": "#0d1f19",
+                        "error": "#ba1a1a",
+                        "surface": "#fcf9f2",
+                        "secondary": "#7d5700",
+                        "surface-container": "#f0eee7",
+                        "on-primary-container": "#9ee9c3",
+                        "surface-container-highest": "#e5e2db",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#1c1c18",
+                        "surface-tint": "#1f6b4d",
+                        "on-primary": "#ffffff",
+                        "primary-container": "#1f6b4d",
+                        "inverse-surface": "#31312c",
+                        "surface-dim": "#dcdad3",
+                        "secondary-container": "#ffc55f",
+                        "primary": "#005237",
+                        "outline": "#6f7973",
+                        "on-primary-fixed": "#002114",
+                        "on-surface": "#1c1c18",
+                        "on-error-container": "#93000a",
+                        "outline-variant": "#bfc9c1",
+                        "tertiary": "#394b44",
+                        "tertiary-container": "#50635b",
+                        "primary-fixed-dim": "#8cd6b1",
+                        "tertiary-fixed": "#d2e7dd",
+                        "on-secondary-container": "#755100",
+                        "secondary-fixed-dim": "#f5bd58",
+                        "inverse-on-surface": "#f3f0ea",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#3f4943",
+                        "surface-bright": "#fcf9f2",
+                        "surface-variant": "#e5e2db",
+                        "surface-container-low": "#f6f3ec",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#b7cbc1",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#a8f2cc",
+                        "surface-container-high": "#ebe8e1",
+                        "on-secondary-fixed": "#271900",
+                        "on-tertiary-fixed-variant": "#384b43",
+                        "on-tertiary": "#ffffff",
+                        "background": "#fcf9f2",
+                        "brand-teal": "#1F6B4D",
+                        "brand-amber": "#D9A441",
+                        "brand-cream": "#FAF7F0"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "32px",
+                        "margin-sm": "16px",
+                        "margin-lg": "48px",
+                        "gutter": "24px",
+                        "unit": "8px",
+                        "margin-md": "24px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Manrope"],
+                        "body-lg": ["Manrope"],
+                        "headline-lg": ["Manrope"],
+                        "label-caps": ["JetBrains Mono"],
+                        "headline-lg-mobile": ["Manrope"],
+                        "headline-xl": ["Manrope"],
+                        "title-md": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-xl": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "title-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.brand-cream');
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(31, 107, 77, 0.08), transparent 40%),
+                radial-gradient(circle at 85% 30%, rgba(217, 164, 65, 0.08), transparent 40%),
+                linear-gradient(rgba(31, 107, 77, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(31, 107, 77, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(250, 247, 240, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 8px 32px rgba(31, 107, 77, 0.08), 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .ambient-shadow-active {
+            box-shadow: 0 12px 40px rgba(31, 107, 77, 0.2);
+        }
+
+        .stat-glow {
+            text-shadow: 0 0 20px rgba(217, 164, 65, 0.6), 0 0 10px rgba(217, 164, 65, 0.4);
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #1F6B4D 0%, #0A261B 100%);
+        }
+        
+        .pill-glow-amber {
+            box-shadow: 0 0 12px rgba(217, 164, 65, 0.4);
+        }
+        
+        .pill-glow-teal {
+            box-shadow: 0 0 12px rgba(31, 107, 77, 0.4);
+        }
+        
+        .gauge-glow {
+            filter: drop-shadow(0 0 8px rgba(217, 164, 65, 0.3));
+        }
+    </style>
+</head>
+<body class="text-on-surface antialiased overflow-x-hidden pt-24 pb-margin-lg">
+<!-- TopNavBar (Shared Component) -->
+<nav class="bg-primary dark:bg-primary-container font-body-lg text-body-lg docked full-width top-0 shadow-md shadow-lg flex justify-between items-center w-full px-container-padding h-16 fixed top-0 z-50">
+<div class="font-headline-lg text-headline-lg font-extrabold text-on-primary">StaffHub</div>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-on-primary/80 font-medium hover:text-on-primary hover:bg-primary-container/20 transition-colors px-3 py-2 rounded-md" href="#">Attendance</a>
+<a class="text-on-primary/80 font-medium hover:text-on-primary hover:bg-primary-container/20 transition-colors px-3 py-2 rounded-md" href="#">Participants</a>
+<a class="text-on-primary/80 font-medium hover:text-on-primary hover:bg-primary-container/20 transition-colors px-3 py-2 rounded-md" href="#">Leave Types</a>
+<a class="text-on-primary font-bold border-b-2 border-secondary-container pb-1 hover:bg-primary-container/20 transition-colors px-3 py-2 rounded-md opacity-90 transition-opacity" href="#">Staff</a>
+<a class="text-on-primary/80 font-medium hover:text-on-primary hover:bg-primary-container/20 transition-colors px-3 py-2 rounded-md" href="#">Balances</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-primary/80 hover:text-on-primary font-body-sm text-body-sm transition-colors">Change Password</button>
+<button class="bg-brand-amber text-on-secondary-fixed-variant font-label-caps text-label-caps px-4 py-2 rounded-DEFAULT hover:opacity-90 transition-opacity">Log out</button>
+</div>
+</nav>
+<main class="max-w-7xl mx-auto px-container-padding w-full flex flex-col gap-gutter">
+<!-- Header & Back Link -->
+<header class="flex flex-col gap-unit mb-margin-sm">
+<a class="flex items-center gap-2 text-primary hover:text-brand-amber transition-colors font-body-sm text-body-sm w-fit mb-4" href="#">
+<span class="material-symbols-outlined text-[16px]" data-icon="arrow_back">arrow_back</span>
+                Back to Staff
+            </a>
+<div class="flex items-center gap-4">
+<h1 class="font-headline-xl text-headline-xl text-primary">Alice Staff</h1>
+<!-- TODO: ALL NAMES, EMAILS, DATES, NUMBERS below are placeholder mockup data — replace with real data bindings when styling is applied to the real component -->
+<span class="bg-surface-variant text-on-surface-variant font-label-caps text-label-caps px-3 py-1 rounded-full border border-outline-variant/30">STAFF</span>
+</div>
+</header>
+<!-- Top Section Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Details Card -->
+<section class="glass-card rounded-xl p-margin-md flex flex-col gap-6 relative overflow-hidden h-full border-t-4 border-t-brand-amber">
+<h2 class="font-label-caps text-label-caps text-brand-teal mb-2">DETAILS</h2>
+<div class="flex flex-col gap-4 flex-grow">
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Email</span>
+<!-- TODO: fake email — replace with real data binding -->
+<span class="font-body-lg text-body-lg font-semibold">alice.staff@staffhub.org</span>
+</div>
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Job Title</span>
+<!-- TODO: Replace "Social Worker" with real job title from data binding -->
+<span class="font-body-lg text-body-lg font-semibold">Social Worker</span>
+</div>
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Status</span>
+<span class="bg-primary-fixed text-on-primary-fixed font-label-caps text-label-caps px-2 py-1 rounded-full pill-glow-teal">Active</span>
+</div>
+<div class="flex justify-between items-center border-b border-outline-variant/30 pb-2">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Joined</span>
+<!-- TODO: fake join date — replace with real data binding -->
+<span class="font-body-lg text-body-lg font-semibold">Oct 12, 2021</span>
+</div>
+</div>
+<div class="flex gap-2 mt-auto pt-4 border-t border-outline-variant/30">
+<button class="flex-1 bg-brand-teal text-white font-body-sm text-body-sm py-2 rounded-DEFAULT hover:bg-brand-teal/90 transition-colors shadow-md">Edit</button>
+<button class="flex-1 border border-brand-teal text-brand-teal font-body-sm text-body-sm py-2 rounded-DEFAULT hover:bg-brand-teal/5 transition-colors">Deactivate</button>
+<button class="flex-1 border border-error text-error font-body-sm text-body-sm py-2 rounded-DEFAULT hover:bg-error/5 transition-colors">Delete</button>
+</div>
+</section>
+<!-- Attendance Hero Card -->
+<section class="lg:col-span-2 rounded-xl p-margin-md flex flex-col gap-6 relative overflow-hidden h-full hero-gradient ambient-shadow-active border border-white/10">
+<!-- TODO: ALL attendance numbers below (21 Present, 0 Absent, 2 Leave, 1 Pending) are fabricated placeholder data. Replace with real data bindings. -->
+<div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 20px 20px;"></div>
+<div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+<h2 class="font-label-caps text-label-caps text-brand-amber tracking-widest">ATTENDANCE SNAPSHOT</h2>
+<div class="flex gap-2">
+<div class="relative">
+<select class="appearance-none bg-white/10 text-white border border-white/20 rounded-DEFAULT font-body-sm text-body-sm pl-3 pr-8 py-1.5 focus:ring-brand-amber focus:border-brand-amber backdrop-blur-md cursor-pointer outline-none">
+<option class="text-on-surface" value="10">October</option>
+<option class="text-on-surface" value="09">September</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-white/70 pointer-events-none text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-white/10 text-white border border-white/20 rounded-DEFAULT font-body-sm text-body-sm pl-3 pr-8 py-1.5 focus:ring-brand-amber focus:border-brand-amber backdrop-blur-md cursor-pointer outline-none">
+<option class="text-on-surface" value="2023">2023</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-white/70 pointer-events-none text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+</div>
+</div>
+<div class="relative z-10 grid grid-cols-2 md:grid-cols-4 gap-4 flex-grow items-center">
+<div class="flex flex-col items-center justify-center p-6 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md shadow-inner">
+<span class="font-label-caps text-label-caps text-white/70 uppercase tracking-widest mb-3">Present</span>
+<span class="text-5xl font-extrabold text-white stat-glow">21</span>
+</div>
+<div class="flex flex-col items-center justify-center p-6 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md shadow-inner">
+<span class="font-label-caps text-label-caps text-white/70 uppercase tracking-widest mb-3">Absent</span>
+<span class="text-5xl font-extrabold text-white">0</span>
+</div>
+<div class="flex flex-col items-center justify-center p-6 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md shadow-inner relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-brand-amber/50"></div>
+<span class="font-label-caps text-label-caps text-white/70 uppercase tracking-widest mb-3">Leave</span>
+<span class="text-5xl font-extrabold text-white stat-glow">2</span>
+</div>
+<div class="flex flex-col items-center justify-center p-6 bg-white/5 rounded-xl border border-brand-amber/30 backdrop-blur-md shadow-[0_0_15px_rgba(217,164,65,0.15)] relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-brand-amber"></div>
+<span class="font-label-caps text-label-caps text-white/70 uppercase tracking-widest mb-3">Pending</span>
+<span class="text-5xl font-extrabold text-brand-amber stat-glow">1</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Middle Section Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Leave Balances -->
+<section class="glass-card rounded-xl p-margin-md flex flex-col gap-6 lg:col-span-1">
+<!-- TODO: ALL leave balance numbers below (15 Days Left / Granted 20 / Used 5) are fabricated placeholder data. Replace with real data bindings. -->
+<h2 class="font-label-caps text-label-caps text-brand-teal tracking-widest">LEAVE BALANCES</h2>
+<div class="flex flex-col items-center justify-center py-8">
+<div class="relative w-56 h-56 flex items-center justify-center mb-8">
+<!-- SVG Donut Chart -->
+<svg class="w-full h-full transform -rotate-90 gauge-glow" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="42" stroke="rgba(31,107,77,0.1)" stroke-width="8"></circle>
+<circle cx="50" cy="50" fill="none" r="42" stroke="url(#gradient)" stroke-dasharray="263.89" stroke-dashoffset="65.97" stroke-linecap="round" stroke-width="12"></circle>
+<defs>
+<lineargradient id="gradient" x1="0%" x2="100%" y1="0%" y2="100%">
+<stop offset="0%" stop-color="#1F6B4D"></stop>
+<stop offset="100%" stop-color="#D9A441"></stop>
+</lineargradient>
+</defs>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-6xl font-extrabold text-primary leading-none mb-1">15</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-widest uppercase">Days Left</span>
+</div>
+</div>
+<h3 class="font-title-md text-title-md text-primary mb-6 text-center font-bold">Annual leave (annual)</h3>
+<div class="flex w-full justify-around px-2 bg-surface/50 rounded-lg py-4 border border-outline-variant/20">
+<div class="flex flex-col items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2">GRANTED</span>
+<span class="text-2xl font-bold text-primary">20</span>
+</div>
+<div class="w-px bg-outline-variant/30 h-12"></div>
+<div class="flex flex-col items-center">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-2">USED</span>
+<span class="text-2xl font-bold text-primary">5</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Documents Placeholder -->
+<section class="glass-card rounded-xl p-margin-md flex flex-col gap-6 lg:col-span-2 justify-center items-center text-center border-dashed border-2 border-outline-variant/50 bg-surface/30">
+<span class="material-symbols-outlined text-[48px] text-outline-variant mb-2" data-icon="folder_open">folder_open</span>
+<h2 class="font-title-md text-title-md text-on-surface-variant">Documents Section</h2>
+<p class="font-body-sm text-body-sm text-outline max-w-md">Section preserved per finalized design. Document management integration pending upcoming release.</p>
+</section>
+</div>
+<!-- Request History Table -->
+<section class="glass-card rounded-xl flex flex-col overflow-hidden shadow-md">
+<!-- TODO: ALL request history rows below use 2023 dates, fake leave type names, and "APPROVED" status (not a real DB enum). Replace with real data bindings. -->
+<div class="p-margin-md border-b border-brand-teal/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-brand-teal text-white">
+<h2 class="font-label-caps text-label-caps text-brand-amber tracking-widest">REQUEST HISTORY</h2>
+<div class="flex flex-wrap gap-3 items-center">
+<span class="font-label-caps text-label-caps text-white/80 mr-1">FILTER:</span>
+<div class="relative">
+<select class="appearance-none bg-white/10 text-white border border-white/20 rounded-DEFAULT font-body-sm text-body-sm pl-3 pr-8 py-1.5 focus:ring-brand-amber focus:border-brand-amber cursor-pointer outline-none">
+<option class="text-on-surface">All Types</option>
+<option class="text-on-surface">Annual Leave</option>
+<option class="text-on-surface">Sick Leave</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-white/70 pointer-events-none text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+<div class="relative">
+<select class="appearance-none bg-white/10 text-white border border-white/20 rounded-DEFAULT font-body-sm text-body-sm pl-3 pr-8 py-1.5 focus:ring-brand-amber focus:border-brand-amber cursor-pointer outline-none">
+<option class="text-on-surface">All Status</option>
+<option class="text-on-surface">Approved</option>
+<option class="text-on-surface">Pending</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-white/70 pointer-events-none text-[18px]" data-icon="expand_more">expand_more</span>
+</div>
+<input aria-label="From Date" class="bg-white/10 text-white border border-white/20 rounded-DEFAULT font-body-sm text-body-sm px-3 py-1.5 focus:ring-brand-amber focus:border-brand-amber [color-scheme:dark]" type="date"/>
+<span class="text-white/50">-</span>
+<input aria-label="To Date" class="bg-white/10 text-white border border-white/20 rounded-DEFAULT font-body-sm text-body-sm px-3 py-1.5 focus:ring-brand-amber focus:border-brand-amber [color-scheme:dark]" type="date"/>
+</div>
+</div>
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse bg-white/40">
+<thead>
+<tr class="bg-brand-cream/80 border-b border-outline-variant/30 shadow-sm">
+<th class="p-5 font-label-caps text-label-caps text-primary whitespace-nowrap tracking-wider">DATE</th>
+<th class="p-5 font-label-caps text-label-caps text-primary whitespace-nowrap tracking-wider">TYPE</th>
+<th class="p-5 font-label-caps text-label-caps text-primary whitespace-nowrap tracking-wider">STATUS</th>
+<th class="p-5 font-label-caps text-label-caps text-primary tracking-wider">NOTE</th>
+<th class="p-5 font-label-caps text-label-caps text-primary text-right whitespace-nowrap tracking-wider">ATTACHMENT</th>
+</tr>
+</thead>
+<tbody class="font-body-sm text-body-sm text-on-surface divide-y divide-outline-variant/20">
+<tr class="hover:bg-white/60 transition-colors">
+<td class="p-5 whitespace-nowrap font-medium">Oct 15, 2023</td>
+<td class="p-5 whitespace-nowrap">Annual Leave</td>
+<td class="p-5 whitespace-nowrap">
+<span class="bg-brand-amber/20 text-secondary-fixed-dim border border-brand-amber/50 font-label-caps text-label-caps px-3 py-1 rounded-full text-[11px] pill-glow-amber font-bold">PENDING</span>
+</td>
+<td class="p-5 text-on-surface-variant truncate max-w-xs">Family vacation</td>
+<td class="p-5 text-right">
+<button aria-label="View Attachment" class="text-brand-teal hover:text-brand-amber transition-colors p-1 rounded hover:bg-brand-teal/10">
+<span class="material-symbols-outlined text-[20px]" data-icon="attachment">attachment</span>
+</button>
+</td>
+</tr>
+<tr class="hover:bg-white/60 transition-colors">
+<td class="p-5 whitespace-nowrap font-medium">Sep 02, 2023</td>
+<td class="p-5 whitespace-nowrap">Sick Leave</td>
+<td class="p-5 whitespace-nowrap">
+<!-- "Approved" is not a real DB enum value (see schema: PENDING, PRESENT, ABSENT, PERMISSION, ANNUAL_LEAVE, OTHER, FIELD_WORK). In our real app, approval is determined by whether reviewedBy is set on an attendance record, not by a status enum. Replace with real approval-derived display label when data-bound. -->
+<span class="bg-brand-teal/10 text-brand-teal border border-brand-teal/40 font-label-caps text-label-caps px-3 py-1 rounded-full text-[11px] pill-glow-teal font-bold">APPROVED</span>
+</td>
+<td class="p-5 text-on-surface-variant truncate max-w-xs">Doctor appointment</td>
+<td class="p-5 text-right">
+<span class="text-outline-variant/50">-</span>
+</td>
+</tr>
+<tr class="hover:bg-white/60 transition-colors">
+<td class="p-5 whitespace-nowrap font-medium">Aug 10, 2023</td>
+<td class="p-5 whitespace-nowrap">Annual Leave</td>
+<td class="p-5 whitespace-nowrap">
+<!-- "Approved" is not a real DB enum value (see schema: PENDING, PRESENT, ABSENT, PERMISSION, ANNUAL_LEAVE, OTHER, FIELD_WORK). In our real app, approval is determined by whether reviewedBy is set on an attendance record, not by a status enum. Replace with real approval-derived display label when data-bound. -->
+<span class="bg-brand-teal/10 text-brand-teal border border-brand-teal/40 font-label-caps text-label-caps px-3 py-1 rounded-full text-[11px] pill-glow-teal font-bold">APPROVED</span>
+</td>
+<td class="p-5 text-on-surface-variant truncate max-w-xs">Long weekend</td>
+<td class="p-5 text-right">
+<span class="text-outline-variant/50">-</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-5 border-t border-outline-variant/30 flex justify-between items-center bg-brand-cream/80">
+<button class="text-brand-teal hover:text-brand-teal/80 font-label-caps text-label-caps font-bold flex items-center gap-2 transition-colors disabled:opacity-40 uppercase tracking-widest" disabled="">
+<span class="material-symbols-outlined text-[18px]" data-icon="arrow_back">arrow_back</span> Prev
+                </button>
+<span class="font-body-sm text-body-sm text-on-surface-variant font-medium">Page 1 of 3</span>
+<button class="text-brand-teal hover:text-brand-teal/80 font-label-caps text-label-caps font-bold flex items-center gap-2 transition-colors uppercase tracking-widest">
+                    Next <span class="material-symbols-outlined text-[18px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</section>
+</main>
+</body></html>
