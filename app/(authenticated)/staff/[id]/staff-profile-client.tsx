@@ -804,62 +804,95 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
       </Card>
 
       {deleteTarget && (
-        <Card style={{ marginBottom: "1.25rem" }}>
-          {!deleteTarget.isLatest ? (
-            <>
-              <p style={{ fontWeight: 500, marginBottom: "0.75rem" }}>
-                Delete this version? This can be undone by an administrator if needed.
-              </p>
-              <div className="flex-row gap-sm">
-                <button
-                  onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category)}
-                  disabled={deletingId === deleteTarget.docId}
-                  className="btn btn-danger btn-sm"
-                >
-                  {deletingId === deleteTarget.docId ? "Deleting..." : "Delete"}
-                </button>
-                <button onClick={() => setDeleteTarget(null)} className="btn btn-ghost btn-sm">Cancel</button>
-              </div>
-            </>
-          ) : (
-            <>
-              <p style={{ fontWeight: 600, marginBottom: "0.75rem", color: "var(--color-brand)" }}>
-                Delete the current version of this document?
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-                <button
-                  onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "leave-empty")}
-                  disabled={deletingId === deleteTarget.docId}
-                  className="btn btn-ghost btn-sm"
-                  style={{ justifyContent: "flex-start", textAlign: "left" }}
-                >
-                  {deletingId === deleteTarget.docId ? "..." : "Leave empty"} — category shows "Not uploaded yet"
-                </button>
-                {deleteTarget.hasPrevious && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => setDeleteTarget(null)}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 480,
+              width: "calc(100% - 2rem)",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            {!deleteTarget.isLatest ? (
+              <>
+                <p style={{ fontWeight: 500, margin: "0 0 0.75rem" }}>
+                  Delete this version? This can be undone by an administrator if needed.
+                </p>
+                <div className="flex-row gap-sm">
                   <button
-                    onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "promote")}
+                    onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category)}
+                    disabled={deletingId === deleteTarget.docId}
+                    className="btn btn-danger btn-sm"
+                  >
+                    {deletingId === deleteTarget.docId ? "Deleting..." : "Delete"}
+                  </button>
+                  <button onClick={() => setDeleteTarget(null)} className="btn btn-ghost btn-sm">Cancel</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ fontWeight: 600, margin: "0 0 0.75rem", color: "var(--color-brand)" }}>
+                  Delete the current version of this document?
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                  <button
+                    onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "leave-empty")}
                     disabled={deletingId === deleteTarget.docId}
                     className="btn btn-ghost btn-sm"
                     style={{ justifyContent: "flex-start", textAlign: "left" }}
                   >
-                    {deletingId === deleteTarget.docId ? "..." : "Promote previous version"} — older version becomes current
+                    {deletingId === deleteTarget.docId ? "..." : "Leave empty"} — category shows "Not uploaded yet"
                   </button>
-                )}
-                <button
-                  onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "upload-new")}
-                  disabled={deletingId === deleteTarget.docId}
-                  className="btn btn-primary btn-sm"
-                  style={{ justifyContent: "flex-start", textAlign: "left" }}
-                >
-                  Upload a new one now
-                </button>
-              </div>
-              <div style={{ marginTop: "0.75rem" }}>
-                <button onClick={() => setDeleteTarget(null)} className="btn btn-ghost btn-sm">Cancel</button>
-              </div>
-            </>
-          )}
-        </Card>
+                  {deleteTarget.hasPrevious && (
+                    <button
+                      onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "promote")}
+                      disabled={deletingId === deleteTarget.docId}
+                      className="btn btn-ghost btn-sm"
+                      style={{ justifyContent: "flex-start", textAlign: "left" }}
+                    >
+                      {deletingId === deleteTarget.docId ? "..." : "Promote previous version"} — older version becomes current
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDocumentDelete(deleteTarget.docId, deleteTarget.category, "upload-new")}
+                    disabled={deletingId === deleteTarget.docId}
+                    className="btn btn-primary btn-sm"
+                    style={{ justifyContent: "flex-start", textAlign: "left" }}
+                  >
+                    Upload a new one now
+                  </button>
+                </div>
+                <div style={{ marginTop: "0.75rem" }}>
+                  <button onClick={() => setDeleteTarget(null)} className="btn btn-ghost btn-sm">Cancel</button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", flexWrap: "wrap", gap: "0.75rem" }}>
