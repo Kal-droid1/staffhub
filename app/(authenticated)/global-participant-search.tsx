@@ -38,6 +38,7 @@ export default function GlobalParticipantSearch() {
   const [editForm, setEditForm] = useState<ParticipantDetail | null>(null);
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState("");
+  const [showImport, setShowImport] = useState(false);
 
   // Live search with debounce
   const doSearch = useCallback(async (q: string) => {
@@ -225,13 +226,15 @@ export default function GlobalParticipantSearch() {
           )}
 
           {isManager && (
-            <a
-              href="/participants/import"
+            <button
+              onClick={() => setShowImport(true)}
               style={{
                 position: "absolute",
                 right: loading ? 30 : 8,
                 top: "50%",
                 transform: "translateY(-50%)",
+                background: "none",
+                border: "none",
                 color: "#1F6B4D",
                 fontSize: "0.65rem",
                 fontWeight: 600,
@@ -241,12 +244,14 @@ export default function GlobalParticipantSearch() {
                 display: loading ? "none" : "flex",
                 alignItems: "center",
                 gap: "0.2rem",
+                cursor: "pointer",
+                fontFamily: "inherit",
               }}
               title="Import participants"
             >
               <span className="material-symbols-outlined" style={{ fontSize: "0.85rem" }}>upload</span>
               Import
-            </a>
+            </button>
           )}
 
           {/* Results dropdown */}
@@ -444,6 +449,77 @@ export default function GlobalParticipantSearch() {
           </div>
         </div>
       )}
+
+      {/* Import modal */}
+      {showImport && <ImportModal onClose={() => setShowImport(false)} />}
     </>
+  );
+}
+
+function ImportModal({ onClose }: { onClose: () => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [result, setResult] = useState<{ created: number; updated: number; total: number; errors: string[] } | null>(null);
+  const [error, setError] = useState("");
+
+  const BATCH_SIZE = 25;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!file) return;
+    setUploading(true); setError(""); setResult(null);
+    try {
+      const html = await file.text();
+      const tableMatch = html.match(/<table[\s\S]*?<\/table>/i);
+      if (!tableMatch) { setError("No table found in file."); setUploading(false); return; }
+      const rowRegex = /<tr[\s\S]*?<\/tr>/gi;
+      const rows: string[] = []; let m: RegExpExecArray | null;
+      while ((m = rowRegex.exec(tableMatch[0])) !== null) rows.push(m[0]);
+      if (rows.length < 2) { setError("No participant rows found."); setUploading(false); return; }
+      const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+      const allRows: Record<string, string>[] = [];
+      for (let i = 1; i < rows.length; i++) {
+        const cells: string[] = []; let cm: RegExpExecArray | null;
+        while ((cm = cellRegex.exec(rows[i])) !== null) cells.push(cm[1].replace(/<[^>]+>/g, "").trim());
+        if (cells.length < 9) continue;
+        allRows.push({ fcpId: cells[0], fcpName: cells[1], localParticipantId: cells[2], name: cells[3], gradeLevel: cells[4] || "", gender: cells[5] || "", ageText: cells[6] || "", communityName: cells[7], status: cells[8] || "Active" });
+      }
+      if (allRows.length === 0) { setError("No participant rows found."); setUploading(false); return; }
+      setProgress({ done: 0, total: allRows.length });
+      let created = 0, updated = 0; const errors: string[] = [];
+      for (let start = 0; start < allRows.length; start += BATCH_SIZE) {
+        const batch = allRows.slice(start, start + BATCH_SIZE);
+        const res = await fetch("/api/participants/import", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ rows: batch }) });
+        const data = await res.json();
+        if (!res.ok) errors.push(data.error || "Batch failed");
+        else { created += data.created ?? 0; updated += data.updated ?? 0; if (data.errors?.length) errors.push(...data.errors); }
+        setProgress({ done: Math.min(start + BATCH_SIZE, allRows.length), total: allRows.length });
+      }
+      setResult({ created, updated, total: allRows.length, errors });
+    } catch { setError("Failed to read file."); }
+    setUploading(false);
+  }
+
+  const pctDone = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 130, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }} onClick={onClose} />
+      <div style={{ position: "relative", background: "#FAF7F0", borderRadius: "12px", border: "1px solid rgba(255,255,255,0.4)", boxShadow: "0 20px 40px rgba(31,107,77,0.25)", borderTop: "4px solid #D9A441", maxWidth: 600, width: "calc(100% - 2rem)", maxHeight: "85vh", overflowY: "auto", margin: "0 1rem", padding: "1.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.05rem", fontWeight: 700 }}>Import Participants</h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }} aria-label="Close">✕</button>
+        </div>
+        <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", margin: "0 0 1rem" }}>Upload an HTML-formatted .xls export. Each row is matched by Local Participant ID — existing records updated, new ones created.</p>
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "1rem" }}><input type="file" accept=".xls,.xlsx,.html,.htm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} disabled={uploading} /></div>
+          <button type="submit" className="btn btn-primary" disabled={!file || uploading}>{uploading ? "Importing..." : "Import"}</button>
+        </form>
+        {uploading && <div style={{ marginTop: "1rem" }}><div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.35rem", fontSize: "0.85rem", color: "var(--color-text-muted)" }}><span>Processing...</span><span>{pctDone}% ({progress.done}/{progress.total})</span></div><div style={{ height: 6, borderRadius: 3, backgroundColor: "var(--color-border)", overflow: "hidden" }}><div style={{ height: "100%", width: `${pctDone}%`, backgroundColor: "var(--color-brand)", borderRadius: 3, transition: "width 0.2s ease" }} /></div></div>}
+        {error && <p className="form-error" style={{ marginTop: "0.5rem" }}>{error}</p>}
+        {result && <div style={{ marginTop: "1rem" }}><div style={{ display: "flex", gap: "2rem" }}><div><p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--color-brand)" }}>{result.created}</p><p className="text-muted" style={{ margin: 0, fontSize: "0.8rem" }}>Created</p></div><div><p style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700, color: "var(--color-brand)" }}>{result.updated}</p><p className="text-muted" style={{ margin: 0, fontSize: "0.8rem" }}>Updated</p></div></div>{result.errors.length > 0 && <div style={{ marginTop: "0.75rem" }}><ul style={{ margin: 0, paddingLeft: "1.25rem", fontSize: "0.85rem", color: "var(--color-danger)" }}>{result.errors.map((err: string, i: number) => <li key={i}>{err}</li>)}</ul></div>}</div>}
+      </div>
+    </div>
   );
 }

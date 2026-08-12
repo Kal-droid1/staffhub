@@ -39,6 +39,7 @@ model User {
   department      String?
   jobTitleId      String?
   jobTitle        JobTitle?          @relation(fields: [jobTitleId], references: [id])
+  avatarUrl       String?
   isActive        Boolean            @default(true)
   hideFromReports Boolean            @default(false)
   deactivatedAt   DateTime?

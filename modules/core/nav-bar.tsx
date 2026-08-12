@@ -30,8 +30,6 @@ export default function NavBar() {
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/attendance", label: "Attendance" },
-    ...(isManager ? [{ href: "/leave-types", label: "Leave Types" }] : []),
-    ...(isManager ? [{ href: "/job-titles", label: "Job Titles" }] : []),
     ...(isManager ? [{ href: "/staff", label: "Staff" }] : []),
     ...(isManager ? [{ href: "/balances", label: "Balances" }] : []),
   ];
@@ -93,11 +91,12 @@ export default function NavBar() {
               </div>
             </div>
             <Link
-              href="/change-password"
+              href="/settings"
               style={{ ...linkStyle, fontSize: "0.8125rem", opacity: 0.9 }}
               onClick={() => setMenuOpen(false)}
+              title="Settings"
             >
-              Change Password
+              <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>settings</span>
             </Link>
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
