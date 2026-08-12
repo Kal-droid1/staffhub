@@ -1,5 +1,5 @@
-﻿-- CreateTable
-CREATE TABLE "JobTitle" (
+-- CreateTable
+CREATE TABLE IF NOT EXISTS "JobTitle" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -8,10 +8,18 @@ CREATE TABLE "JobTitle" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "JobTitle_name_key" ON "JobTitle"("name");
+CREATE UNIQUE INDEX IF NOT EXISTS "JobTitle_name_key" ON "JobTitle"("name");
 
 -- AlterTable
-ALTER TABLE "User" ADD COLUMN "jobTitleId" TEXT;
+DO $$ BEGIN
+  ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "jobTitleId" TEXT;
+EXCEPTION
+  WHEN duplicate_column THEN NULL;
+END $$;
 
 -- AddForeignKey
-ALTER TABLE "User" ADD CONSTRAINT "User_jobTitleId_fkey" FOREIGN KEY ("jobTitleId") REFERENCES "JobTitle"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "User" ADD CONSTRAINT "User_jobTitleId_fkey" FOREIGN KEY ("jobTitleId") REFERENCES "JobTitle"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
