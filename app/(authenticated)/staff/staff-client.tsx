@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Card from "@/modules/core/components/card";
 
 interface StaffMember {
   id: string;
@@ -72,8 +71,9 @@ export default function StaffClient({ initialStaff }: Props) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [actingId, setActingId] = useState<string | null>(null);
-  const [deactivateTarget, setDeactivateTarget] = useState<string | null>(null);
+  const [deactivateTarget, setDeactivateTarget] = useState<StaffMember | null>(null);
   const [hideFromReports, setHideFromReports] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null);
   const [page, setPage] = useState(0);
 
   useEffect(() => {
@@ -198,7 +198,6 @@ export default function StaffClient({ initialStaff }: Props) {
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete will fully hide this account from all reports and move it to Trash. Continue?")) return;
     setActingId(id);
     const res = await fetch("/api/staff", {
       method: "PATCH",
@@ -209,6 +208,7 @@ export default function StaffClient({ initialStaff }: Props) {
       setStaff((prev) => prev.filter((s) => s.id !== id));
     }
     setActingId(null);
+    setDeleteTarget(null);
     router.refresh();
   }
 
@@ -393,7 +393,7 @@ export default function StaffClient({ initialStaff }: Props) {
                   ))}
                 </select>
                 <p className="form-hint" style={{ marginTop: "0.35rem" }}>
-                  Role will be set automatically: Director → ADMIN, all others → STAFF
+                  Role will be set automatically: Director → MANAGER, all others → STAFF
                 </p>
               </div>
 
@@ -448,6 +448,188 @@ export default function StaffClient({ initialStaff }: Props) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Deactivate confirmation modal */}
+      {deactivateTarget && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => { setDeactivateTarget(null); setHideFromReports(false); }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 440,
+              width: "calc(100% - 2rem)",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.05rem", fontWeight: 700 }}>Deactivate Staff</h3>
+              <button
+                onClick={() => { setDeactivateTarget(null); setHideFromReports(false); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+              Deactivate <strong>{deactivateTarget.name}</strong>? They will no longer be able to log in until reactivated.
+            </p>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "1rem", fontSize: "0.85rem", cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={hideFromReports}
+                onChange={(e) => setHideFromReports(e.target.checked)}
+              />
+              Also hide from historical reports?
+            </label>
+            <div className="flex-row gap-sm">
+              <button
+                onClick={() => handleDeactivate(deactivateTarget.id)}
+                disabled={actingId === deactivateTarget.id}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "#ba1a1a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  fontWeight: 600,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {actingId === deactivateTarget.id ? "Deactivating…" : "Deactivate"}
+              </button>
+              <button
+                onClick={() => { setDeactivateTarget(null); setHideFromReports(false); }}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "none",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "0.5rem",
+                  fontWeight: 500,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  color: "var(--color-text)",
+                  fontFamily: "inherit",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => setDeleteTarget(null)}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #ba1a1a",
+              maxWidth: 440,
+              width: "calc(100% - 2rem)",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0, color: "#ba1a1a", fontSize: "1.05rem", fontWeight: 700 }}>Delete Staff</h3>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+              Delete <strong>{deleteTarget.name}</strong>? This moves them to Trash and can be restored later.
+            </p>
+            <div className="flex-row gap-sm">
+              <button
+                onClick={() => handleDelete(deleteTarget.id)}
+                disabled={actingId === deleteTarget.id}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "#ba1a1a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  fontWeight: 600,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {actingId === deleteTarget.id ? "Deleting…" : "Delete"}
+              </button>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "none",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "0.5rem",
+                  fontWeight: 500,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  color: "var(--color-text)",
+                  fontFamily: "inherit",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -643,180 +825,149 @@ export default function StaffClient({ initialStaff }: Props) {
                     </span>
                   </td>
                   <td data-label="Actions" style={{ padding: "1.5rem 1.5rem", textAlign: "right", whiteSpace: "nowrap" }}>
-                    {deactivateTarget === s.id ? (
-                      <div style={{ padding: "0.25rem 0" }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.5rem", fontSize: "0.85rem", cursor: "pointer" }}>
-                          <input
-                            type="checkbox"
-                            checked={hideFromReports}
-                            onChange={(e) => setHideFromReports(e.target.checked)}
-                          />
-                          Also hide from historical reports?
-                        </label>
-                        <div className="flex-row gap-sm" style={{ justifyContent: "flex-end" }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.75rem" }}>
+                      <button
+                        onClick={() => startEdit(s)}
+                        title="Edit"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.5rem",
+                          borderRadius: "0.5rem",
+                          color: "var(--color-text-muted)",
+                          transition: "all 0.15s",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = "#1F6B4D";
+                          e.currentTarget.style.background = "rgba(31,107,77,0.08)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = "var(--color-text-muted)";
+                          e.currentTarget.style.background = "none";
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>edit</span>
+                      </button>
+                      {s.isActive ? (
+                        <>
                           <button
-                            onClick={() => handleDeactivate(s.id)}
+                            onClick={() => setDeactivateTarget(s)}
                             disabled={actingId === s.id}
-                            className="btn btn-danger btn-sm"
+                            title="Deactivate"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "0.5rem",
+                              borderRadius: "0.5rem",
+                              color: "var(--color-text-muted)",
+                              transition: "all 0.15s",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "#ba1a1a";
+                              e.currentTarget.style.background = "rgba(186,26,26,0.08)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = "var(--color-text-muted)";
+                              e.currentTarget.style.background = "none";
+                            }}
                           >
-                            {actingId === s.id ? "…" : "Confirm Deactivate"}
+                            <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>block</span>
                           </button>
                           <button
-                            onClick={() => {
-                              setDeactivateTarget(null);
-                              setHideFromReports(false);
+                            onClick={() => setDeleteTarget(s)}
+                            disabled={actingId === s.id}
+                            title="Delete"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "0.5rem",
+                              borderRadius: "0.5rem",
+                              color: "var(--color-text-muted)",
+                              transition: "all 0.15s",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                             }}
-                            className="btn btn-ghost btn-sm"
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "#ba1a1a";
+                              e.currentTarget.style.background = "rgba(186,26,26,0.08)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = "var(--color-text-muted)";
+                              e.currentTarget.style.background = "none";
+                            }}
                           >
-                            Cancel
+                            <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>delete</span>
                           </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "0.75rem" }}>
-                        <button
-                          onClick={() => startEdit(s)}
-                          title="Edit"
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: "0.5rem",
-                            borderRadius: "0.5rem",
-                            color: "var(--color-text-muted)",
-                            transition: "all 0.15s",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.color = "#1F6B4D";
-                            e.currentTarget.style.background = "rgba(31,107,77,0.08)";
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.color = "var(--color-text-muted)";
-                            e.currentTarget.style.background = "none";
-                          }}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>edit</span>
-                        </button>
-                        {s.isActive ? (
-                          <>
-                            <button
-                              onClick={() => setDeactivateTarget(s.id)}
-                              disabled={actingId === s.id}
-                              title="Deactivate"
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: "0.5rem",
-                                borderRadius: "0.5rem",
-                                color: "var(--color-text-muted)",
-                                transition: "all 0.15s",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = "#ba1a1a";
-                                e.currentTarget.style.background = "rgba(186,26,26,0.08)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = "var(--color-text-muted)";
-                                e.currentTarget.style.background = "none";
-                              }}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>block</span>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(s.id)}
-                              disabled={actingId === s.id}
-                              title="Delete"
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: "0.5rem",
-                                borderRadius: "0.5rem",
-                                color: "var(--color-text-muted)",
-                                transition: "all 0.15s",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = "#ba1a1a";
-                                e.currentTarget.style.background = "rgba(186,26,26,0.08)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = "var(--color-text-muted)";
-                                e.currentTarget.style.background = "none";
-                              }}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>delete</span>
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleReactivate(s.id)}
-                              disabled={actingId === s.id}
-                              title="Reactivate"
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: "0.5rem",
-                                borderRadius: "0.5rem",
-                                color: "var(--color-text-muted)",
-                                transition: "all 0.15s",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = "#1F6B4D";
-                                e.currentTarget.style.background = "rgba(31,107,77,0.08)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = "var(--color-text-muted)";
-                                e.currentTarget.style.background = "none";
-                              }}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>restart_alt</span>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(s.id)}
-                              disabled={actingId === s.id}
-                              title="Delete"
-                              style={{
-                                background: "none",
-                                border: "none",
-                                cursor: "pointer",
-                                padding: "0.5rem",
-                                borderRadius: "0.5rem",
-                                color: "var(--color-text-muted)",
-                                transition: "all 0.15s",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.color = "#ba1a1a";
-                                e.currentTarget.style.background = "rgba(186,26,26,0.08)";
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.color = "var(--color-text-muted)";
-                                e.currentTarget.style.background = "none";
-                              }}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>delete</span>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    )}
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleReactivate(s.id)}
+                            disabled={actingId === s.id}
+                            title="Reactivate"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "0.5rem",
+                              borderRadius: "0.5rem",
+                              color: "var(--color-text-muted)",
+                              transition: "all 0.15s",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "#1F6B4D";
+                              e.currentTarget.style.background = "rgba(31,107,77,0.08)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = "var(--color-text-muted)";
+                              e.currentTarget.style.background = "none";
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>restart_alt</span>
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(s)}
+                            disabled={actingId === s.id}
+                            title="Delete"
+                            style={{
+                              background: "none",
+                              border: "none",
+                              cursor: "pointer",
+                              padding: "0.5rem",
+                              borderRadius: "0.5rem",
+                              color: "var(--color-text-muted)",
+                              transition: "all 0.15s",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.color = "#ba1a1a";
+                              e.currentTarget.style.background = "rgba(186,26,26,0.08)";
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.color = "var(--color-text-muted)";
+                              e.currentTarget.style.background = "none";
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>delete</span>
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
@@ -895,8 +1046,6 @@ export default function StaffClient({ initialStaff }: Props) {
           </div>
         </div>
       </div>
-
-      {/* Deactivate confirmation (keep outside modal) */}
     </div>
   );
 }

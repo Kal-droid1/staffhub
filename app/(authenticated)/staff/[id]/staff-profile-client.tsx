@@ -641,27 +641,179 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
       )}
 
       {showConfirmation === "deactivate" && (
-        <Card style={{ marginBottom: "1.25rem" }}>
-          <p style={{ fontWeight: 500, marginBottom: "0.75rem" }}>Deactivate {staff.name}?</p>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.75rem", fontSize: "0.85rem", cursor: "pointer" }}>
-            <input type="checkbox" checked={hideFromReports} onChange={(e) => setHideFromReports(e.target.checked)} />
-            Also hide from historical reports?
-          </label>
-          <div className="flex-row gap-sm">
-            <button onClick={handleDeactivate} disabled={actingId === staff.id} className="btn btn-danger btn-sm">Confirm Deactivate</button>
-            <button onClick={() => setShowConfirmation(null)} className="btn btn-ghost btn-sm">Cancel</button>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => { setShowConfirmation(null); setHideFromReports(false); }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 440,
+              width: "calc(100% - 2rem)",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.05rem", fontWeight: 700 }}>Deactivate Staff</h3>
+              <button
+                onClick={() => { setShowConfirmation(null); setHideFromReports(false); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+              Deactivate <strong>{staff.name}</strong>? They will no longer be able to log in until reactivated.
+            </p>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "1rem", fontSize: "0.85rem", cursor: "pointer" }}>
+              <input type="checkbox" checked={hideFromReports} onChange={(e) => setHideFromReports(e.target.checked)} />
+              Also hide from historical reports?
+            </label>
+            <div className="flex-row gap-sm">
+              <button
+                onClick={handleDeactivate}
+                disabled={actingId === staff.id}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "#ba1a1a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  fontWeight: 600,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {actingId === staff.id ? "Deactivating…" : "Deactivate"}
+              </button>
+              <button
+                onClick={() => { setShowConfirmation(null); setHideFromReports(false); }}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "none",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "0.5rem",
+                  fontWeight: 500,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  color: "var(--color-text)",
+                  fontFamily: "inherit",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </Card>
+        </div>
       )}
 
       {showConfirmation === "delete" && (
-        <Card style={{ marginBottom: "1.25rem" }}>
-          <p style={{ fontWeight: 500, marginBottom: "0.75rem" }}>Delete {staff.name}? This will fully hide them from all reports and move them to Trash.</p>
-          <div className="flex-row gap-sm">
-            <button onClick={handleDelete} disabled={actingId === staff.id} className="btn btn-danger btn-sm">Confirm Delete</button>
-            <button onClick={() => setShowConfirmation(null)} className="btn btn-ghost btn-sm">Cancel</button>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => setShowConfirmation(null)}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #ba1a1a",
+              maxWidth: 440,
+              width: "calc(100% - 2rem)",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0, color: "#ba1a1a", fontSize: "1.05rem", fontWeight: 700 }}>Delete Staff</h3>
+              <button
+                onClick={() => setShowConfirmation(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+              Delete <strong>{staff.name}</strong>? This moves them to Trash and can be restored later.
+            </p>
+            <div className="flex-row gap-sm">
+              <button
+                onClick={handleDelete}
+                disabled={actingId === staff.id}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "#ba1a1a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  fontWeight: 600,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {actingId === staff.id ? "Deleting…" : "Delete"}
+              </button>
+              <button
+                onClick={() => setShowConfirmation(null)}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "none",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "0.5rem",
+                  fontWeight: 500,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  color: "var(--color-text)",
+                  fontFamily: "inherit",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </Card>
+        </div>
       )}
 
       <h2 style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)", margin: "0 0 0.75rem" }}>

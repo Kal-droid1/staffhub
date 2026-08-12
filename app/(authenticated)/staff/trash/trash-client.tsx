@@ -23,8 +23,7 @@ export default function TrashClient({ initialTrash }: Props) {
   const router = useRouter();
   const [trash, setTrash] = useState<TrashMember[]>(initialTrash);
   const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [permanentDeleteId, setPermanentDeleteId] = useState<string | null>(null);
-  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<TrashMember | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   async function handleRestore(id: string) {
@@ -42,7 +41,6 @@ export default function TrashClient({ initialTrash }: Props) {
   }
 
   async function handlePermanentDelete(id: string) {
-    if (deleteConfirmation !== "DELETE") return;
     setDeleting(true);
     const res = await fetch("/api/staff", {
       method: "PATCH",
@@ -51,8 +49,7 @@ export default function TrashClient({ initialTrash }: Props) {
     });
     if (res.ok) {
       setTrash((prev) => prev.filter((s) => s.id !== id));
-      setPermanentDeleteId(null);
-      setDeleteConfirmation("");
+      setPermanentDeleteTarget(null);
     }
     setDeleting(false);
     router.refresh();
@@ -130,42 +127,12 @@ export default function TrashClient({ initialTrash }: Props) {
                       >
                         {restoringId === s.id ? "…" : "Restore"}
                       </button>
-                      {permanentDeleteId === s.id ? (
-                        <div className="flex-row gap-sm" style={{ alignItems: "center" }}>
-                          <input
-                            type="text"
-                            placeholder='Type "DELETE"'
-                            value={deleteConfirmation}
-                            onChange={(e) => setDeleteConfirmation(e.target.value)}
-                            className="form-input"
-                            style={{ width: 120, fontSize: "0.8rem" }}
-                            autoFocus
-                          />
-                          <button
-                            onClick={() => handlePermanentDelete(s.id)}
-                            disabled={deleting || deleteConfirmation !== "DELETE"}
-                            className="btn btn-danger btn-sm"
-                          >
-                            {deleting ? "…" : "Confirm"}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setPermanentDeleteId(null);
-                              setDeleteConfirmation("");
-                            }}
-                            className="btn btn-ghost btn-sm"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setPermanentDeleteId(s.id)}
-                          className="btn btn-danger btn-sm"
-                        >
-                          Delete Forever
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setPermanentDeleteTarget(s)}
+                        className="btn btn-danger btn-sm"
+                      >
+                        Delete Forever
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -175,6 +142,93 @@ export default function TrashClient({ initialTrash }: Props) {
           </div>
         )}
       </Card>
+
+      {/* Permanent Delete confirmation modal */}
+      {permanentDeleteTarget && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => setPermanentDeleteTarget(null)}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #ba1a1a",
+              maxWidth: 440,
+              width: "calc(100% - 2rem)",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0, color: "#ba1a1a", fontSize: "1.05rem", fontWeight: 700 }}>Permanent Delete</h3>
+              <button
+                onClick={() => setPermanentDeleteTarget(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+              Permanently delete <strong>{permanentDeleteTarget.name}</strong>? This cannot be undone.
+            </p>
+            <div className="flex-row gap-sm">
+              <button
+                onClick={() => handlePermanentDelete(permanentDeleteTarget.id)}
+                disabled={deleting}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "#ba1a1a",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "0.5rem",
+                  fontWeight: 600,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                }}
+              >
+                {deleting ? "Deleting…" : "Permanently Delete"}
+              </button>
+              <button
+                onClick={() => setPermanentDeleteTarget(null)}
+                style={{
+                  padding: "0.4rem 1rem",
+                  background: "none",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "0.5rem",
+                  fontWeight: 500,
+                  fontSize: "0.8125rem",
+                  cursor: "pointer",
+                  color: "var(--color-text)",
+                  fontFamily: "inherit",
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
