@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { prisma } from "@/lib/prisma";
-import { put, get } from "@vercel/blob";
+import { put, get, del } from "@vercel/blob";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await get(user.avatarUrl, { access: "private" });
+    const result = await get(user.avatarUrl, { access: "private", useCache: false });
     if (!result || result.statusCode !== 200) {
       return NextResponse.json({ error: "Avatar not found" }, { status: 404 });
     }
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(result.stream, {
       headers: {
         "Content-Type": result.blob.contentType,
-        "Cache-Control": "private, max-age=300",
+        "Cache-Control": "no-store",
       },
     });
   } catch (e) {
@@ -75,11 +75,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File is required" }, { status: 400 });
   }
 
-  let blob;
+  const existing = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { avatarUrl: true },
+  });
+
+  const rawExt = file.name.includes(".") ? file.name.split(".").pop() ?? "" : "";
+  const extension = /^[a-zA-Z0-9]+$/.test(rawExt) ? rawExt.toLowerCase() : "jpg";
+  const stablePath = `avatars/${session.user.id}/avatar.${extension}`;
+
   try {
-    blob = await put(`avatars/${session.user.id}/${file.name}`, file, {
+    await put(stablePath, file, {
       access: "private",
-      addRandomSuffix: true,
+      allowOverwrite: true,
+      contentType: file.type || undefined,
     });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
@@ -90,12 +99,20 @@ export async function POST(req: NextRequest) {
   try {
     await prisma.user.update({
       where: { id: session.user.id },
-      data: { avatarUrl: blob.url },
+      data: { avatarUrl: `avatars/${session.user.id}/avatar.${extension}` },
     });
   } catch (e) {
     console.error("User update error:", e);
     return NextResponse.json({ error: "Failed to save avatar URL to database." }, { status: 500 });
   }
 
-  return NextResponse.json({ avatarUrl: blob.url });
+  if (existing?.avatarUrl && existing.avatarUrl !== `avatars/${session.user.id}/avatar.${extension}`) {
+    try {
+      await del(existing.avatarUrl);
+    } catch (e) {
+      console.error("Old avatar cleanup error:", e);
+    }
+  }
+
+  return NextResponse.json({ avatarUrl: `avatars/${session.user.id}/avatar.${extension}` });
 }
