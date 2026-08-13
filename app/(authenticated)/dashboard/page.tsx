@@ -70,6 +70,8 @@ export default async function DashboardPage() {
 
   const totalRemaining = balances.reduce((sum, b) => sum + b.remaining, 0);
 
+  const staffBalances = balances.filter((b) => b.granted > 0);
+
   const isManager = ROLE_HIERARCHY[user.role] >= ROLE_HIERARCHY.MANAGER;
   const pendingApprovals = isManager ? await countPendingRequestGroups() : 0;
   const teamToday = isManager ? await getTeamAttendanceToday() : null;
@@ -386,13 +388,13 @@ export default async function DashboardPage() {
               <div style={{ flex: 1, height: 1, background: "var(--color-border-light)" }} />
             </div>
 
-            {balances.length === 0 ? (
+            {staffBalances.length === 0 ? (
               <Card>
-                <p className="text-muted" style={{ margin: 0 }}>No leave types configured yet.</p>
+                <p className="text-muted" style={{ margin: 0 }}>No leave balances assigned yet.</p>
               </Card>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
-                {balances.map((b) => {
+                {staffBalances.map((b) => {
                   const available = Math.max(b.remaining, 0);
                   const total = Math.max(b.granted, 0);
                   const pct = total > 0 ? Math.min(Math.max(Math.round((available / total) * 100), 0), 100) : 0;
