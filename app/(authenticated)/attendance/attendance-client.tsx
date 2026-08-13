@@ -351,8 +351,8 @@ export default function AttendanceClient({
     setError("");
     setSuccess("");
 
-    if (selectedLeaveType?.requiresAttachment && !leaveFile) {
-      setError("A signed attachment is required for this leave type.");
+    if (!leaveFile) {
+      setError("A signed attachment is required.");
       setLoading(false);
       return;
     }
@@ -993,14 +993,12 @@ export default function AttendanceClient({
                 <label className="form-label">Note (optional)</label>
                 <input type="text" className="form-input" value={leaveNote} onChange={(e) => setLeaveNote(e.target.value)} placeholder="Reason for leave..." />
               </div>
-              {selectedLeaveType?.requiresAttachment && (
-                <div style={{ marginBottom: "0.75rem" }}>
-                  <label className="form-label">Signed attachment (required)</label>
-                  <input type="file" accept="image/*,.pdf" onChange={(e) => setLeaveFile(e.target.files?.[0] || null)} className="form-input" />
-                  {leaveFile && <p className="form-hint">{leaveFile.name}</p>}
-                </div>
-              )}
-              <button type="submit" disabled={loading || (selectedLeaveType?.requiresAttachment && !leaveFile)} className="btn btn-primary">
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Signed attachment (required)</label>
+                <input type="file" accept="image/*,.pdf" onChange={(e) => setLeaveFile(e.target.files?.[0] || null)} className="form-input" />
+                {leaveFile && <p className="form-hint">{leaveFile.name}</p>}
+              </div>
+              <button type="submit" disabled={loading || !leaveFile} className="btn btn-primary">
                 {loading ? "Submitting..." : "Submit request"}
               </button>
             </form>
@@ -1313,24 +1311,22 @@ export default function AttendanceClient({
                   />
                 </div>
 
-                {selectedLeaveType?.requiresAttachment && (
-                  <div style={{ marginBottom: "0.75rem" }}>
-                    <label className="form-label">Signed attachment (required)</label>
-                    <input
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={(e) => setLeaveFile(e.target.files?.[0] || null)}
-                      className="form-input"
-                    />
-                    {leaveFile && (
-                      <p className="form-hint">{leaveFile.name}</p>
-                    )}
-                  </div>
-                )}
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Signed attachment (required)</label>
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    onChange={(e) => setLeaveFile(e.target.files?.[0] || null)}
+                    className="form-input"
+                  />
+                  {leaveFile && (
+                    <p className="form-hint">{leaveFile.name}</p>
+                  )}
+                </div>
 
                 <button
                   type="submit"
-                  disabled={loading || (selectedLeaveType?.requiresAttachment && !leaveFile)}
+                  disabled={loading || !leaveFile}
                   className="btn btn-primary"
                 >
                   {loading ? "Submitting..." : "Submit request"}
