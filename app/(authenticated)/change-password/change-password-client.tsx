@@ -6,7 +6,6 @@ import Card from "@/modules/core/components/card";
 
 export default function ChangePasswordClient() {
   const router = useRouter();
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,8 +22,8 @@ export default function ChangePasswordClient() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters.");
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters.");
       return;
     }
 
@@ -33,7 +32,7 @@ export default function ChangePasswordClient() {
     const res = await fetch("/api/account/password", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword, newPassword }),
+      body: JSON.stringify({ newPassword }),
     });
     const data = await res.json();
 
@@ -44,7 +43,6 @@ export default function ChangePasswordClient() {
     }
 
     setSuccess("Password changed successfully.");
-    setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
     setLoading(false);
@@ -57,17 +55,6 @@ export default function ChangePasswordClient() {
 
       <Card>
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: "0.75rem" }}>
-            <label className="form-label">Current Password</label>
-            <input
-              type="password"
-              className="form-input"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-            />
-          </div>
-
           <div style={{ marginBottom: "0.75rem" }}>
             <label className="form-label">New Password</label>
             <input

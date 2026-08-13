@@ -11,28 +11,23 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { currentPassword, newPassword } = body;
+  const { newPassword } = body;
 
-  if (!currentPassword || !newPassword) {
-    return NextResponse.json({ error: "currentPassword and newPassword are required." }, { status: 400 });
+  if (!newPassword) {
+    return NextResponse.json({ error: "newPassword is required." }, { status: 400 });
   }
 
-  if (newPassword.length < 6) {
-    return NextResponse.json({ error: "New password must be at least 6 characters." }, { status: 400 });
+  if (newPassword.length < 8) {
+    return NextResponse.json({ error: "New password must be at least 8 characters." }, { status: 400 });
   }
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { password: true },
+    select: { id: true },
   });
 
   if (!user) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
-  }
-
-  const valid = await bcrypt.compare(currentPassword, user.password);
-  if (!valid) {
-    return NextResponse.json({ error: "Current password is incorrect." }, { status: 403 });
   }
 
   const hashed = await bcrypt.hash(newPassword, 12);

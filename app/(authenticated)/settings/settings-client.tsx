@@ -63,7 +63,6 @@ export default function SettingsClient({ role }: Props) {
 /* ---- Change Password Section ---- */
 
 function ChangePasswordSection() {
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
@@ -79,8 +78,8 @@ function ChangePasswordSection() {
       setError("New passwords do not match.");
       return;
     }
-    if (newPassword.length < 6) {
-      setError("New password must be at least 6 characters.");
+    if (newPassword.length < 8) {
+      setError("New password must be at least 8 characters.");
       return;
     }
 
@@ -88,7 +87,7 @@ function ChangePasswordSection() {
     const res = await fetch("/api/account/password", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword, newPassword }),
+      body: JSON.stringify({ newPassword }),
     });
     const data = await res.json();
 
@@ -99,7 +98,6 @@ function ChangePasswordSection() {
     }
 
     setSuccess("Password changed successfully.");
-    setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
     setLoading(false);
@@ -109,10 +107,6 @@ function ChangePasswordSection() {
     <Card style={{ maxWidth: 480 }}>
       <h3 style={{ margin: "0 0 1rem", color: "var(--color-brand)", fontSize: "1rem", fontWeight: 600 }}>Change Your Password</h3>
       <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: "0.75rem" }}>
-          <label className="form-label">Current Password</label>
-          <input type="password" className="form-input" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-        </div>
         <div style={{ marginBottom: "0.75rem" }}>
           <label className="form-label">New Password</label>
           <input type="password" className="form-input" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
