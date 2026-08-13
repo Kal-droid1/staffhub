@@ -161,6 +161,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
   const now = new Date();
   const [summaryMonth, setSummaryMonth] = useState(now.getMonth() + 1);
   const [summaryYear, setSummaryYear] = useState(now.getFullYear());
+  const [balanceIndex, setBalanceIndex] = useState(0);
 
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -1109,17 +1110,73 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
           {balancesState.length === 0 ? (
             <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>No leave types configured.</p>
           ) : (
-            balancesState.map((b) => {
+            (() => {
+              const b = balancesState[Math.min(balanceIndex, balancesState.length - 1)];
               const maxVal = Math.max(b.granted, b.remaining + b.used);
               return (
-                <div key={b.leaveTypeId} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                    <button
+                      type="button"
+                      onClick={() => setBalanceIndex(Math.max(0, balanceIndex - 1))}
+                      disabled={balanceIndex === 0}
+                      aria-label="Previous leave type"
+                      style={{
+                        background: "rgba(255,255,255,0.5)",
+                        color: "#1F6B4D",
+                        border: "1px solid rgba(191,201,193,0.3)",
+                        borderRadius: "0.25rem",
+                        width: 28,
+                        height: 28,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: balanceIndex === 0 ? "default" : "pointer",
+                        fontSize: "0.85rem",
+                        fontFamily: "inherit",
+                        outline: "none",
+                        opacity: balanceIndex === 0 ? 0.4 : 1,
+                      }}
+                    >
+                      ←
+                    </button>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "#1F6B4D" }}>
+                        {b.leaveTypeName}
+                        {b.isAnnualRecurring && <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", marginLeft: "0.35rem" }}>(annual)</span>}
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
+                        ({balanceIndex + 1}/{balancesState.length})
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBalanceIndex(Math.min(balancesState.length - 1, balanceIndex + 1))}
+                      disabled={balanceIndex === balancesState.length - 1}
+                      aria-label="Next leave type"
+                      style={{
+                        background: "rgba(255,255,255,0.5)",
+                        color: "#1F6B4D",
+                        border: "1px solid rgba(191,201,193,0.3)",
+                        borderRadius: "0.25rem",
+                        width: 28,
+                        height: 28,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: balanceIndex === balancesState.length - 1 ? "default" : "pointer",
+                        fontSize: "0.85rem",
+                        fontFamily: "inherit",
+                        outline: "none",
+                        opacity: balanceIndex === balancesState.length - 1 ? 0.4 : 1,
+                      }}
+                    >
+                      →
+                    </button>
+                  </div>
                   <RadialGauge value={b.remaining} max={maxVal} size={180} strokeWidth={10} gradient />
                   <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: "0.5rem", marginBottom: "0.25rem" }}>
                     Days Left
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "#1F6B4D", marginBottom: "0.25rem" }}>
-                    {b.leaveTypeName}
-                    {b.isAnnualRecurring && <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", marginLeft: "0.35rem" }}>(annual)</span>}
                   </div>
                   <div style={{ display: "flex", width: "100%", justifyContent: "space-around", padding: "0.75rem 0", background: "rgba(255,255,255,0.5)", borderRadius: "0.5rem", border: "1px solid rgba(191,201,193,0.2)", marginTop: "0.25rem" }}>
                     <div style={{ textAlign: "center" }}>
@@ -1134,7 +1191,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                   </div>
                 </div>
               );
-            })
+            })()
           )}
         </section>
         </div>
