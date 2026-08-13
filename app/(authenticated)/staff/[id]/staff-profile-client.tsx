@@ -749,16 +749,38 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.8rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: "1.05rem", color: "#D9A441" }}>mail</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.85rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "0.2rem 0.7rem",
+                borderRadius: "999px",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                letterSpacing: "0.03em",
+                backgroundColor: "rgba(31,107,77,0.1)",
+                color: "#1F6B4D",
+                border: "1px solid rgba(31,107,77,0.3)",
+                whiteSpace: "nowrap",
+              }}>
                 Email
               </span>
               <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right", wordBreak: "break-word" }}>{staff.email}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.8rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: "1.05rem", color: "#D9A441" }}>work</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.85rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "0.2rem 0.7rem",
+                borderRadius: "999px",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                letterSpacing: "0.03em",
+                backgroundColor: "rgba(217,164,65,0.18)",
+                color: "#7d5700",
+                border: "1px solid rgba(217,164,65,0.4)",
+                whiteSpace: "nowrap",
+              }}>
                 Job Title
               </span>
               <span style={{
@@ -776,9 +798,20 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                 {staff.jobTitle?.name || "\u2014"}
               </span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.8rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: "1.05rem", color: "#D9A441" }}>toggle_on</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.85rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "0.2rem 0.7rem",
+                borderRadius: "999px",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                letterSpacing: "0.03em",
+                backgroundColor: "rgba(31,107,77,0.1)",
+                color: "#1F6B4D",
+                border: "1px solid rgba(31,107,77,0.3)",
+                whiteSpace: "nowrap",
+              }}>
                 Status
               </span>
               <StatusPill
@@ -786,9 +819,20 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                 label={staff.isActive ? "Active" : "Inactive"}
               />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.8rem 0" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: "1.05rem", color: "#D9A441" }}>calendar_today</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.85rem 0" }}>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "0.2rem 0.7rem",
+                borderRadius: "999px",
+                fontSize: "0.7rem",
+                fontWeight: 700,
+                letterSpacing: "0.03em",
+                backgroundColor: "rgba(217,164,65,0.18)",
+                color: "#7d5700",
+                border: "1px solid rgba(217,164,65,0.4)",
+                whiteSpace: "nowrap",
+              }}>
                 Joined
               </span>
               <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>{formatDate(staff.createdAt)}</span>
@@ -800,14 +844,27 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
               style={{
                 flex: 1,
                 padding: "0.5rem 1rem",
-                background: "none",
+                background: "rgba(217,164,65,0.08)",
                 border: "1px solid #D9A441",
-                borderRadius: "0.25rem",
-                color: "#1F6B4D",
-                fontWeight: 500,
+                borderRadius: "0.35rem",
+                color: "#7d5700",
+                fontWeight: 600,
                 fontSize: "0.8125rem",
                 cursor: "pointer",
                 fontFamily: "inherit",
+                transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#D9A441";
+                e.currentTarget.style.color = "#0A261B";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 16px rgba(217,164,65,0.4)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(217,164,65,0.08)";
+                e.currentTarget.style.color = "#7d5700";
+                e.currentTarget.style.transform = "";
+                e.currentTarget.style.boxShadow = "";
               }}
             >
               Leave Grants
@@ -818,15 +875,27 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                 style={{
                   flex: 1,
                   padding: "0.5rem 1rem",
-                  background: "#1F6B4D",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.25rem",
-                  fontWeight: 500,
+                  background: "rgba(31,107,77,0.08)",
+                  border: "1px solid #1F6B4D",
+                  borderRadius: "0.35rem",
+                  color: "#1F6B4D",
+                  fontWeight: 600,
                   fontSize: "0.8125rem",
                   cursor: "pointer",
                   fontFamily: "inherit",
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                  transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#1F6B4D";
+                  e.currentTarget.style.color = "#fff";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(31,107,77,0.35)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(31,107,77,0.08)";
+                  e.currentTarget.style.color = "#1F6B4D";
+                  e.currentTarget.style.transform = "";
+                  e.currentTarget.style.boxShadow = "";
                 }}
               >
                 Edit
@@ -840,14 +909,27 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                   style={{
                     flex: 1,
                     padding: "0.5rem 1rem",
-                    background: "none",
-                    border: "1px solid #1F6B4D",
-                    borderRadius: "0.25rem",
-                    color: "#1F6B4D",
-                    fontWeight: 500,
+                    background: "rgba(120,100,60,0.06)",
+                    border: "1px solid rgba(120,100,60,0.5)",
+                    borderRadius: "0.35rem",
+                    color: "#6b5a33",
+                    fontWeight: 600,
                     fontSize: "0.8125rem",
                     cursor: "pointer",
                     fontFamily: "inherit",
+                    transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(217,164,65,0.35)";
+                    e.currentTarget.style.color = "#4a3c1f";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 16px rgba(217,164,65,0.25)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(120,100,60,0.06)";
+                    e.currentTarget.style.color = "#6b5a33";
+                    e.currentTarget.style.transform = "";
+                    e.currentTarget.style.boxShadow = "";
                   }}
                 >
                   Deactivate
@@ -858,14 +940,27 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                   style={{
                     flex: 1,
                     padding: "0.5rem 1rem",
-                    background: "none",
+                    background: "rgba(186,26,26,0.06)",
                     border: "1px solid #ba1a1a",
-                    borderRadius: "0.25rem",
+                    borderRadius: "0.35rem",
                     color: "#ba1a1a",
-                    fontWeight: 500,
+                    fontWeight: 600,
                     fontSize: "0.8125rem",
                     cursor: "pointer",
                     fontFamily: "inherit",
+                    transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "#ba1a1a";
+                    e.currentTarget.style.color = "#fff";
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 16px rgba(186,26,26,0.4)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(186,26,26,0.06)";
+                    e.currentTarget.style.color = "#ba1a1a";
+                    e.currentTarget.style.transform = "";
+                    e.currentTarget.style.boxShadow = "";
                   }}
                 >
                   Delete
@@ -878,14 +973,27 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                 style={{
                   flex: 1,
                   padding: "0.5rem 1rem",
-                  background: "#1F6B4D",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "0.25rem",
-                  fontWeight: 500,
+                  background: "rgba(31,107,77,0.08)",
+                  border: "1px solid #1F6B4D",
+                  borderRadius: "0.35rem",
+                  color: "#1F6B4D",
+                  fontWeight: 600,
                   fontSize: "0.8125rem",
                   cursor: "pointer",
                   fontFamily: "inherit",
+                  transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#1F6B4D";
+                  e.currentTarget.style.color = "#fff";
+                  e.currentTarget.style.transform = "translateY(-2px)";
+                  e.currentTarget.style.boxShadow = "0 6px 16px rgba(31,107,77,0.35)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(31,107,77,0.08)";
+                  e.currentTarget.style.color = "#1F6B4D";
+                  e.currentTarget.style.transform = "";
+                  e.currentTarget.style.boxShadow = "";
                 }}
               >
                 Reactivate
