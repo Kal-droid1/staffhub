@@ -4,7 +4,8 @@ import { getLeaveBalances } from "@/modules/leave/queries";
 import { countPendingRequestGroups, getTeamAttendanceToday } from "@/modules/attendance/queries";
 import type { Role } from "@prisma/client";
 import Card from "@/modules/core/components/card";
-import { formatDays, formatDaysLabel } from "@/lib/format";
+import { formatDays, formatDaysLabel, formatDate } from "@/lib/format";
+import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
 function getRoleLabel(role: Role): string {
@@ -39,6 +40,11 @@ export default async function DashboardPage() {
   const roleLabel = getRoleLabel(user.role);
   const balances = await getLeaveBalances(user.id);
   const greeting = getGreeting();
+
+  const staffRecord = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { createdAt: true },
+  });
 
   const totalRemaining = balances.reduce((sum, b) => sum + b.remaining, 0);
 
@@ -202,23 +208,38 @@ export default async function DashboardPage() {
       )}
 
       <div className="card-grid card-grid--2" style={{ marginBottom: "1.5rem" }}>
-        <Card>
-          <p className="stat-label">Your Role</p>
-          <p className="stat-number" style={{ fontSize: "1.5rem", marginTop: "0.25rem" }}>
-            {roleLabel}
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
-              <span style={pillLabelStyle}>Email</span>
-              <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right", wordBreak: "break-word" }}>{user.email}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
-              <span style={pillLabelStyle}>
-                {user.jobTitleName ? "Job Title" : "Department"}
-              </span>
-              <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right" }}>
-                {user.jobTitleName || user.department || "\u2014"}
-              </span>
+        <Card style={{ position: "relative", overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "absolute", inset: 0, opacity: 0.08, backgroundImage: "radial-gradient(#1F6B4D 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none" }} />
+          <div style={{ position: "relative", zIndex: 1, flex: 1, display: "flex", flexDirection: "column" }}>
+            <p className="stat-label">Your Role</p>
+            <p className="stat-number" style={{ fontSize: "1.5rem", marginTop: "0.25rem" }}>
+              {roleLabel}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem", flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+                <span style={pillLabelStyle}>Email</span>
+                <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right", wordBreak: "break-word" }}>{user.email}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+                <span style={pillLabelStyle}>
+                  {user.jobTitleName ? "Job Title" : "Department"}
+                </span>
+                <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right" }}>
+                  {user.jobTitleName || user.department || "\u2014"}
+                </span>
+              </div>
+              {user.jobTitleName && user.department && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+                  <span style={pillLabelStyle}>Department</span>
+                  <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right" }}>{user.department}</span>
+                </div>
+              )}
+              {staffRecord?.createdAt && (
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+                  <span style={pillLabelStyle}>Start Date</span>
+                  <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right" }}>{formatDate(staffRecord.createdAt)}</span>
+                </div>
+              )}
             </div>
           </div>
         </Card>
