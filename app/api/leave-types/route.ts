@@ -10,6 +10,9 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (!session.user.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
   const types = await getLeaveTypes();
   return NextResponse.json(types);
 }

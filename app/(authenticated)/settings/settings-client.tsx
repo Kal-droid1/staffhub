@@ -12,8 +12,13 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export default function SettingsClient() {
+interface Props {
+  role: string;
+}
+
+export default function SettingsClient({ role }: Props) {
   const router = useRouter();
+  const visibleTabs = role === "MANAGER" || role === "ADMIN" ? TABS : TABS.filter((t) => t.id === "password");
   const [tab, setTab] = useState<TabId>("password");
 
   return (
@@ -24,7 +29,7 @@ export default function SettingsClient() {
 
       {/* Tab bar */}
       <div style={{ display: "flex", gap: "0.25rem", margin: "1.5rem 0", borderBottom: "2px solid rgba(31,107,77,0.1)", paddingBottom: 0 }}>
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
