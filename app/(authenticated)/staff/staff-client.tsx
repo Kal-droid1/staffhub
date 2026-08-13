@@ -47,7 +47,7 @@ interface LeaveTypeOption {
 interface CompanyLeaveAction {
   id: string;
   label: string | null;
-  leaveType: { name: string };
+  leaveType: { name: string } | null;
   startDate: string;
   endDate: string;
   affectedStaff: number;
@@ -125,6 +125,7 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
   const [bulkError, setBulkError] = useState("");
 
   const [showCompanyLeave, setShowCompanyLeave] = useState(false);
+  const [clMode, setClMode] = useState<"typed" | "custom">("typed");
   const [clTypeId, setClTypeId] = useState(leaveTypes[0]?.id ?? "");
   const [clStartDate, setClStartDate] = useState("");
   const [clEndDate, setClEndDate] = useState("");
@@ -360,6 +361,7 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
   }
 
   async function openCompanyLeave() {
+    setClMode("typed");
     setClTypeId(leaveTypes[0]?.id ?? "");
     setClStartDate("");
     setClEndDate("");
@@ -377,8 +379,16 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
 
   async function handleCompanyLeave(e: React.FormEvent) {
     e.preventDefault();
-    if (!clTypeId || !clStartDate || !clEndDate) {
-      setClError("Leave type, start date, and end date are required.");
+    if (!clStartDate || !clEndDate) {
+      setClError("Start date and end date are required.");
+      return;
+    }
+    if (clMode === "typed" && !clTypeId) {
+      setClError("Select a leave type.");
+      return;
+    }
+    if (clMode === "custom" && !clLabel.trim()) {
+      setClError("Enter a custom reason.");
       return;
     }
     setClSaving(true);
@@ -389,7 +399,7 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        leaveTypeId: clTypeId,
+        leaveTypeId: clMode === "typed" ? clTypeId : undefined,
         startDate: clStartDate,
         endDate: clEndDate,
         label: clLabel || undefined,
@@ -403,9 +413,13 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
       return;
     }
 
-    const typeName = leaveTypes.find((t) => t.id === clTypeId)?.name ?? "Leave";
+    const displayName =
+      clMode === "custom"
+        ? clLabel.trim()
+        : leaveTypes.find((t) => t.id === clTypeId)?.name ?? "Leave";
+    const suffix = clMode === "custom" ? " (no balance deducted)" : "";
     setClResult(
-      `Applied ${typeName} from ${formatDate(new Date(clStartDate))} to ${formatDate(new Date(clEndDate))} to ${data.affectedStaff} active staff member${data.affectedStaff === 1 ? "" : "s"}${data.skippedRecords ? `, skipped ${data.skippedRecords} conflicting date${data.skippedRecords === 1 ? "" : "s"}` : ""}${data.insufficientStaff ? `, ${data.insufficientStaff} exceeded balance` : ""}.`
+      `Applied '${displayName}' leave from ${formatDate(new Date(clStartDate))} to ${formatDate(new Date(clEndDate))} to ${data.affectedStaff} active staff member${data.affectedStaff === 1 ? "" : "s"}${data.skippedRecords ? `, skipped ${data.skippedRecords} conflicting date${data.skippedRecords === 1 ? "" : "s"}` : ""}${data.insufficientStaff ? `, ${data.insufficientStaff} exceeded balance` : ""}${suffix}.`
     );
     setClSaving(false);
     try {
@@ -1684,18 +1698,56 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
               </button>
             </div>
             <form onSubmit={handleCompanyLeave}>
-              <div style={{ marginBottom: "0.75rem" }}>
-                <label className="form-label">Leave Type</label>
-                <select
-                  value={clTypeId}
-                  onChange={(e) => setClTypeId(e.target.value)}
-                  className="form-select"
-                >
-                  {leaveTypes.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
+              <div style={{ display: "flex", gap: "1.25rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", color: "#1F6B4D" }}>
+                  <input
+                    type="radio"
+                    name="company-leave-mode"
+                    checked={clMode === "typed"}
+                    onChange={() => setClMode("typed")}
+                  />
+                  Use existing leave type
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", color: "#1F6B4D" }}>
+                  <input
+                    type="radio"
+                    name="company-leave-mode"
+                    checked={clMode === "custom"}
+                    onChange={() => { setClMode("custom"); setClTypeId(""); }}
+                  />
+                  Custom reason (does not affect balance)
+                </label>
               </div>
+
+              {clMode === "typed" && (
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Leave Type</label>
+                  <select
+                    value={clTypeId}
+                    onChange={(e) => setClTypeId(e.target.value)}
+                    className="form-select"
+                  >
+                    {leaveTypes.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {clMode === "custom" && (
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Custom reason (required)</label>
+                  <input
+                    type="text"
+                    value={clLabel}
+                    onChange={(e) => setClLabel(e.target.value)}
+                    className="form-input"
+                    placeholder="e.g. National Mourning Day"
+                    required
+                  />
+                </div>
+              )}
+
               <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
                 <div style={{ flex: 1, minWidth: 140 }}>
                   <label className="form-label">Start date</label>
@@ -1716,16 +1768,20 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                   />
                 </div>
               </div>
-              <div style={{ marginBottom: "0.75rem" }}>
-                <label className="form-label">Label (optional)</label>
-                <input
-                  type="text"
-                  value={clLabel}
-                  onChange={(e) => setClLabel(e.target.value)}
-                  className="form-input"
-                  placeholder="e.g. New Year Holiday"
-                />
-              </div>
+
+              {clMode === "typed" && (
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Label (optional)</label>
+                  <input
+                    type="text"
+                    value={clLabel}
+                    onChange={(e) => setClLabel(e.target.value)}
+                    className="form-input"
+                    placeholder="e.g. New Year Holiday"
+                  />
+                </div>
+              )}
+
               {clError && <p className="form-error mb-1">{clError}</p>}
               {clResult && (
                 <p style={{ margin: "0 0 0.75rem", fontSize: "0.875rem", color: "#1F6B4D", background: "rgba(31,107,77,0.08)", padding: "0.6rem 0.75rem", borderRadius: "0.5rem" }}>
@@ -1772,11 +1828,12 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                     >
                       <div style={{ minWidth: 0 }}>
                         <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#1F6B4D" }}>
-                          {a.leaveType.name} {a.label ? `— ${a.label}` : ""}
+                          {a.leaveType?.name ?? a.label ?? "Custom leave"}
                         </p>
                         <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
                           {formatDate(new Date(a.startDate))} – {formatDate(new Date(a.endDate))} · {a.affectedStaff} staff
                           {a.skippedRecords ? ` · ${a.skippedRecords} skipped` : ""}
+                          {!a.leaveType ? " · no balance deducted" : ""}
                         </p>
                       </div>
                       <button

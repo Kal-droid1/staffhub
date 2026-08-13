@@ -38,9 +38,18 @@ export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const { leaveTypeId, startDate, endDate, label } = body;
 
-  if (!leaveTypeId || !startDate || !endDate) {
+  if (!startDate || !endDate) {
     return NextResponse.json(
-      { error: "leaveTypeId, startDate, and endDate are required." },
+      { error: "startDate and endDate are required." },
+      { status: 400 }
+    );
+  }
+
+  const trimmedLabel = typeof label === "string" && label.trim() ? label.trim() : undefined;
+
+  if (!leaveTypeId && !trimmedLabel) {
+    return NextResponse.json(
+      { error: "Provide a leave type or a custom reason." },
       { status: 400 }
     );
   }
@@ -53,10 +62,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const summary = await applyCompanyLeave({
-      leaveTypeId,
+      leaveTypeId: leaveTypeId || undefined,
       startDate: start,
       endDate: end,
-      label: typeof label === "string" && label.trim() ? label.trim() : undefined,
+      label: trimmedLabel,
       createdById: session!.user!.id,
     });
     return NextResponse.json(summary, { status: 201 });

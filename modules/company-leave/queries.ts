@@ -3,15 +3,21 @@ import type { AttendanceStatus } from "@prisma/client";
 import { getLeaveBalances } from "@/modules/leave/queries";
 
 export async function applyCompanyLeave(args: {
-  leaveTypeId: string;
+  leaveTypeId?: string;
   startDate: Date;
   endDate: Date;
   label?: string;
   createdById: string;
 }) {
-  const leaveType = await prisma.leaveType.findUnique({ where: { id: args.leaveTypeId } });
-  if (!leaveType) throw new Error("Leave type not found");
+  let leaveType = null;
+  if (args.leaveTypeId) {
+    leaveType = await prisma.leaveType.findUnique({ where: { id: args.leaveTypeId } });
+    if (!leaveType) throw new Error("Leave type not found");
+  }
   if (args.startDate > args.endDate) throw new Error("Start date must be on or before end date");
+
+  const customReason = !leaveType && args.label ? args.label : null;
+  const mappedStatus: AttendanceStatus = leaveType?.mappedStatus ?? "OTHER";
 
   const dates: Date[] = [];
   const cursor = new Date(args.startDate);
@@ -40,7 +46,7 @@ export async function applyCompanyLeave(args: {
     date: Date;
     requestedStatus: AttendanceStatus;
     status: AttendanceStatus;
-    leaveTypeId: string;
+    leaveTypeId: string | null;
     note: string | null;
     batchId: string;
     reviewedById: string;
@@ -57,10 +63,10 @@ export async function applyCompanyLeave(args: {
       records.push({
         userId: u.id,
         date: d,
-        requestedStatus: leaveType.mappedStatus,
-        status: leaveType.mappedStatus,
-        leaveTypeId: leaveType.id,
-        note: args.label || null,
+        requestedStatus: mappedStatus,
+        status: mappedStatus,
+        leaveTypeId: leaveType?.id ?? null,
+        note: customReason || args.label || null,
         batchId: id,
         reviewedById: args.createdById,
         reviewedAt: new Date(),
@@ -74,8 +80,8 @@ export async function applyCompanyLeave(args: {
     prisma.bulkLeaveAction.create({
       data: {
         id,
-        label: args.label || null,
-        leaveTypeId: leaveType.id,
+        label: customReason || args.label || null,
+        leaveTypeId: leaveType?.id ?? null,
         startDate: args.startDate,
         endDate: args.endDate,
         batchId: id,
@@ -89,10 +95,12 @@ export async function applyCompanyLeave(args: {
   ]);
 
   let insufficientStaff = 0;
-  for (const uid of affectedUserIds) {
-    const balances = await getLeaveBalances(uid);
-    const b = balances.find((x) => x.leaveTypeId === leaveType.id);
-    if (b && b.remaining < 0) insufficientStaff++;
+  if (leaveType) {
+    for (const uid of affectedUserIds) {
+      const balances = await getLeaveBalances(uid);
+      const b = balances.find((x) => x.leaveTypeId === leaveType.id);
+      if (b && b.remaining < 0) insufficientStaff++;
+    }
   }
 
   await prisma.bulkLeaveAction.update({
@@ -105,6 +113,7 @@ export async function applyCompanyLeave(args: {
     affectedStaff: affectedUserIds.length,
     skippedRecords,
     insufficientStaff,
+    custom: !leaveType,
   };
 }
 
