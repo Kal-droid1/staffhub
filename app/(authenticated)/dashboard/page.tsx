@@ -343,7 +343,7 @@ export default async function DashboardPage() {
                 <p className="text-muted" style={{ margin: 0 }}>No leave types configured yet.</p>
               </Card>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.5rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 320px))", gap: "1.5rem", justifyContent: "flex-start" }}>
                 {balances.map((b) => {
                   const available = Math.max(b.remaining, 0);
                   const total = Math.max(b.granted, 0);
