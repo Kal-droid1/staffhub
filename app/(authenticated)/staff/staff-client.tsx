@@ -108,6 +108,12 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
   const [deactivateTarget, setDeactivateTarget] = useState<StaffMember | null>(null);
   const [hideFromReports, setHideFromReports] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null);
+  const [resetTarget, setResetTarget] = useState<StaffMember | null>(null);
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [resetSaving, setResetSaving] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
   const [page, setPage] = useState(0);
   const [showTrash, setShowTrash] = useState(false);
   const [trash, setTrash] = useState<TrashMember[] | null>(null);
@@ -271,6 +277,49 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
     setActingId(null);
     setDeleteTarget(null);
     router.refresh();
+  }
+
+  function openResetPassword(s: StaffMember) {
+    setResetTarget(s);
+    setResetNewPassword("");
+    setResetConfirmPassword("");
+    setResetError("");
+    setResetSuccess("");
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!resetTarget) return;
+    setResetError("");
+    setResetSuccess("");
+
+    if (resetNewPassword !== resetConfirmPassword) {
+      setResetError("New passwords do not match.");
+      return;
+    }
+    if (resetNewPassword.length < 8) {
+      setResetError("New password must be at least 8 characters.");
+      return;
+    }
+
+    setResetSaving(true);
+    const res = await fetch("/api/staff", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: resetTarget.id, action: "reset-password", newPassword: resetNewPassword }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setResetError(data.error || "Failed to reset password.");
+      setResetSaving(false);
+      return;
+    }
+
+    setResetSuccess(`Password reset for ${resetTarget.name}.`);
+    setResetNewPassword("");
+    setResetConfirmPassword("");
+    setResetSaving(false);
   }
 
   async function openTrash() {
@@ -911,6 +960,98 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
         </div>
       )}
 
+      {/* Reset Password modal */}
+      {resetTarget && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => setResetTarget(null)}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 440,
+              width: "calc(100% - 2rem)",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.05rem", fontWeight: 700 }}>Reset Password</h3>
+              <button
+                onClick={() => setResetTarget(null)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+              Set a new password for <strong>{resetTarget.name}</strong>.
+            </p>
+            <form onSubmit={handleResetPassword}>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">New Password</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={resetNewPassword}
+                  onChange={(e) => setResetNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Confirm New Password</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  value={resetConfirmPassword}
+                  onChange={(e) => setResetConfirmPassword(e.target.value)}
+                  required
+                />
+              </div>
+              {resetError && <p className="form-error mb-1">{resetError}</p>}
+              {resetSuccess && (
+                <p style={{ margin: "0 0 0.75rem", fontSize: "0.875rem", color: "#1F6B4D", background: "rgba(31,107,77,0.08)", padding: "0.6rem 0.75rem", borderRadius: "0.5rem" }}>
+                  {resetSuccess}
+                </p>
+              )}
+              <div className="flex-row gap-sm">
+                <button type="submit" disabled={resetSaving} className="btn btn-success">
+                  {resetSaving ? "Resetting..." : "Reset Password"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setResetTarget(null)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Glass-card table container */}
       <div style={{
         background: "rgba(255, 255, 255, 0.7)",
@@ -1137,6 +1278,32 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                         }}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>edit</span>
+                      </button>
+                      <button
+                        onClick={() => openResetPassword(s)}
+                        title="Reset Password"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.5rem",
+                          borderRadius: "0.5rem",
+                          color: "var(--color-text-muted)",
+                          transition: "all 0.15s",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = "#D9A441";
+                          e.currentTarget.style.background = "rgba(217,164,65,0.12)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = "var(--color-text-muted)";
+                          e.currentTarget.style.background = "none";
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>key</span>
                       </button>
                       {s.isActive ? (
                         <>
