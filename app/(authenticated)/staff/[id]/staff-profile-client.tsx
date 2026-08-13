@@ -658,6 +658,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
       <div style={{
         display: "grid",
         gridTemplateColumns: "1fr 2fr",
+        alignItems: "start",
         gap: "1.5rem",
         marginBottom: "1.5rem",
       }}>
