@@ -9,6 +9,7 @@ const userSelect = {
   department: true,
   jobTitleId: true,
   jobTitle: { select: { id: true, name: true } },
+  avatarUrl: true,
   isActive: true,
   hideFromReports: true,
   deactivatedAt: true,
@@ -24,6 +25,7 @@ const userSelectSerialized = {
   department: true,
   jobTitleId: true,
   jobTitle: { select: { id: true, name: true } },
+  avatarUrl: true,
   isActive: true,
   hideFromReports: true,
   deactivatedAt: true,
@@ -39,6 +41,7 @@ export interface StaffRow {
   department: string | null;
   jobTitleId: string | null;
   jobTitle: { id: string; name: string } | null;
+  avatarUrl: string | null;
   isActive: boolean;
   hideFromReports: boolean;
   deactivatedAt: string | null;

@@ -13,6 +13,7 @@ interface StaffMember {
   department: string | null;
   jobTitleId: string | null;
   jobTitle: { id: string; name: string } | null;
+  avatarUrl: string | null;
   isActive: boolean;
   hideFromReports: boolean;
   deactivatedAt: string | null;
@@ -893,7 +894,7 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                         width: 48,
                         height: 48,
                         borderRadius: "50%",
-                        background: avatarBg,
+                        background: s.avatarUrl ? "none" : avatarBg,
                         color: "#fff",
                         border: "2px solid #fff",
                         boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
@@ -904,8 +905,17 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                         fontWeight: 700,
                         flexShrink: 0,
                         opacity: s.isActive ? 1 : 0.6,
+                        overflow: "hidden",
                       }}>
-                        {getInitials(s.name)}
+                        {s.avatarUrl ? (
+                          <img
+                            src={`/api/account/avatar?userId=${encodeURIComponent(s.id)}`}
+                            alt={`${s.name} avatar`}
+                            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
+                          />
+                        ) : (
+                          getInitials(s.name)
+                        )}
                       </div>
                       <Link
                         href={`/staff/${s.id}`}

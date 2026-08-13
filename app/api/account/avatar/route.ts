@@ -1,17 +1,29 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
+import { hasRole } from "@/modules/core/roles";
 import { prisma } from "@/lib/prisma";
 import { put, get } from "@vercel/blob";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const userId = searchParams.get("userId");
+
+  if (userId && userId !== session.user.id) {
+    if (!session.user.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+  }
+
+  const targetId = userId || session.user.id;
+
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: targetId },
     select: { avatarUrl: true },
   });
 
