@@ -291,6 +291,47 @@ export async function getMyPendingRecords(userId: string) {
   });
 }
 
+export type FieldWorkBatch = {
+  id: string;
+  batchId: string | null;
+  date: Date;
+  note: string | null;
+  status: AttendanceStatus;
+  reviewedById: string | null;
+};
+
+export async function getMyFieldWorkBatches(userId: string): Promise<FieldWorkBatch[]> {
+  const records = await prisma.attendanceRecord.findMany({
+    where: { userId, requestedStatus: "FIELD_WORK" },
+    select: {
+      id: true,
+      batchId: true,
+      date: true,
+      note: true,
+      status: true,
+      reviewedById: true,
+    },
+    orderBy: { date: "desc" },
+  });
+
+  const seen = new Set<string>();
+  const batches: FieldWorkBatch[] = [];
+  for (const r of records) {
+    const key = r.batchId || r.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    batches.push({
+      id: r.id,
+      batchId: r.batchId,
+      date: r.date,
+      note: r.note,
+      status: r.status,
+      reviewedById: r.reviewedById,
+    });
+  }
+  return batches;
+}
+
 export async function approveRecord(recordId: string, reviewerId: string) {
   const record = await prisma.attendanceRecord.findUnique({ where: { id: recordId } });
   if (!record) return null;

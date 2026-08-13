@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>StaffHub - Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-error": "#ffffff",
+                      "on-primary-fixed": "#002114",
+                      "on-background": "#1b1c1c",
+                      "on-tertiary-container": "#dcd9d3",
+                      "inverse-surface": "#303030",
+                      "inverse-primary": "#8cd6b1",
+                      "tertiary-fixed-dim": "#c9c6c0",
+                      "on-surface-variant": "#3f4943",
+                      "secondary-container": "#ffc55f",
+                      "inverse-on-surface": "#f2f0f0",
+                      "surface": "#fbf9f8",
+                      "on-tertiary-fixed": "#1c1c18",
+                      "surface-tint": "#1f6b4d",
+                      "on-secondary-container": "#755100",
+                      "error": "#ba1a1a",
+                      "tertiary": "#484743",
+                      "on-primary-container": "#9ee9c3",
+                      "on-primary": "#ffffff",
+                      "surface-variant": "#e4e2e2",
+                      "error-container": "#ffdad6",
+                      "primary-fixed": "#a8f2cc",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed-variant": "#005237",
+                      "on-error-container": "#93000a",
+                      "secondary-fixed-dim": "#f5bd58",
+                      "surface-container-low": "#f5f3f3",
+                      "tertiary-fixed": "#e5e2db",
+                      "on-surface": "#1b1c1c",
+                      "primary-container": "#1f6b4d",
+                      "surface-dim": "#dbd9d9",
+                      "tertiary-container": "#605f5a",
+                      "surface-container-high": "#eae8e7",
+                      "surface-bright": "#fbf9f8",
+                      "secondary": "#7d5700",
+                      "on-secondary-fixed-variant": "#5f4100",
+                      "outline-variant": "#bfc9c1",
+                      "primary-fixed-dim": "#8cd6b1",
+                      "on-tertiary-fixed-variant": "#474742",
+                      "primary": "#005237",
+                      "surface-container-highest": "#e4e2e2",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container": "#efeded",
+                      "background": "#fbf9f8",
+                      "secondary-fixed": "#ffdeaa",
+                      "on-secondary-fixed": "#271900",
+                      "on-secondary": "#ffffff",
+                      "outline": "#6f7973",
+                      
+                      // Custom brand colors based on prompt
+                      "brand-cream": "#FAF7F0",
+                      "brand-teal": "#1F6B4D",
+                      "brand-amber": "#D9A441",
+                      "brand-teal-light": "#E8F2EE"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "section-gap": "48px",
+                      "base": "8px",
+                      "gutter": "24px",
+                      "card-internal": "24px",
+                      "container-padding": "32px"
+              },
+              "fontFamily": {
+                      "headline-lg-mobile": ["Manrope"],
+                      "data-lg": ["Manrope"],
+                      "title-md": ["Manrope"],
+                      "headline-lg": ["Manrope"],
+                      "display-lg": ["Manrope"],
+                      "body-md": ["Manrope"],
+                      "label-pill": ["Manrope"]
+              },
+              "fontSize": {
+                      "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                      "data-lg": ["36px", {"lineHeight": "44px", "fontWeight": "500"}],
+                      "title-md": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                      "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "label-pill": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+              },
+              backgroundImage: {
+                  'dotted-pattern': 'radial-gradient(#E0E0E0 1px, transparent 1px)',
+              }
+            },
+          }
+        }
+    </script>
+<style>
+        body {
+            background-color: #FAF7F0; /* Cream background */
+        }
+        .bg-dotted {
+            background-image: radial-gradient(#E0E0E0 1.5px, transparent 1.5px);
+            background-size: 16px 16px;
+        }
+        .card-shadow {
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-surface antialiased h-screen overflow-hidden flex">
+<!-- SideNavBar -->
+<nav class="bg-surface dark:bg-inverse-surface h-full w-64 fixed left-0 top-0 shadow-sm flex flex-col p-base z-20">
+<div class="mb-8 px-4 mt-4">
+<h1 class="font-headline-lg text-headline-lg font-bold text-primary dark:text-primary-fixed">StaffHub</h1>
+<p class="font-label-pill text-label-pill text-on-surface-variant mt-1">Nonprofit Child Development</p>
+</div>
+<div class="mb-8 px-4">
+<button class="w-full bg-brand-teal text-white py-2 px-4 rounded-lg font-title-md text-title-md hover:bg-on-primary-fixed-variant transition-colors flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span> Quick Actions
+            </button>
+</div>
+<ul class="flex flex-col gap-2 flex-grow">
+<!-- Active Tab: Home -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary dark:text-primary-fixed-dim font-bold border-r-4 border-secondary bg-surface-container transition-transform duration-150 scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-body-md text-body-md">Home</span>
+</a>
+</li>
+<!-- Inactive Tabs -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">event_busy</span>
+<span class="font-body-md text-body-md">Leave</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">location_on</span>
+<span class="font-body-md text-body-md">Field Work</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body-md text-body-md">Directory</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto pt-4 border-t border-surface-variant">
+<ul class="flex flex-col gap-2">
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-surface-container-highest transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-md text-body-md">Support</span>
+</a>
+</li>
+</ul>
+<div class="mt-4 px-4 flex items-center gap-3">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="A professional headshot of a female staff member with short brown hair, wearing a dark green blouse, smiling warmly in a bright, modern office setting with blurred background elements." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCG8OS4yxw0We1qvJ0qfkJVwMZu-COPk_dq3JzUQvYXMsyZCsHBzKWBak0cc9SdpdLVhXWRZxLFrNz3A_BSBUa282Ym1L36QUwkodDGsuad6FneRQXiOIFjZrsym4YsmSVitwEQOsdjeUkMM_ZEo0hfdgQzOSrAh0rOyBzk9F2G1jCPekrLOE4q_6OO5LqkPWb3JpB-Yhxb4sl2XufWvEsRZBlzi3KWWXhjQ1S5bIcW9MdjY0hWx6KF"/>
+<div class="flex flex-col">
+<span class="font-title-md text-title-md text-sm">Alice Wonderland</span>
+<span class="font-label-pill text-label-pill text-on-surface-variant">Staff Member</span>
+</div>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 h-screen overflow-y-auto relative bg-[#FAF7F0]">
+<!-- Command Center Header (Top AppBar structural hybrid) -->
+<header class="w-full px-gutter pt-8 pb-6 relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-surface-variant/50 bg-[#FAF7F0] bg-dotted">
+<div class="flex flex-col gap-2 max-w-2xl">
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-brand-teal-light text-brand-teal font-label-pill text-label-pill px-3 py-1 rounded-full flex items-center gap-1.5 border border-brand-teal/10">
+<span class="w-2 h-2 rounded-full bg-brand-teal animate-pulse"></span>
+                        Signed In • 08:30 AM
+                    </span>
+<span class="text-on-surface-variant font-label-pill text-label-pill uppercase tracking-wider">Today's Status</span>
+</div>
+<h2 class="font-display-lg text-display-lg text-brand-teal">Good morning, Alice</h2>
+</div>
+<div class="flex items-center gap-4 shrink-0">
+<button class="bg-transparent border-2 border-brand-amber text-brand-amber font-title-md text-title-md px-6 py-2.5 rounded-lg hover:bg-brand-amber/10 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined">location_on</span>
+                    Log Field Work
+                </button>
+<button class="bg-brand-teal text-white font-title-md text-title-md px-6 py-3 rounded-lg hover:bg-on-primary-fixed-variant transition-colors flex items-center gap-2 shadow-sm">
+<span class="material-symbols-outlined">event_busy</span>
+                    Request Leave
+                </button>
+</div>
+</header>
+<div class="p-gutter max-w-[1440px] mx-auto flex flex-col gap-section-gap">
+<!-- Section: Your Leave (Balance Cards) -->
+<section>
+<div class="flex items-center gap-3 mb-6">
+<h3 class="font-title-md text-title-md text-brand-teal">Your Leave Balances</h3>
+<div class="h-px flex-1 bg-surface-variant"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Card 1: Annual Leave -->
+<div class="bg-white rounded-xl p-card-internal card-shadow border border-surface-variant/30 flex flex-col relative overflow-hidden group hover:border-brand-teal/30 transition-colors">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-brand-teal-light rounded-full opacity-50 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="bg-brand-teal-light text-brand-teal font-label-pill text-label-pill px-3 py-1 rounded-full uppercase">Annual</span>
+<span class="material-symbols-outlined text-brand-teal" style="font-variation-settings: 'FILL' 1;">flight_takeoff</span>
+</div>
+<div class="flex items-baseline gap-2 mt-2 relative z-10">
+<span class="font-data-lg text-data-lg text-on-surface">14</span>
+<span class="font-body-md text-body-md text-on-surface-variant">days remaining</span>
+</div>
+<div class="mt-6 relative z-10">
+<div class="flex justify-between text-xs font-label-pill text-on-surface-variant mb-2">
+<span>14 Available</span>
+<span>21 Total</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5">
+<div class="bg-brand-teal h-1.5 rounded-full" style="width: 66%"></div>
+</div>
+</div>
+</div>
+<!-- Card 2: Sick Leave -->
+<div class="bg-white rounded-xl p-card-internal card-shadow border border-surface-variant/30 flex flex-col relative overflow-hidden group hover:border-brand-amber/30 transition-colors">
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-[#FFF5E5] rounded-full opacity-50 group-hover:scale-110 transition-transform"></div>
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="bg-[#FFF5E5] text-brand-amber font-label-pill text-label-pill px-3 py-1 rounded-full uppercase">Sick Leave</span>
+<span class="material-symbols-outlined text-brand-amber" style="font-variation-settings: 'FILL' 1;">medical_services</span>
+</div>
+<div class="flex items-baseline gap-2 mt-2 relative z-10">
+<span class="font-data-lg text-data-lg text-on-surface">8</span>
+<span class="font-body-md text-body-md text-on-surface-variant">days remaining</span>
+</div>
+<div class="mt-6 relative z-10">
+<div class="flex justify-between text-xs font-label-pill text-on-surface-variant mb-2">
+<span>8 Available</span>
+<span>10 Total</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5">
+<div class="bg-brand-amber h-1.5 rounded-full" style="width: 80%"></div>
+</div>
+</div>
+</div>
+<!-- Card 3: Maternity/Paternity Leave -->
+<div class="bg-white rounded-xl p-card-internal card-shadow border border-surface-variant/30 flex flex-col relative overflow-hidden group hover:border-tertiary-container/30 transition-colors">
+<div class="flex justify-between items-start mb-4 relative z-10">
+<span class="bg-surface-variant text-on-surface font-label-pill text-label-pill px-3 py-1 rounded-full uppercase">Parental</span>
+<span class="material-symbols-outlined text-on-surface-variant">child_care</span>
+</div>
+<div class="flex items-baseline gap-2 mt-2 relative z-10">
+<span class="font-data-lg text-data-lg text-on-surface">90</span>
+<span class="font-body-md text-body-md text-on-surface-variant">days remaining</span>
+</div>
+<div class="mt-6 relative z-10">
+<div class="flex justify-between text-xs font-label-pill text-on-surface-variant mb-2">
+<span>90 Available</span>
+<span>90 Total</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5">
+<div class="bg-tertiary-container h-1.5 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section: Recent Field Work (Added for Context) -->
+<section class="mb-12">
+<div class="flex items-center gap-3 mb-6">
+<h3 class="font-title-md text-title-md text-brand-teal">Recent Field Work</h3>
+<div class="h-px flex-1 bg-surface-variant"></div>
+</div>
+<div class="bg-white rounded-xl card-shadow border border-surface-variant/30 overflow-hidden">
+<div class="p-6 flex items-center justify-between border-b border-surface-variant/50 hover:bg-surface/50 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-brand-teal-light flex items-center justify-center text-brand-teal">
+<span class="material-symbols-outlined">storefront</span>
+</div>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface">Community Center Outreach</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Site Visit • Yesterday, 2:00 PM</p>
+</div>
+</div>
+<span class="bg-green-100 text-green-800 font-label-pill text-label-pill px-3 py-1 rounded-full">Completed</span>
+</div>
+<div class="p-6 flex items-center justify-between hover:bg-surface/50 transition-colors cursor-pointer">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center text-brand-amber">
+<span class="material-symbols-outlined">groups</span>
+</div>
+<div>
+<h4 class="font-title-md text-title-md text-on-surface">Stakeholder Meeting</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Client Office • Oct 24, 10:00 AM</p>
+</div>
+</div>
+<span class="bg-green-100 text-green-800 font-label-pill text-label-pill px-3 py-1 rounded-full">Completed</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Bottom Integrated Profile Bar -->
+<div class="fixed bottom-0 left-64 right-0 bg-white/80 backdrop-blur-md border-t border-surface-variant/30 py-3 px-8 z-20 flex justify-between items-center">
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="text-on-surface-variant font-label-pill text-label-pill uppercase">Role:</span>
+<span class="bg-brand-teal-light text-brand-teal font-label-pill text-label-pill px-3 py-1 rounded-full">Senior Developer</span>
+</div>
+<div class="w-px h-4 bg-surface-variant"></div>
+<div class="flex items-center gap-2">
+<span class="text-on-surface-variant font-label-pill text-label-pill uppercase">Dept:</span>
+<span class="bg-surface-variant text-on-surface font-label-pill text-label-pill px-3 py-1 rounded-full">Engineering</span>
+</div>
+<div class="w-px h-4 bg-surface-variant"></div>
+<div class="flex items-center gap-2">
+<span class="text-on-surface-variant font-label-pill text-label-pill uppercase">Tenure:</span>
+<span class="font-body-md text-body-md text-on-surface-variant text-sm">Started Jul 2026</span>
+</div>
+</div>
+<a class="text-brand-teal font-title-md text-title-md text-sm hover:underline flex items-center gap-1" href="#">
+                View Full Profile <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</main>
+</body></html>
