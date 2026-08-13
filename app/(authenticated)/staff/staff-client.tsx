@@ -44,6 +44,19 @@ interface LeaveTypeOption {
   defaultDays: number;
 }
 
+interface CompanyLeaveAction {
+  id: string;
+  label: string | null;
+  leaveType: { name: string };
+  startDate: string;
+  endDate: string;
+  affectedStaff: number;
+  skippedRecords: number;
+  insufficientStaff: number;
+  createdAt: string;
+  createdBy: { name: string } | null;
+}
+
 interface Props {
   initialStaff: StaffMember[];
   leaveTypes: LeaveTypeOption[];
@@ -110,6 +123,18 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
   const [bulkNote, setBulkNote] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
   const [bulkError, setBulkError] = useState("");
+
+  const [showCompanyLeave, setShowCompanyLeave] = useState(false);
+  const [clTypeId, setClTypeId] = useState(leaveTypes[0]?.id ?? "");
+  const [clStartDate, setClStartDate] = useState("");
+  const [clEndDate, setClEndDate] = useState("");
+  const [clLabel, setClLabel] = useState("");
+  const [clSaving, setClSaving] = useState(false);
+  const [clError, setClError] = useState("");
+  const [clResult, setClResult] = useState("");
+  const [clHistory, setClHistory] = useState<CompanyLeaveAction[]>([]);
+  const [clHistoryLoading, setClHistoryLoading] = useState(false);
+  const [clUndoingId, setClUndoingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/job-titles")
@@ -334,6 +359,73 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
     router.refresh();
   }
 
+  async function openCompanyLeave() {
+    setClTypeId(leaveTypes[0]?.id ?? "");
+    setClStartDate("");
+    setClEndDate("");
+    setClLabel("");
+    setClError("");
+    setClResult("");
+    setShowCompanyLeave(true);
+    setClHistoryLoading(true);
+    try {
+      const res = await fetch("/api/company-leave");
+      if (res.ok) setClHistory(await res.json());
+    } catch {}
+    setClHistoryLoading(false);
+  }
+
+  async function handleCompanyLeave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!clTypeId || !clStartDate || !clEndDate) {
+      setClError("Leave type, start date, and end date are required.");
+      return;
+    }
+    setClSaving(true);
+    setClError("");
+    setClResult("");
+
+    const res = await fetch("/api/company-leave", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        leaveTypeId: clTypeId,
+        startDate: clStartDate,
+        endDate: clEndDate,
+        label: clLabel || undefined,
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setClError(data.error || "Failed to apply company leave.");
+      setClSaving(false);
+      return;
+    }
+
+    const typeName = leaveTypes.find((t) => t.id === clTypeId)?.name ?? "Leave";
+    setClResult(
+      `Applied ${typeName} from ${formatDate(new Date(clStartDate))} to ${formatDate(new Date(clEndDate))} to ${data.affectedStaff} active staff member${data.affectedStaff === 1 ? "" : "s"}${data.skippedRecords ? `, skipped ${data.skippedRecords} conflicting date${data.skippedRecords === 1 ? "" : "s"}` : ""}${data.insufficientStaff ? `, ${data.insufficientStaff} exceeded balance` : ""}.`
+    );
+    setClSaving(false);
+    try {
+      const historyRes = await fetch("/api/company-leave");
+      if (historyRes.ok) setClHistory(await historyRes.json());
+    } catch {}
+    router.refresh();
+  }
+
+  async function handleCompanyLeaveUndo(id: string) {
+    if (!confirm("Undo this company leave? All records it created will be removed.")) return;
+    setClUndoingId(id);
+    const res = await fetch(`/api/company-leave?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (res.ok) {
+      setClHistory((prev) => prev.filter((a) => a.id !== id));
+      router.refresh();
+    }
+    setClUndoingId(null);
+  }
+
   return (
     <>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
@@ -386,6 +478,30 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
           >
             <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>group_add</span>
             Grant to All Staff
+          </button>
+          <button
+            onClick={openCompanyLeave}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              padding: "0.5rem 1rem",
+              background: "rgba(255, 255, 255, 0.3)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid #1F6B4D",
+              borderRadius: "0.5rem",
+              color: "#1F6B4D",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              transition: "background 0.15s",
+              fontFamily: "inherit",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(31,107,77,0.08)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>event_available</span>
+            Company Leave
           </button>
           <button
             onClick={openTrash}
@@ -1516,6 +1632,177 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Company Leave modal */}
+      {showCompanyLeave && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 120,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => { setShowCompanyLeave(false); setClError(""); setClResult(""); }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #1F6B4D",
+              maxWidth: 560,
+              width: "calc(100% - 2rem)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.1rem", fontWeight: 700 }}>Company Leave</h3>
+              <button
+                onClick={() => { setShowCompanyLeave(false); setClError(""); setClResult(""); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleCompanyLeave}>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Leave Type</label>
+                <select
+                  value={clTypeId}
+                  onChange={(e) => setClTypeId(e.target.value)}
+                  className="form-select"
+                >
+                  {leaveTypes.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">Start date</label>
+                  <input
+                    type="date"
+                    value={clStartDate}
+                    onChange={(e) => setClStartDate(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 140 }}>
+                  <label className="form-label">End date</label>
+                  <input
+                    type="date"
+                    value={clEndDate}
+                    onChange={(e) => setClEndDate(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Label (optional)</label>
+                <input
+                  type="text"
+                  value={clLabel}
+                  onChange={(e) => setClLabel(e.target.value)}
+                  className="form-input"
+                  placeholder="e.g. New Year Holiday"
+                />
+              </div>
+              {clError && <p className="form-error mb-1">{clError}</p>}
+              {clResult && (
+                <p style={{ margin: "0 0 0.75rem", fontSize: "0.875rem", color: "#1F6B4D", background: "rgba(31,107,77,0.08)", padding: "0.6rem 0.75rem", borderRadius: "0.5rem" }}>
+                  {clResult}
+                </p>
+              )}
+              <div className="flex-row gap-sm">
+                <button type="submit" disabled={clSaving} className="btn btn-success">
+                  {clSaving ? "Applying..." : "Apply to All Staff"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => { setShowCompanyLeave(false); setClError(""); setClResult(""); }}
+                >
+                  Close
+                </button>
+              </div>
+            </form>
+
+            <div style={{ marginTop: "1.5rem", borderTop: "1px solid var(--color-border)", paddingTop: "1rem" }}>
+              <p style={{ margin: "0 0 0.5rem", fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
+                Recent Company Leave
+              </p>
+              {clHistoryLoading ? (
+                <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--color-text-muted)" }}>Loading…</p>
+              ) : clHistory.length === 0 ? (
+                <p style={{ margin: 0, fontSize: "0.875rem", color: "var(--color-text-muted)" }}>No company leave actions yet.</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {clHistory.map((a) => (
+                    <div
+                      key={a.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "0.75rem",
+                        padding: "0.6rem 0.75rem",
+                        background: "rgba(255,255,255,0.5)",
+                        border: "1px solid rgba(191,201,193,0.2)",
+                        borderRadius: "0.5rem",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 600, color: "#1F6B4D" }}>
+                          {a.leaveType.name} {a.label ? `— ${a.label}` : ""}
+                        </p>
+                        <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
+                          {formatDate(new Date(a.startDate))} – {formatDate(new Date(a.endDate))} · {a.affectedStaff} staff
+                          {a.skippedRecords ? ` · ${a.skippedRecords} skipped` : ""}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCompanyLeaveUndo(a.id)}
+                        disabled={clUndoingId === a.id}
+                        style={{
+                          padding: "0.35rem 0.75rem",
+                          background: "none",
+                          border: "1px solid rgba(186,26,26,0.4)",
+                          borderRadius: "0.5rem",
+                          color: "#ba1a1a",
+                          fontWeight: 600,
+                          fontSize: "0.75rem",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {clUndoingId === a.id ? "Undoing..." : "Undo"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -51,6 +51,7 @@ model User {
   leaveGrants     LeaveGrant[]
   documents       StaffDocument[]    @relation("StaffDocuments")
   uploadedDocs    StaffDocument[]    @relation("UploadedDocuments")
+  bulkLeaveActions BulkLeaveAction[] @relation("BulkLeaveCreator")
 }
 
 model Settings {
@@ -92,6 +93,23 @@ model LeaveType {
   createdAt        DateTime           @default(now())
   grants           LeaveGrant[]
   attendance       AttendanceRecord[]
+  bulkLeaveActions BulkLeaveAction[]
+}
+
+model BulkLeaveAction {
+  id                String     @id @default(uuid())
+  label             String?
+  leaveTypeId       String
+  leaveType         LeaveType  @relation(fields: [leaveTypeId], references: [id])
+  startDate         DateTime   @db.Date
+  endDate           DateTime   @db.Date
+  batchId           String     @unique
+  createdById       String
+  createdBy         User       @relation("BulkLeaveCreator", fields: [createdById], references: [id])
+  affectedStaff     Int        @default(0)
+  skippedRecords    Int        @default(0)
+  insufficientStaff Int        @default(0)
+  createdAt         DateTime   @default(now())
 }
 
 model LeaveGrant {
