@@ -118,6 +118,15 @@ export async function deactivateUser(id: string, hideFromReports: boolean) {
   });
 }
 
+export async function resetUserPassword(id: string, newPassword: string) {
+  const hashed = await bcrypt.hash(newPassword, 12);
+  await prisma.user.update({
+    where: { id },
+    data: { password: hashed },
+  });
+  return { success: true };
+}
+
 export async function reactivateUser(id: string) {
   return prisma.user.update({
     where: { id },

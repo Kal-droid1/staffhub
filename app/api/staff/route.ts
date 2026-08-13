@@ -12,6 +12,7 @@ import {
   deleteUser,
   restoreUser,
   permanentlyDeleteUser,
+  resetUserPassword,
 } from "@/lib/staff";
 
 function managerGuard(session: Session | null) {
@@ -91,7 +92,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { id, action, hideFromReports, confirmation } = body;
+  const { id, action, hideFromReports, confirmation, newPassword } = body;
 
   if (!id || !action) {
     return NextResponse.json({ error: "id and action are required." }, { status: 400 });
@@ -99,6 +100,15 @@ export async function PATCH(req: NextRequest) {
 
   try {
     switch (action) {
+      case "reset-password": {
+        if (!newPassword || typeof newPassword !== "string") {
+          return NextResponse.json({ error: "newPassword is required." }, { status: 400 });
+        }
+        if (newPassword.length < 8) {
+          return NextResponse.json({ error: "New password must be at least 8 characters." }, { status: 400 });
+        }
+        return NextResponse.json(await resetUserPassword(id, newPassword));
+      }
       case "deactivate": {
         const hide = hideFromReports === true;
         const user = await deactivateUser(id, hide);

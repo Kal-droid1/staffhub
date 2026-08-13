@@ -139,6 +139,13 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
   const [grantError, setGrantError] = useState("");
   const [deletingGrantId, setDeletingGrantId] = useState<string | null>(null);
 
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [resetSaving, setResetSaving] = useState(false);
+  const [resetError, setResetError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState("");
+
   const [showEdit, setShowEdit] = useState(false);
   const [editingName, setEditingName] = useState(staff.name);
   const [editingEmail, setEditingEmail] = useState(staff.email);
@@ -354,6 +361,49 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
     if (res.ok) router.push("/staff");
     setActingId(null);
     setShowConfirmation(null);
+  }
+
+  function openResetPassword() {
+    setResetNewPassword("");
+    setResetConfirmPassword("");
+    setResetError("");
+    setResetSuccess("");
+    setShowResetPassword(true);
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setResetError("");
+    setResetSuccess("");
+
+    if (resetNewPassword !== resetConfirmPassword) {
+      setResetError("New passwords do not match.");
+      return;
+    }
+    if (resetNewPassword.length < 8) {
+      setResetError("New password must be at least 8 characters.");
+      return;
+    }
+
+    setResetSaving(true);
+    const res = await fetch("/api/staff", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: staff.id, action: "reset-password", newPassword: resetNewPassword }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setResetError(data.error || "Failed to reset password.");
+      setResetSaving(false);
+      return;
+    }
+
+    setResetSuccess("Password reset successfully.");
+    setResetNewPassword("");
+    setResetConfirmPassword("");
+    setResetSaving(false);
+    router.refresh();
   }
 
   async function refreshProfileBalances() {
@@ -871,6 +921,36 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
               }}
             >
               Leave Grants
+            </button>
+            <button
+              onClick={openResetPassword}
+              style={{
+                flex: 1,
+                padding: "0.5rem 1rem",
+                background: "rgba(31,107,77,0.08)",
+                border: "1px solid #1F6B4D",
+                borderRadius: "0.35rem",
+                color: "#1F6B4D",
+                fontWeight: 600,
+                fontSize: "0.8125rem",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#1F6B4D";
+                e.currentTarget.style.color = "#fff";
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 6px 16px rgba(31,107,77,0.35)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(31,107,77,0.08)";
+                e.currentTarget.style.color = "#1F6B4D";
+                e.currentTarget.style.transform = "";
+                e.currentTarget.style.boxShadow = "";
+              }}
+            >
+              Reset Password
             </button>
             {!showEdit && (
               <button
@@ -2367,6 +2447,97 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                   onClick={() => { setShowGrantForm(false); setEditingGrantId(null); setGrantError(""); }}
                 >
                   Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password modal */}
+      {showResetPassword && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 120,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => { setShowResetPassword(false); setResetError(""); setResetSuccess(""); }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 480,
+              width: "calc(100% - 2rem)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.1rem", fontWeight: 700 }}>
+                Reset Password for {staff.name}
+              </h3>
+              <button
+                onClick={() => { setShowResetPassword(false); setResetError(""); setResetSuccess(""); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleResetPassword}>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">New Password</label>
+                <input
+                  type="password"
+                  value={resetNewPassword}
+                  onChange={(e) => setResetNewPassword(e.target.value)}
+                  className="form-input"
+                  required
+                />
+              </div>
+              <div style={{ marginBottom: "1rem" }}>
+                <label className="form-label">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={resetConfirmPassword}
+                  onChange={(e) => setResetConfirmPassword(e.target.value)}
+                  className="form-input"
+                  required
+                />
+              </div>
+              {resetError && <p className="form-error mb-1">{resetError}</p>}
+              {resetSuccess && <p className="form-success mb-1">{resetSuccess}</p>}
+              <div className="flex-row gap-sm">
+                {!resetSuccess && (
+                  <button type="submit" disabled={resetSaving} className="btn btn-success">
+                    {resetSaving ? "Resetting..." : "Reset Password"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => { setShowResetPassword(false); setResetError(""); setResetSuccess(""); }}
+                >
+                  {resetSuccess ? "Close" : "Cancel"}
                 </button>
               </div>
             </form>
