@@ -113,6 +113,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
 
   const [grants, setGrants] = useState<GrantRow[]>(initialGrants);
   const [balancesState, setBalancesState] = useState<Balance[]>(balances);
+  const [showGrantsModal, setShowGrantsModal] = useState(false);
   const [showGrantForm, setShowGrantForm] = useState(false);
   const [editingGrantId, setEditingGrantId] = useState<string | null>(null);
   const [grantTypeId, setGrantTypeId] = useState(leaveTypes[0]?.id ?? "");
@@ -692,6 +693,23 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(191,201,193,0.3)" }}>
+            <button
+              onClick={() => setShowGrantsModal(true)}
+              style={{
+                flex: 1,
+                padding: "0.5rem 1rem",
+                background: "none",
+                border: "1px solid #D9A441",
+                borderRadius: "0.25rem",
+                color: "#1F6B4D",
+                fontWeight: 500,
+                fontSize: "0.8125rem",
+                cursor: "pointer",
+                fontFamily: "inherit",
+              }}
+            >
+              Leave Grants
+            </button>
             {!showEdit && (
               <button
                 onClick={() => setShowEdit(true)}
@@ -1400,116 +1418,6 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
         </section>
       </div>
 
-      {/* Leave Grants */}
-      <section style={{
-        background: "rgba(250, 247, 240, 0.85)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        border: "1px solid rgba(255, 255, 255, 0.4)",
-        borderRadius: "0.75rem",
-        boxShadow: "0 8px 32px rgba(31, 107, 77, 0.08), 0 2px 8px rgba(0,0,0,0.04)",
-        marginBottom: "1.5rem",
-        overflow: "hidden",
-      }}>
-        <div style={{
-          padding: "1rem 1.5rem",
-          borderBottom: "1px solid rgba(31,107,77,0.2)",
-          background: "#1F6B4D",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "1rem",
-        }}>
-          <h2 style={{
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#D9A441",
-            fontFamily: "var(--font-mono)",
-            margin: 0,
-          }}>
-            LEAVE GRANTS
-          </h2>
-          <button
-            onClick={openAddGrant}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem",
-              padding: "0.4rem 0.9rem",
-              background: "#D9A441",
-              color: "#0A261B",
-              border: "none",
-              borderRadius: "0.35rem",
-              fontWeight: 700,
-              fontSize: "0.75rem",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              boxShadow: "0 2px 8px rgba(217,164,65,0.3)",
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>add</span>
-            Add Grant
-          </button>
-        </div>
-
-        {grants.length === 0 ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-muted)" }}>
-            No grants for this staff member.
-          </div>
-        ) : (
-          <div className="table-responsive">
-            <table style={{
-              width: "100%",
-              textAlign: "left",
-              borderCollapse: "collapse",
-              background: "rgba(255,255,255,0.4)",
-            }}>
-              <thead>
-                <tr style={{ background: "rgba(250,247,240,0.8)", borderBottom: "1px solid rgba(191,201,193,0.3)" }}>
-                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>Type</th>
-                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", textAlign: "center" }}>Days</th>
-                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>Granted</th>
-                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>Expires</th>
-                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)" }}>Note</th>
-                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", textAlign: "right" }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody style={{ fontSize: "0.8125rem" }}>
-                {grants.map((g) => (
-                  <tr key={g.id} style={{ borderBottom: "1px solid rgba(191,201,193,0.2)" }}>
-                    <td data-label="Type" style={{ padding: "1rem 1.5rem", fontWeight: 600 }}>{g.leaveTypeName}</td>
-                    <td data-label="Days" style={{ padding: "1rem 1.5rem", textAlign: "center", fontWeight: 600 }}>{formatDays(g.days)}</td>
-                    <td data-label="Granted" style={{ padding: "1rem 1.5rem", whiteSpace: "nowrap" }}>{g.grantedDate.slice(0, 10)}</td>
-                    <td data-label="Expires" style={{ padding: "1rem 1.5rem", whiteSpace: "nowrap" }}>{g.expiresAt ? g.expiresAt.slice(0, 10) : "Never"}</td>
-                    <td data-label="Note" style={{ padding: "1rem 1.5rem", color: "var(--color-text-muted)", maxWidth: "15rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.note || "\u2014"}</td>
-                    <td data-label="Actions" style={{ padding: "1rem 1.5rem", textAlign: "right", whiteSpace: "nowrap" }}>
-                      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
-                        <button
-                          onClick={() => openEditGrant(g)}
-                          className="btn btn-primary btn-sm"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteGrant(g.id)}
-                          disabled={deletingGrantId === g.id}
-                          className="btn btn-danger btn-sm"
-                        >
-                          {deletingGrantId === g.id ? "…" : "Delete"}
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
       {/* Request History */}
       <section style={{
         background: "rgba(250, 247, 240, 0.85)",
@@ -2006,6 +1914,134 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Leave Grants modal */}
+      {showGrantsModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 110,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => setShowGrantsModal(false)}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 760,
+              width: "calc(100% - 2rem)",
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+              margin: "0 1rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.25rem 1.5rem 0", flexShrink: 0 }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.1rem", fontWeight: 700 }}>
+                Leave Grants — {staff.name}
+              </h3>
+              <button
+                onClick={() => setShowGrantsModal(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1, padding: "1rem 1.5rem 1.5rem" }}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.75rem" }}>
+                <button
+                  onClick={openAddGrant}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    padding: "0.4rem 0.9rem",
+                    background: "#D9A441",
+                    color: "#0A261B",
+                    border: "none",
+                    borderRadius: "0.35rem",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    boxShadow: "0 2px 8px rgba(217,164,65,0.3)",
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>add</span>
+                  Add Grant
+                </button>
+              </div>
+
+              {grants.length === 0 ? (
+                <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-muted)" }}>
+                  No grants for this staff member.
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0, width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>Type</th>
+                        <th style={{ textAlign: "center" }}>Days</th>
+                        <th>Granted</th>
+                        <th>Expires</th>
+                        <th>Note</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {grants.map((g) => (
+                        <tr key={g.id}>
+                          <td data-label="Type" style={{ fontWeight: 600 }}>{g.leaveTypeName}</td>
+                          <td data-label="Days" style={{ textAlign: "center", fontWeight: 600 }}>{formatDays(g.days)}</td>
+                          <td data-label="Granted">{g.grantedDate.slice(0, 10)}</td>
+                          <td data-label="Expires">{g.expiresAt ? g.expiresAt.slice(0, 10) : "Never"}</td>
+                          <td data-label="Note" className="text-muted">{g.note || "\u2014"}</td>
+                          <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
+                            <div className="flex-row gap-sm">
+                              <button
+                                onClick={() => openEditGrant(g)}
+                                className="btn btn-primary btn-sm"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteGrant(g.id)}
+                                disabled={deletingGrantId === g.id}
+                                className="btn btn-danger btn-sm"
+                              >
+                                {deletingGrantId === g.id ? "…" : "Delete"}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         </div>
