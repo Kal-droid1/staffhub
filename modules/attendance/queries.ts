@@ -241,6 +241,49 @@ export async function getPendingRecords() {
   });
 }
 
+export async function countPendingRequestGroups(): Promise<number> {
+  const records = await prisma.attendanceRecord.findMany({
+    where: { status: "PENDING" },
+    select: { batchId: true, id: true },
+  });
+  return new Set(records.map((r) => r.batchId || r.id)).size;
+}
+
+export async function getTeamAttendanceToday(): Promise<{
+  present: number;
+  absent: number;
+  onLeave: number;
+  pending: number;
+}> {
+  const today = addisTodayDate();
+  const records = await prisma.attendanceRecord.findMany({
+    where: { date: today },
+    select: { status: true },
+  });
+
+  const counts = { present: 0, absent: 0, onLeave: 0, pending: 0 };
+  for (const r of records) {
+    switch (r.status) {
+      case "PRESENT":
+      case "FIELD_WORK":
+        counts.present++;
+        break;
+      case "ABSENT":
+        counts.absent++;
+        break;
+      case "PERMISSION":
+      case "ANNUAL_LEAVE":
+      case "OTHER":
+        counts.onLeave++;
+        break;
+      case "PENDING":
+        counts.pending++;
+        break;
+    }
+  }
+  return counts;
+}
+
 export async function getMyPendingRecords(userId: string) {
   return prisma.attendanceRecord.findMany({
     where: { userId, status: "PENDING" },

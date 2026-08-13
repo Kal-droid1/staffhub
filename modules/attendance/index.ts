@@ -4,6 +4,8 @@ export {
   createLeaveRequest,
   createLeaveRequestBatch,
   getPendingRecords,
+  countPendingRequestGroups,
+  getTeamAttendanceToday,
   approveRecord,
   rejectRecord,
   getSettings,
