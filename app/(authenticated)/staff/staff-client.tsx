@@ -362,7 +362,7 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
             Manage your workforce, roles, and status.
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
           <button
             onClick={openBulkGrant}
             style={{
@@ -792,7 +792,7 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
         overflow: "hidden",
       }}>
         <div className="table-responsive">
-        <table style={{
+        <table className="staff-table" style={{
           width: "100%",
           textAlign: "left",
           borderCollapse: "collapse",

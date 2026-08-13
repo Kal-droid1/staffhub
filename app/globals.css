@@ -598,15 +598,23 @@ body {
   .table-responsive .table-card tbody,
   .table-responsive .table-card th,
   .table-responsive .table-card td,
-  .table-responsive .table-card tr {
+  .table-responsive .table-card tr,
+  .table-responsive .staff-table,
+  .table-responsive .staff-table thead,
+  .table-responsive .staff-table tbody,
+  .table-responsive .staff-table th,
+  .table-responsive .staff-table td,
+  .table-responsive .staff-table tr {
     display: block;
   }
 
-  .table-responsive .table-card thead {
+  .table-responsive .table-card thead,
+  .table-responsive .staff-table thead {
     display: none;
   }
 
-  .table-responsive .table-card tbody tr {
+  .table-responsive .table-card tbody tr,
+  .table-responsive .staff-table tbody tr {
     margin-bottom: 1rem;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -614,11 +622,13 @@ body {
     box-shadow: var(--shadow-sm);
   }
 
-  .table-responsive .table-card tbody tr:last-child {
+  .table-responsive .table-card tbody tr:last-child,
+  .table-responsive .staff-table tbody tr:last-child {
     margin-bottom: 0;
   }
 
-  .table-responsive .table-card tbody td {
+  .table-responsive .table-card tbody td,
+  .table-responsive .staff-table tbody td {
     display: flex;
     align-items: flex-start;
     gap: 0.5rem;
@@ -628,11 +638,13 @@ body {
     text-align: left !important;
   }
 
-  .table-responsive .table-card tbody td:last-child {
+  .table-responsive .table-card tbody td:last-child,
+  .table-responsive .staff-table tbody td:last-child {
     border-bottom: none;
   }
 
-  .table-responsive .table-card tbody td::before {
+  .table-responsive .table-card tbody td::before,
+  .table-responsive .staff-table tbody td::before {
     content: attr(data-label);
     font-weight: 600;
     font-size: 0.75rem;
@@ -641,6 +653,30 @@ body {
     letter-spacing: 0.03em;
     min-width: 90px;
     flex-shrink: 0;
+  }
+
+  /* Staff table: roomier mobile card rows + larger tap targets */
+  .table-responsive .staff-table tbody td {
+    padding: 0.65rem 0.9rem;
+  }
+
+  .table-responsive .staff-table tbody td[data-label="Name"] {
+    padding: 0.9rem;
+  }
+
+  .table-responsive .staff-table tbody td[data-label="Actions"] {
+    justify-content: flex-start;
+  }
+
+  .table-responsive .staff-table tbody td[data-label="Actions"] > div {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .table-responsive .staff-table tbody td[data-label="Actions"] button {
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0.5rem;
   }
 
   /* ---- Navbar mobile ---- */
