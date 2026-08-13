@@ -224,69 +224,69 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <p className="stat-label">Total Leave Remaining</p>
-          <p className="stat-number" style={{ marginTop: "0.25rem" }}>
-            {formatDaysLabel(totalRemaining)}
-          </p>
-          <p className="text-sm text-muted" style={{ marginTop: "0.15rem" }}>
-            across all leave types
-          </p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.5rem" }}>
+            <div>
+              <p className="stat-label">Total Leave Remaining</p>
+              <p className="stat-number" style={{ marginTop: "0.25rem" }}>
+                {formatDaysLabel(totalRemaining)}
+              </p>
+              <p className="text-sm text-muted" style={{ marginTop: "0.15rem" }}>
+                across all leave types
+              </p>
+            </div>
+            <span className="material-symbols-outlined" style={{ fontSize: "1.75rem", color: "#D9A441", opacity: 0.7 }}>
+              event_available
+            </span>
+          </div>
+
+          <div className="table-responsive" style={{ marginTop: "1rem" }}>
+            {balances.length === 0 ? (
+              <p className="text-muted" style={{ padding: "1.5rem 0", margin: 0 }}>
+                No leave types configured yet.
+              </p>
+            ) : (
+              <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0, width: "100%" }}>
+                <thead>
+                  <tr style={{ background: "rgba(31,107,77,0.06)" }}>
+                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D" }}>Type</th>
+                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center" }}>Granted</th>
+                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center" }}>Used</th>
+                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center" }}>Remaining</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {balances.map((b) => (
+                    <tr key={b.leaveTypeId}>
+                      <td data-label="Type">
+                        {b.leaveTypeName}
+                        {b.isAnnualRecurring && (
+                          <span className="text-sm text-muted" style={{ marginLeft: "0.35rem" }}>
+                            (annual)
+                          </span>
+                        )}
+                      </td>
+                      <td data-label="Granted" style={{ textAlign: "center" }}>{formatDays(b.granted)}</td>
+                      <td data-label="Used" style={{ textAlign: "center" }}>{formatDays(b.used)}</td>
+                      <td data-label="Remaining" style={{ textAlign: "center", fontWeight: 600 }}>
+                        <span
+                          className={
+                            b.remaining <= 0
+                              ? "status-pill status-pill--danger"
+                              : "status-pill status-pill--success"
+                          }
+                        >
+                          {formatDays(b.remaining)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </Card>
       </div>
 
-      <Card style={{ overflow: "hidden", padding: 0 }}>
-        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid var(--color-border)" }}>
-          <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 600, color: "var(--color-brand)" }}>
-            Leave Balances
-          </h2>
-        </div>
-
-        {balances.length === 0 ? (
-          <p className="text-muted" style={{ padding: "2rem 1.5rem", margin: 0 }}>
-            No leave types configured yet.
-          </p>
-        ) : (
-          <div className="table-responsive">
-          <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th style={{ textAlign: "center" }}>Granted</th>
-                <th style={{ textAlign: "center" }}>Used</th>
-                <th style={{ textAlign: "center" }}>Remaining</th>
-              </tr>
-            </thead>
-            <tbody>
-              {balances.map((b) => (
-                <tr key={b.leaveTypeId}>
-                  <td data-label="Type">
-                    {b.leaveTypeName}
-                    {b.isAnnualRecurring && (
-                      <span className="text-sm text-muted" style={{ marginLeft: "0.35rem" }}>
-                        (annual)
-                      </span>
-                    )}
-                  </td>
-                  <td data-label="Granted" style={{ textAlign: "center" }}>{formatDays(b.granted)}</td>
-                  <td data-label="Used" style={{ textAlign: "center" }}>{formatDays(b.used)}</td>
-                  <td data-label="Remaining" style={{ textAlign: "center", fontWeight: 600 }}>
-                    <span
-                      className={
-                        b.remaining <= 0
-                          ? "status-pill status-pill--danger"
-                          : "status-pill status-pill--success"
-                      }
-                    >
-                      {formatDays(b.remaining)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        )}
-      </Card>
     </div>
   );
 }
