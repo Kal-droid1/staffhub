@@ -247,11 +247,11 @@ export default async function DashboardPage() {
             ) : (
               <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0, width: "100%" }}>
                 <thead>
-                  <tr style={{ background: "rgba(31,107,77,0.06)" }}>
-                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D" }}>Type</th>
-                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center" }}>Granted</th>
-                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center" }}>Used</th>
-                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center" }}>Remaining</th>
+                  <tr>
+                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", background: "rgba(31,107,77,0.06)", borderBottom: "1px solid rgba(31,107,77,0.1)" }}>Type</th>
+                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center", background: "rgba(31,107,77,0.06)", borderBottom: "1px solid rgba(31,107,77,0.1)" }}>Granted</th>
+                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center", background: "rgba(31,107,77,0.06)", borderBottom: "1px solid rgba(31,107,77,0.1)" }}>Used</th>
+                    <th style={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", textAlign: "center", background: "rgba(31,107,77,0.06)", borderBottom: "1px solid rgba(31,107,77,0.1)" }}>Remaining</th>
                   </tr>
                 </thead>
                 <tbody>
