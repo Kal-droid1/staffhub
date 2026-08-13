@@ -658,7 +658,6 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
       <div style={{
         display: "grid",
         gridTemplateColumns: "1fr 2fr",
-        alignItems: "start",
         gap: "1.5rem",
         marginBottom: "1.5rem",
       }}>
@@ -1013,6 +1012,9 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
           overflow: "hidden",
           boxShadow: "0 12px 40px rgba(31, 107, 77, 0.2)",
           border: "1px solid rgba(255,255,255,0.1)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
         }}>
           <div style={{ position: "absolute", inset: 0, opacity: 0.1, backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)", backgroundSize: "20px 20px", pointerEvents: "none" }} />
           <div style={{
