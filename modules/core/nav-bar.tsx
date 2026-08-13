@@ -164,11 +164,13 @@ export default function NavBar() {
 }
 
 function ProfilePictureUpload({ onClose }: { onClose: () => void }) {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [saved, setSaved] = useState(() => Boolean(session?.user?.avatarUrl));
+  const [justSaved, setJustSaved] = useState(false);
+  const [savedVersion, setSavedVersion] = useState(0);
   const [error, setError] = useState("");
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -178,7 +180,8 @@ function ProfilePictureUpload({ onClose }: { onClose: () => void }) {
     if (f.size > 5 * 1024 * 1024) { setError("File must be under 5MB."); return; }
     setError("");
     setFile(f);
-    setAvatarUrl(null);
+    setSaved(false);
+    setJustSaved(false);
     setPreviewUrl(URL.createObjectURL(f));
   }
 
@@ -191,17 +194,21 @@ function ProfilePictureUpload({ onClose }: { onClose: () => void }) {
       const res = await fetch("/api/account/avatar", { method: "POST", body: formData });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setError(data.error || `Upload failed (${res.status}).`); setUploading(false); return; }
-      setAvatarUrl(data.avatarUrl);
-      URL.revokeObjectURL(previewUrl!);
+
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
       setFile(null);
+      setSaved(true);
+      setJustSaved(true);
+      setSavedVersion((v) => v + 1);
+      await update();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error.");
     }
     setUploading(false);
   }
 
-  const displayUrl = avatarUrl || previewUrl;
+  const displayUrl = previewUrl || (saved ? `/api/account/avatar?v=${savedVersion}` : null);
 
   return (
     <>
@@ -217,10 +224,12 @@ function ProfilePictureUpload({ onClose }: { onClose: () => void }) {
           {!displayUrl && (session?.user?.name?.charAt(0)?.toUpperCase() ?? "?")}
         </div>
         <div>
-          {avatarUrl ? (
+          {justSaved ? (
             <p style={{ margin: "0 0 0.35rem", fontWeight: 600, fontSize: "0.9rem", color: "#1F6B4D" }}>Picture updated!</p>
           ) : previewUrl ? (
             <p style={{ margin: "0 0 0.35rem", fontWeight: 600, fontSize: "0.9rem" }}>Preview — confirm or change</p>
+          ) : saved ? (
+            <p style={{ margin: "0 0 0.35rem", fontWeight: 600, fontSize: "0.9rem" }}>Profile photo</p>
           ) : (
             <p style={{ margin: "0 0 0.35rem", fontWeight: 600, fontSize: "0.9rem" }}>Upload a new photo</p>
           )}
@@ -248,7 +257,7 @@ function ProfilePictureUpload({ onClose }: { onClose: () => void }) {
           onClick={onClose}
           style={{ padding: "0.4rem 1rem", background: "none", border: "1px solid var(--color-border)", borderRadius: "0.35rem", fontWeight: 500, fontSize: "0.8125rem", cursor: "pointer", fontFamily: "inherit", color: "var(--color-text)" }}
         >
-          {avatarUrl ? "Done" : "Close"}
+          {justSaved ? "Done" : "Close"}
         </button>
       </div>
     </>
