@@ -60,7 +60,7 @@ export default async function DashboardPage() {
 
   const staffRecord = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { createdAt: true, jobTitle: { select: { name: true } } },
+    select: { createdAt: true },
   });
 
   const fieldWorkBatches = await getMyFieldWorkBatches(user.id);
@@ -330,7 +330,7 @@ export default async function DashboardPage() {
       )}
 
       {!isManager && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "1008px", width: "100%" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "1008px", width: "100%", margin: "0 auto" }}>
           {/* Leave balances */}
           <section>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
@@ -343,7 +343,7 @@ export default async function DashboardPage() {
                 <p className="text-muted" style={{ margin: 0 }}>No leave types configured yet.</p>
               </Card>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 320px))", gap: "1.5rem", justifyContent: "flex-start" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1.5rem" }}>
                 {balances.map((b) => {
                   const available = Math.max(b.remaining, 0);
                   const total = Math.max(b.granted, 0);
@@ -406,7 +406,14 @@ export default async function DashboardPage() {
 
             {fieldWorkBatches.length === 0 ? (
               <Card>
-                <p className="text-muted" style={{ margin: 0 }}>No field work submitted yet.</p>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", padding: "2rem 0" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: "2rem", color: "var(--color-text-muted)", opacity: 0.6 }}>
+                    assignment
+                  </span>
+                  <p className="text-muted" style={{ margin: 0, color: "var(--color-text-muted)" }}>
+                    No field work submitted yet.
+                  </p>
+                </div>
               </Card>
             ) : (
               <Card style={{ padding: 0, overflow: "hidden" }}>
@@ -453,39 +460,6 @@ export default async function DashboardPage() {
               </Card>
             )}
           </section>
-
-          {/* Bottom profile strip */}
-          <div style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: "0.75rem 1.5rem",
-            background: "rgba(255,255,255,0.8)",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255,255,255,0.4)",
-            borderTop: "3px solid #D9A441",
-            borderRadius: "0.75rem",
-            boxShadow: "0 8px 32px rgba(31,107,77,0.08)",
-            padding: "0.9rem 1.25rem",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span className="section-label" style={{ color: "var(--color-text-muted)", fontSize: "0.65rem" }}>Role</span>
-              <span style={pillLabelStyle}>{staffRecord?.jobTitle?.name ?? user.jobTitleName ?? "\u2014"}</span>
-            </div>
-            <div style={{ width: 1, height: "1.25rem", background: "var(--color-border-light)" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span className="section-label" style={{ color: "var(--color-text-muted)", fontSize: "0.65rem" }}>Dept</span>
-              <span style={pillLabelStyle}>{user.department || "\u2014"}</span>
-            </div>
-            <div style={{ width: 1, height: "1.25rem", background: "var(--color-border-light)" }} />
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span className="section-label" style={{ color: "var(--color-text-muted)", fontSize: "0.65rem" }}>Tenure</span>
-              <span className="text-muted" style={{ fontSize: "0.8125rem", fontWeight: 600 }}>
-                {staffRecord?.createdAt ? `Started ${formatDate(staffRecord.createdAt)}` : "\u2014"}
-              </span>
-            </div>
-          </div>
         </div>
       )}
 
