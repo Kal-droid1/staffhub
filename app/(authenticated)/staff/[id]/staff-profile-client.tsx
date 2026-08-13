@@ -166,6 +166,8 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
   const [summaryYear, setSummaryYear] = useState(now.getFullYear());
   const [balanceIndex, setBalanceIndex] = useState(0);
 
+  const filteredBalances = balancesState.filter((b) => b.granted > 0);
+
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterFromDate, setFilterFromDate] = useState("");
@@ -510,7 +512,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
 
     setDeletingBalance(null);
     setBalanceDeleting(false);
-    setBalanceIndex((idx) => Math.max(0, Math.min(idx, balancesState.length - 2)));
+    setBalanceIndex((idx) => Math.max(0, Math.min(idx, filteredBalances.length - 2)));
     await refreshProfileBalances();
     router.refresh();
   }
@@ -1133,11 +1135,11 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
           }}>
             LEAVE BALANCES
           </h2>
-          {balancesState.length === 0 ? (
-            <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>No leave types configured.</p>
+          {filteredBalances.length === 0 ? (
+            <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>No leave types assigned yet.</p>
           ) : (
             (() => {
-              const b = balancesState[Math.min(balanceIndex, balancesState.length - 1)];
+              const b = filteredBalances[Math.min(balanceIndex, filteredBalances.length - 1)];
               const maxVal = Math.max(b.granted, b.remaining + b.used);
               return (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -1172,13 +1174,13 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                         {b.isAnnualRecurring && <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", marginLeft: "0.35rem" }}>(annual)</span>}
                       </div>
                       <div style={{ fontSize: "0.7rem", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)" }}>
-                        ({balanceIndex + 1}/{balancesState.length})
+                        ({balanceIndex + 1}/{filteredBalances.length})
                       </div>
                     </div>
                     <button
                       type="button"
-                      onClick={() => setBalanceIndex(Math.min(balancesState.length - 1, balanceIndex + 1))}
-                      disabled={balanceIndex === balancesState.length - 1}
+                      onClick={() => setBalanceIndex(Math.min(filteredBalances.length - 1, balanceIndex + 1))}
+                      disabled={balanceIndex === filteredBalances.length - 1}
                       aria-label="Next leave type"
                       style={{
                         background: "rgba(255,255,255,0.5)",
@@ -1190,11 +1192,11 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        cursor: balanceIndex === balancesState.length - 1 ? "default" : "pointer",
+                        cursor: balanceIndex === filteredBalances.length - 1 ? "default" : "pointer",
                         fontSize: "0.85rem",
                         fontFamily: "inherit",
                         outline: "none",
-                        opacity: balanceIndex === balancesState.length - 1 ? 0.4 : 1,
+                        opacity: balanceIndex === filteredBalances.length - 1 ? 0.4 : 1,
                       }}
                     >
                       →
@@ -1215,28 +1217,31 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                       <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1F6B4D" }}>{formatDays(b.used)}</div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => { setBalanceDeleteError(""); setDeletingBalance(b); }}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.4rem",
-                      marginTop: "0.75rem",
-                      padding: "0.35rem 0.75rem",
-                      background: "none",
-                      border: "1px solid rgba(186,26,26,0.4)",
-                      borderRadius: "0.5rem",
-                      color: "#ba1a1a",
-                      fontWeight: 600,
-                      fontSize: "0.75rem",
-                      cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>delete</span>
-                    Remove this leave grant
-                  </button>
+                  <div style={{ display: "flex", justifyContent: "center", marginTop: "0.75rem" }}>
+                    <button
+                      type="button"
+                      onClick={() => { setBalanceDeleteError(""); setDeletingBalance(b); }}
+                      title="Remove this leave grant"
+                      aria-label="Remove this leave grant"
+                      style={{
+                        background: "rgba(255,255,255,0.5)",
+                        color: "#ba1a1a",
+                        border: "1px solid rgba(186,26,26,0.4)",
+                        borderRadius: "0.25rem",
+                        width: 28,
+                        height: 28,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        outline: "none",
+                        padding: 0,
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>delete</span>
+                    </button>
+                  </div>
                 </div>
               );
             })()
