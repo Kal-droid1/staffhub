@@ -351,6 +351,12 @@ export default function AttendanceClient({
     setError("");
     setSuccess("");
 
+    if (selectedLeaveType?.requiresAttachment && !leaveFile) {
+      setError("A signed attachment is required for this leave type.");
+      setLoading(false);
+      return;
+    }
+
     const isMultiDay = leaveStartDate && leaveEndDate && leaveStartDate !== leaveEndDate && leaveTypeId;
 
     const matchingBalance = ownBalances.find((b) => b.leaveTypeId === leaveTypeId);

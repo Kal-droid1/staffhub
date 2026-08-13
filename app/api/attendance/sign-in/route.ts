@@ -12,6 +12,7 @@ import {
 } from "@/modules/attendance/queries";
 import type { AttendanceStatus } from "@prisma/client";
 import { put } from "@vercel/blob";
+import { getLeaveTypeById } from "@/modules/leave/queries";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -126,6 +127,16 @@ export async function POST(req: NextRequest) {
     }
 
     const isMultiDay = startDate && endDate && startDate !== endDate && leaveTypeId;
+
+    if (leaveTypeId) {
+      const leaveType = await getLeaveTypeById(leaveTypeId);
+      if (leaveType?.requiresAttachment && !attachmentUrl) {
+        return NextResponse.json(
+          { error: "A signed attachment is required for this leave type." },
+          { status: 400 }
+        );
+      }
+    }
 
     if (isMultiDay) {
       await createLeaveRequestBatch(

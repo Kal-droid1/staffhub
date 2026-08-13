@@ -38,6 +38,10 @@ export async function getLeaveTypes(): Promise<LeaveTypeRow[]> {
   return prisma.leaveType.findMany({ orderBy: { name: "asc" } });
 }
 
+export async function getLeaveTypeById(id: string): Promise<LeaveTypeRow | null> {
+  return prisma.leaveType.findUnique({ where: { id } });
+}
+
 export async function createLeaveType(
   name: string,
   isAnnualRecurring: boolean,

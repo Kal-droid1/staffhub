@@ -1,5 +1,6 @@
 export {
   getLeaveTypes,
+  getLeaveTypeById,
   createLeaveType,
   updateLeaveType,
   getLeaveGrants,
