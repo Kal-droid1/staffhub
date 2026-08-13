@@ -330,7 +330,7 @@ export default async function DashboardPage() {
       )}
 
       {!isManager && (
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "1008px", width: "100%" }}>
           {/* Leave balances */}
           <section>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
