@@ -128,6 +128,49 @@ export async function getCompanyLeaveActions() {
   });
 }
 
+export type UpcomingCompanyLeave = {
+  id: string;
+  label: string | null;
+  leaveTypeName: string | null;
+  startDate: Date;
+  endDate: Date;
+};
+
+export async function getUpcomingCompanyLeaveForUser(userId: string): Promise<UpcomingCompanyLeave[]> {
+  const now = new Date();
+  const horizon = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+  const actions = await prisma.bulkLeaveAction.findMany({
+    where: {
+      startDate: { lte: horizon },
+      endDate: { gte: now },
+    },
+    include: {
+      leaveType: { select: { name: true } },
+    },
+    orderBy: { startDate: "asc" },
+  });
+
+  const upcoming: UpcomingCompanyLeave[] = [];
+  for (const action of actions) {
+    const applied = await prisma.attendanceRecord.findFirst({
+      where: { userId, batchId: action.batchId },
+      select: { id: true },
+    });
+    if (!applied) continue;
+
+    upcoming.push({
+      id: action.id,
+      label: action.label,
+      leaveTypeName: action.leaveType?.name ?? null,
+      startDate: action.startDate,
+      endDate: action.endDate,
+    });
+  }
+
+  return upcoming;
+}
+
 export async function undoCompanyLeave(id: string) {
   const action = await prisma.bulkLeaveAction.findUnique({ where: { id } });
   if (!action) throw new Error("Company leave action not found");

@@ -2,6 +2,7 @@ import { ROLE_HIERARCHY } from "@/modules/core/roles";
 import { requireAuth } from "@/modules/core/require-auth";
 import { getLeaveBalances } from "@/modules/leave/queries";
 import { countPendingRequestGroups, getTeamAttendanceToday, getMyFieldWorkBatches } from "@/modules/attendance/queries";
+import { getUpcomingCompanyLeaveForUser } from "@/modules/company-leave/queries";
 import type { Role } from "@prisma/client";
 import Card from "@/modules/core/components/card";
 import StatusPill from "@/modules/core/components/status-pill";
@@ -64,6 +65,8 @@ export default async function DashboardPage() {
   });
 
   const fieldWorkBatches = await getMyFieldWorkBatches(user.id);
+
+  const upcomingCompanyLeave = await getUpcomingCompanyLeaveForUser(user.id);
 
   const totalRemaining = balances.reduce((sum, b) => sum + b.remaining, 0);
 
@@ -331,6 +334,51 @@ export default async function DashboardPage() {
 
       {!isManager && (
         <div style={{ display: "flex", flexDirection: "column", gap: "2rem", maxWidth: "1008px", width: "100%", margin: "0 auto" }}>
+          {/* Upcoming company leave banner */}
+          {upcomingCompanyLeave.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {upcomingCompanyLeave.map((leave) => {
+                const isCustom = !leave.leaveTypeName;
+                return (
+                  <div
+                    key={leave.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.9rem",
+                      padding: "1rem 1.25rem",
+                      background: "rgba(255, 255, 255, 0.8)",
+                      backdropFilter: "blur(12px)",
+                      WebkitBackdropFilter: "blur(12px)",
+                      border: "1px solid rgba(31, 107, 77, 0.2)",
+                      borderLeft: "4px solid #D9A441",
+                      borderRadius: "0.75rem",
+                      boxShadow: "0 8px 32px rgba(31, 107, 77, 0.08)",
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "1.5rem", color: "#D9A441", flexShrink: 0 }}>
+                      event_busy
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: "0.95rem", color: "#1F6B4D" }}>
+                        {isCustom ? leave.label : leave.leaveTypeName}
+                        {!isCustom && leave.label ? ` — ${leave.label}` : ""}
+                      </p>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+                        {formatDate(leave.startDate)} – {formatDate(leave.endDate)}
+                      </p>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: isCustom ? "var(--color-text-muted)" : "#1F6B4D" }}>
+                        {isCustom
+                          ? "This will not be deducted from your leave balance."
+                          : `Leave type: ${leave.leaveTypeName}`}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           {/* Leave balances */}
           <section>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "1.5rem" }}>
