@@ -101,6 +101,21 @@ interface Props {
 const ROLE_OPTIONS = ["STAFF", "MANAGER"];
 const PAGE_SIZE = 5;
 
+const AVATAR_BG: Record<string, string> = {
+  STAFF: "#6b7b6f",
+  MANAGER: "#D9A441",
+};
+
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -660,35 +675,122 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
           flexDirection: "column",
           gap: "1.5rem",
         }}>
-          <h2 style={{
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#1F6B4D",
-            fontFamily: "var(--font-mono)",
-            margin: 0,
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.9rem",
+            paddingBottom: "1.25rem",
+            borderBottom: "1px solid rgba(191,201,193,0.3)",
           }}>
-            DETAILS
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", flex: 1 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(191,201,193,0.3)" }}>
-              <span style={{ fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>Email</span>
-              <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>{staff.email}</span>
+            <div style={{
+              width: 56,
+              height: 56,
+              borderRadius: "50%",
+              background: AVATAR_BG[staff.role] ?? AVATAR_BG.STAFF,
+              color: "#fff",
+              border: "2px solid #fff",
+              boxShadow: "0 4px 14px rgba(31, 107, 77, 0.18)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "1.1rem",
+              fontWeight: 700,
+              flexShrink: 0,
+            }}>
+              {getInitials(staff.name)}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(191,201,193,0.3)" }}>
-              <span style={{ fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>Job Title</span>
-              <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>{staff.jobTitle?.name || "—"}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem", minWidth: 0 }}>
+              <span style={{
+                fontSize: "1.05rem",
+                fontWeight: 800,
+                color: "#1F6B4D",
+                letterSpacing: "-0.01em",
+                lineHeight: 1.2,
+                wordBreak: "break-word",
+              }}>
+                {staff.name}
+              </span>
+              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                <span style={{
+                  display: "inline-block",
+                  padding: "0.15rem 0.7rem",
+                  borderRadius: "999px",
+                  fontSize: "0.7rem",
+                  fontWeight: 700,
+                  fontFamily: "var(--font-mono)",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  backgroundColor: staff.role === "MANAGER" ? "#D9A441" : "var(--color-muted)",
+                  color: staff.role === "MANAGER" ? "#fff" : "var(--color-text)",
+                  border: staff.role === "MANAGER" ? "none" : "1px solid rgba(191,201,193,0.3)",
+                  boxShadow: staff.role === "MANAGER" ? "0 2px 8px rgba(217,164,65,0.4)" : "none",
+                  whiteSpace: "nowrap",
+                }}>
+                  {staff.role}
+                </span>
+                {!staff.isActive && (
+                  <span style={{
+                    display: "inline-block",
+                    padding: "0.15rem 0.7rem",
+                    borderRadius: "999px",
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                    backgroundColor: "#ba1a1a",
+                    color: "#fff",
+                    whiteSpace: "nowrap",
+                  }}>
+                    Inactive
+                  </span>
+                )}
+              </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(191,201,193,0.3)" }}>
-              <span style={{ fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>Status</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.8rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "1.05rem", color: "#D9A441" }}>mail</span>
+                Email
+              </span>
+              <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right", wordBreak: "break-word" }}>{staff.email}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.8rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "1.05rem", color: "#D9A441" }}>work</span>
+                Job Title
+              </span>
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "0.2rem 0.7rem",
+                borderRadius: "999px",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                backgroundColor: "rgba(31,107,77,0.1)",
+                color: "#1F6B4D",
+                border: "1px solid rgba(31,107,77,0.3)",
+                whiteSpace: "nowrap",
+              }}>
+                {staff.jobTitle?.name || "\u2014"}
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.8rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "1.05rem", color: "#D9A441" }}>toggle_on</span>
+                Status
+              </span>
               <StatusPill
                 status={staff.isActive ? "present" : "absent"}
                 label={staff.isActive ? "Active" : "Inactive"}
               />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "0.5rem", borderBottom: "1px solid rgba(191,201,193,0.3)" }}>
-              <span style={{ fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>Joined</span>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.8rem 0" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.8125rem", color: "var(--color-text-muted)" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "1.05rem", color: "#D9A441" }}>calendar_today</span>
+                Joined
+              </span>
               <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>{formatDate(staff.createdAt)}</span>
             </div>
           </div>
