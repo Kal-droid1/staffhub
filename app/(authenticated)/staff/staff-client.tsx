@@ -35,8 +35,17 @@ interface TrashMember {
   deletedAt: string;
 }
 
+interface LeaveTypeOption {
+  id: string;
+  name: string;
+  isAnnualRecurring: boolean;
+  mappedStatus: string;
+  defaultDays: number;
+}
+
 interface Props {
   initialStaff: StaffMember[];
+  leaveTypes: LeaveTypeOption[];
 }
 
 const PAGE_SIZE = 10;
@@ -67,7 +76,7 @@ const AVATAR_BG: Record<string, string> = {
   MANAGER: "#D9A441",
 };
 
-export default function StaffClient({ initialStaff }: Props) {
+export default function StaffClient({ initialStaff, leaveTypes }: Props) {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
   const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
@@ -92,6 +101,14 @@ export default function StaffClient({ initialStaff }: Props) {
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<TrashMember | null>(null);
   const [deletingPerm, setDeletingPerm] = useState(false);
+
+  const [showBulkGrant, setShowBulkGrant] = useState(false);
+  const [bulkTypeId, setBulkTypeId] = useState(leaveTypes[0]?.id ?? "");
+  const [bulkDays, setBulkDays] = useState(leaveTypes[0]?.defaultDays ?? 20);
+  const [bulkDate, setBulkDate] = useState(adisToday());
+  const [bulkNote, setBulkNote] = useState("");
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkError, setBulkError] = useState("");
 
   useEffect(() => {
     fetch("/api/job-titles")
@@ -277,6 +294,45 @@ export default function StaffClient({ initialStaff }: Props) {
     return `${formatDate(d)}, ${d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
   }
 
+  function openBulkGrant() {
+    setBulkTypeId(leaveTypes[0]?.id ?? "");
+    setBulkDays(leaveTypes[0]?.defaultDays ?? 20);
+    setBulkDate(adisToday());
+    setBulkNote("");
+    setBulkError("");
+    setShowBulkGrant(true);
+  }
+
+  async function handleBulkGrant(e: React.FormEvent) {
+    e.preventDefault();
+    if (bulkDays <= 0 || !bulkTypeId) return;
+    setBulkSaving(true);
+    setBulkError("");
+
+    const res = await fetch("/api/leave-grants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bulk: true,
+        leaveTypeId: bulkTypeId,
+        days: bulkDays,
+        grantedDate: bulkDate,
+        note: bulkNote || undefined,
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setBulkError(data.error || "Failed to create bulk grants.");
+      setBulkSaving(false);
+      return;
+    }
+
+    setShowBulkGrant(false);
+    setBulkSaving(false);
+    router.refresh();
+  }
+
   return (
     <>
       <div style={{ maxWidth: 1200, margin: "0 auto" }}>
@@ -306,6 +362,30 @@ export default function StaffClient({ initialStaff }: Props) {
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <button
+            onClick={openBulkGrant}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              padding: "0.5rem 1rem",
+              background: "rgba(255, 255, 255, 0.3)",
+              backdropFilter: "blur(8px)",
+              border: "1px solid #D9A441",
+              borderRadius: "0.5rem",
+              color: "#1F6B4D",
+              fontWeight: 600,
+              fontSize: "0.875rem",
+              cursor: "pointer",
+              transition: "background 0.15s",
+              fontFamily: "inherit",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(217,164,65,0.12)")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>group_add</span>
+            Grant to All Staff
+          </button>
           <button
             onClick={openTrash}
             style={{
@@ -1315,6 +1395,130 @@ export default function StaffClient({ initialStaff }: Props) {
           )}
         </div>
       )}
+
+      {/* Grant to All Staff modal */}
+      {showBulkGrant && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 120,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => { setShowBulkGrant(false); setBulkError(""); }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 500,
+              width: "calc(100% - 2rem)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.1rem", fontWeight: 700 }}>Grant to All Staff</h3>
+              <button
+                onClick={() => { setShowBulkGrant(false); setBulkError(""); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleBulkGrant}>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Leave Type</label>
+                <select
+                  value={bulkTypeId}
+                  onChange={(e) => {
+                    const selected = leaveTypes.find((t) => t.id === e.target.value);
+                    setBulkTypeId(e.target.value);
+                    if (selected) setBulkDays(selected.defaultDays);
+                  }}
+                  className="form-select"
+                >
+                  {leaveTypes.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <label className="form-label">Days</label>
+                  <input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    value={bulkDays}
+                    onChange={(e) => setBulkDays(Number(e.target.value))}
+                    className="form-input"
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <label className="form-label">Grant Date</label>
+                  <input
+                    type="date"
+                    value={bulkDate}
+                    onChange={(e) => setBulkDate(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Note (optional)</label>
+                <input
+                  type="text"
+                  value={bulkNote}
+                  onChange={(e) => setBulkNote(e.target.value)}
+                  className="form-input"
+                  placeholder="e.g. Q2 2026 grant"
+                />
+              </div>
+              {bulkError && <p className="form-error mb-1">{bulkError}</p>}
+              <div className="flex-row gap-sm">
+                <button type="submit" disabled={bulkSaving} className="btn btn-success">
+                  {bulkSaving ? "Granting..." : "Grant to All"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => { setShowBulkGrant(false); setBulkError(""); }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
+}
+
+function adisToday(): string {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Addis_Ababa",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(new Date());
 }

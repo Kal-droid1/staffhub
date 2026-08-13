@@ -2,6 +2,7 @@ import { requireAuth } from "@/modules/core/require-auth";
 import { prisma } from "@/lib/prisma";
 import { getLeaveBalances } from "@/modules/leave/queries";
 import { getLeaveGrants } from "@/modules/leave/queries";
+import { getLeaveTypes } from "@/modules/leave/queries";
 import StaffProfileClient from "./staff-profile-client";
 
 const DOCUMENT_CATEGORIES = [
@@ -62,6 +63,8 @@ export default async function StaffProfilePage({ params }: PageProps) {
   });
 
   const grants = await getLeaveGrants(id);
+
+  const leaveTypes = await getLeaveTypes();
 
   const docs = await prisma.staffDocument.findMany({
     where: { userId: id, deletedAt: null },
@@ -134,6 +137,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
       records={JSON.parse(JSON.stringify(recordsJson))}
       grants={JSON.parse(JSON.stringify(grantsJson))}
       documents={JSON.parse(JSON.stringify(documentsJson))}
+      leaveTypes={JSON.parse(JSON.stringify(leaveTypes))}
     />
   );
 }

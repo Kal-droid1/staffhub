@@ -54,6 +54,23 @@ interface GrantRow {
   expiresAt: string | null;
 }
 
+interface LeaveTypeOption {
+  id: string;
+  name: string;
+  isAnnualRecurring: boolean;
+  mappedStatus: string;
+  defaultDays: number;
+}
+
+interface LeaveGrantApiRow {
+  id: string;
+  days: number;
+  grantedDate: string;
+  note: string | null;
+  expiresAt: string | null;
+  leaveType: { id: string; name: string };
+}
+
 interface DocumentFile {
   id: string;
   fileName: string;
@@ -78,6 +95,7 @@ interface Props {
   records: RecordRow[];
   grants: GrantRow[];
   documents: DocumentCategory[];
+  leaveTypes: LeaveTypeOption[];
 }
 
 const ROLE_OPTIONS = ["STAFF", "MANAGER"];
@@ -88,10 +106,22 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default function StaffProfileClient({ staff, balances, records, grants, documents: initialDocuments }: Props) {
+export default function StaffProfileClient({ staff, balances, records, grants: initialGrants, documents: initialDocuments, leaveTypes }: Props) {
   const router = useRouter();
 
   const [jobTitles, setJobTitles] = useState<JobTitleOption[]>([]);
+
+  const [grants, setGrants] = useState<GrantRow[]>(initialGrants);
+  const [balancesState, setBalancesState] = useState<Balance[]>(balances);
+  const [showGrantForm, setShowGrantForm] = useState(false);
+  const [editingGrantId, setEditingGrantId] = useState<string | null>(null);
+  const [grantTypeId, setGrantTypeId] = useState(leaveTypes[0]?.id ?? "");
+  const [grantDays, setGrantDays] = useState(leaveTypes[0]?.defaultDays ?? 20);
+  const [grantDate, setGrantDate] = useState(adisToday());
+  const [grantNote, setGrantNote] = useState("");
+  const [grantSaving, setGrantSaving] = useState(false);
+  const [grantError, setGrantError] = useState("");
+  const [deletingGrantId, setDeletingGrantId] = useState<string | null>(null);
 
   const [showEdit, setShowEdit] = useState(false);
   const [editingName, setEditingName] = useState(staff.name);
@@ -308,6 +338,88 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
     if (res.ok) router.push("/staff");
     setActingId(null);
     setShowConfirmation(null);
+  }
+
+  async function refreshProfileBalances() {
+    const res = await fetch(`/api/leave-balances?userId=${encodeURIComponent(staff.id)}`);
+    const data = await res.json();
+    if (res.ok) setBalancesState(data.balances);
+  }
+
+  function openAddGrant() {
+    setEditingGrantId(null);
+    setGrantTypeId(leaveTypes[0]?.id ?? "");
+    setGrantDays(leaveTypes[0]?.defaultDays ?? 20);
+    setGrantDate(adisToday());
+    setGrantNote("");
+    setGrantError("");
+    setShowGrantForm(true);
+  }
+
+  function openEditGrant(g: GrantRow) {
+    setEditingGrantId(g.id);
+    setGrantDays(g.days);
+    setGrantDate(g.grantedDate.slice(0, 10));
+    setGrantNote(g.note ?? "");
+    setGrantError("");
+    setShowGrantForm(true);
+  }
+
+  async function handleSaveGrant(e: React.FormEvent) {
+    e.preventDefault();
+    if (grantDays <= 0) return;
+    setGrantSaving(true);
+    setGrantError("");
+
+    const url = "/api/leave-grants";
+    const method = editingGrantId ? "PUT" : "POST";
+    const body: Record<string, unknown> = editingGrantId
+      ? { id: editingGrantId, days: grantDays, grantedDate: grantDate, note: grantNote || undefined }
+      : { userId: staff.id, leaveTypeId: grantTypeId, days: grantDays, grantedDate: grantDate, note: grantNote || undefined };
+
+    const res = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setGrantError(data.error || "Failed to save grant.");
+      setGrantSaving(false);
+      return;
+    }
+
+    const grantsRes = await fetch(`/api/leave-grants?userId=${encodeURIComponent(staff.id)}`);
+    const grantsData = await grantsRes.json();
+    if (grantsRes.ok) {
+      setGrants(grantsData.map((g: LeaveGrantApiRow) => ({
+        id: g.id,
+        leaveTypeName: g.leaveType.name,
+        days: g.days,
+        grantedDate: g.grantedDate,
+        note: g.note,
+        expiresAt: g.expiresAt,
+      })));
+    }
+
+    await refreshProfileBalances();
+
+    setShowGrantForm(false);
+    setEditingGrantId(null);
+    setGrantSaving(false);
+    router.refresh();
+  }
+
+  async function handleDeleteGrant(grantId: string) {
+    setDeletingGrantId(grantId);
+    const res = await fetch(`/api/leave-grants?id=${encodeURIComponent(grantId)}`, { method: "DELETE" });
+    if (res.ok) {
+      setGrants((prev) => prev.filter((g) => g.id !== grantId));
+      await refreshProfileBalances();
+      router.refresh();
+    }
+    setDeletingGrantId(null);
   }
 
   async function handleDocumentUpload(category: string, file: File) {
@@ -844,10 +956,10 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
           }}>
             LEAVE BALANCES
           </h2>
-          {balances.length === 0 ? (
+          {balancesState.length === 0 ? (
             <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>No leave types configured.</p>
           ) : (
-            balances.map((b) => {
+            balancesState.map((b) => {
               const maxVal = Math.max(b.granted, b.remaining + b.used);
               return (
                 <div key={b.leaveTypeId} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -1287,6 +1399,116 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
           )}
         </section>
       </div>
+
+      {/* Leave Grants */}
+      <section style={{
+        background: "rgba(250, 247, 240, 0.85)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid rgba(255, 255, 255, 0.4)",
+        borderRadius: "0.75rem",
+        boxShadow: "0 8px 32px rgba(31, 107, 77, 0.08), 0 2px 8px rgba(0,0,0,0.04)",
+        marginBottom: "1.5rem",
+        overflow: "hidden",
+      }}>
+        <div style={{
+          padding: "1rem 1.5rem",
+          borderBottom: "1px solid rgba(31,107,77,0.2)",
+          background: "#1F6B4D",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "1rem",
+        }}>
+          <h2 style={{
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#D9A441",
+            fontFamily: "var(--font-mono)",
+            margin: 0,
+          }}>
+            LEAVE GRANTS
+          </h2>
+          <button
+            onClick={openAddGrant}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.35rem",
+              padding: "0.4rem 0.9rem",
+              background: "#D9A441",
+              color: "#0A261B",
+              border: "none",
+              borderRadius: "0.35rem",
+              fontWeight: 700,
+              fontSize: "0.75rem",
+              cursor: "pointer",
+              fontFamily: "inherit",
+              boxShadow: "0 2px 8px rgba(217,164,65,0.3)",
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>add</span>
+            Add Grant
+          </button>
+        </div>
+
+        {grants.length === 0 ? (
+          <div style={{ padding: "2rem", textAlign: "center", color: "var(--color-text-muted)" }}>
+            No grants for this staff member.
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table style={{
+              width: "100%",
+              textAlign: "left",
+              borderCollapse: "collapse",
+              background: "rgba(255,255,255,0.4)",
+            }}>
+              <thead>
+                <tr style={{ background: "rgba(250,247,240,0.8)", borderBottom: "1px solid rgba(191,201,193,0.3)" }}>
+                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>Type</th>
+                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", textAlign: "center" }}>Days</th>
+                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>Granted</th>
+                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", whiteSpace: "nowrap" }}>Expires</th>
+                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)" }}>Note</th>
+                  <th style={{ padding: "1rem 1.5rem", fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1F6B4D", fontFamily: "var(--font-mono)", textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody style={{ fontSize: "0.8125rem" }}>
+                {grants.map((g) => (
+                  <tr key={g.id} style={{ borderBottom: "1px solid rgba(191,201,193,0.2)" }}>
+                    <td data-label="Type" style={{ padding: "1rem 1.5rem", fontWeight: 600 }}>{g.leaveTypeName}</td>
+                    <td data-label="Days" style={{ padding: "1rem 1.5rem", textAlign: "center", fontWeight: 600 }}>{formatDays(g.days)}</td>
+                    <td data-label="Granted" style={{ padding: "1rem 1.5rem", whiteSpace: "nowrap" }}>{g.grantedDate.slice(0, 10)}</td>
+                    <td data-label="Expires" style={{ padding: "1rem 1.5rem", whiteSpace: "nowrap" }}>{g.expiresAt ? g.expiresAt.slice(0, 10) : "Never"}</td>
+                    <td data-label="Note" style={{ padding: "1rem 1.5rem", color: "var(--color-text-muted)", maxWidth: "15rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{g.note || "\u2014"}</td>
+                    <td data-label="Actions" style={{ padding: "1rem 1.5rem", textAlign: "right", whiteSpace: "nowrap" }}>
+                      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+                        <button
+                          onClick={() => openEditGrant(g)}
+                          className="btn btn-primary btn-sm"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteGrant(g.id)}
+                          disabled={deletingGrantId === g.id}
+                          className="btn btn-danger btn-sm"
+                        >
+                          {deletingGrantId === g.id ? "…" : "Delete"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* Request History */}
       <section style={{
@@ -1788,6 +2010,134 @@ export default function StaffProfileClient({ staff, balances, records, grants, d
           </div>
         </div>
       )}
+
+      {/* Grant form modal */}
+      {showGrantForm && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 120,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => { setShowGrantForm(false); setEditingGrantId(null); setGrantError(""); }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 500,
+              width: "calc(100% - 2rem)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.1rem", fontWeight: 700 }}>
+                {editingGrantId ? "Edit Grant" : `Add Grant for ${staff.name}`}
+              </h3>
+              <button
+                onClick={() => { setShowGrantForm(false); setEditingGrantId(null); setGrantError(""); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleSaveGrant}>
+              {!editingGrantId && (
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Leave Type</label>
+                  <select
+                    value={grantTypeId}
+                    onChange={(e) => {
+                      const selected = leaveTypes.find((t) => t.id === e.target.value);
+                      setGrantTypeId(e.target.value);
+                      if (selected) setGrantDays(selected.defaultDays);
+                    }}
+                    className="form-select"
+                  >
+                    {leaveTypes.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
+                <div style={{ flex: 1, minWidth: 120 }}>
+                  <label className="form-label">Days</label>
+                  <input
+                    type="number"
+                    min="0.5"
+                    step="0.5"
+                    value={grantDays}
+                    onChange={(e) => setGrantDays(Number(e.target.value))}
+                    className="form-input"
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 160 }}>
+                  <label className="form-label">Grant Date</label>
+                  <input
+                    type="date"
+                    value={grantDate}
+                    onChange={(e) => setGrantDate(e.target.value)}
+                    className="form-input"
+                  />
+                </div>
+              </div>
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label className="form-label">Note (optional)</label>
+                <input
+                  type="text"
+                  value={grantNote}
+                  onChange={(e) => setGrantNote(e.target.value)}
+                  className="form-input"
+                  placeholder="e.g. Annual leave 2026"
+                />
+              </div>
+              {grantError && <p className="form-error mb-1">{grantError}</p>}
+              <div className="flex-row gap-sm">
+                <button type="submit" disabled={grantSaving} className="btn btn-success">
+                  {grantSaving ? "Saving..." : editingGrantId ? "Update" : "Add Grant"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => { setShowGrantForm(false); setEditingGrantId(null); setGrantError(""); }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+function adisToday(): string {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Addis_Ababa",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(new Date());
 }
