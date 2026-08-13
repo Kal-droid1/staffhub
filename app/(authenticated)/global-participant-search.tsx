@@ -360,7 +360,7 @@ export default function GlobalParticipantSearch() {
             ) : editing ? (
               /* Edit form */
               <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                <div className="grid-2-mobile" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                   <div style={{ gridColumn: "1 / -1" }}>
                     <label className="form-label">Name</label>
                     <input className="form-input" value={editForm?.name ?? ""} onChange={(e) => setField("name", e.target.value)} />
@@ -429,7 +429,7 @@ export default function GlobalParticipantSearch() {
                   </button>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                <div className="grid-2-mobile" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
                   {([
                     ["ID", detail.localParticipantId, true],
                     ["FCP", `${detail.fcpName} (${detail.fcpId})`, false],

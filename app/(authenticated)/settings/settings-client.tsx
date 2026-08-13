@@ -28,7 +28,7 @@ export default function SettingsClient({ role }: Props) {
       </h1>
 
       {/* Tab bar */}
-      <div style={{ display: "flex", gap: "0.25rem", margin: "1.5rem 0", borderBottom: "2px solid rgba(31,107,77,0.1)", paddingBottom: 0 }}>
+      <div className="wrap-mobile" style={{ display: "flex", gap: "0.25rem", margin: "1.5rem 0", borderBottom: "2px solid rgba(31,107,77,0.1)", paddingBottom: 0 }}>
         {visibleTabs.map((t) => (
           <button
             key={t.id}

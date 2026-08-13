@@ -722,4 +722,35 @@ body {
   .navbar-links a {
     padding: 0.3rem 0;
   }
+
+  /* Shared responsive helpers for inline-styled layouts */
+  .stack-mobile {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid-2-mobile {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .wrap-mobile {
+    flex-wrap: wrap !important;
+  }
+
+  .modal-mobile {
+    padding: 1rem !important;
+    width: calc(100% - 1rem) !important;
+    margin: 0 0.5rem !important;
+  }
+
+  .tap-target-mobile button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  /* Small screens: make two-column grids single column */
+  @media (max-width: 480px) {
+    .grid-2-mobile {
+      grid-template-columns: 1fr !important;
+    }
+  }
 }

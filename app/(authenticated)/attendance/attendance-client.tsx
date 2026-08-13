@@ -700,7 +700,7 @@ export default function AttendanceClient({
             <span className="material-symbols-outlined" style={{ fontSize: "2.5rem", color: "#D9A441", textShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>how_to_reg</span>
           </div>
 
-          <div style={{ marginTop: "1rem", padding: "0.75rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="grid-2-mobile" style={{ marginTop: "1rem", padding: "0.75rem 1.25rem", background: "rgba(255,255,255,0.08)", borderRadius: "6px", borderTop: "1px solid rgba(255,255,255,0.2)", position: "relative", zIndex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             <div>
               <p style={{ margin: 0, fontSize: "0.8rem", opacity: 0.65, fontWeight: 700 }}>Requested vs Status</p>
               <p style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "#fff" }}>

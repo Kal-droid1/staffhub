@@ -734,7 +734,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
       </header>
 
       {/* Two-column layout: Details + Leave Balances (left) | Attendance Snapshot + Documents (right) */}
-      <div style={{
+      <div className="stack-mobile" style={{
         display: "grid",
         gridTemplateColumns: "1fr 2fr",
         alignItems: "start",
@@ -920,7 +920,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
               <span style={{ fontWeight: 600, fontSize: "0.875rem" }}>{formatDate(staff.createdAt)}</span>
             </div>
           </div>
-          <div style={{ display: "flex", gap: "0.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(191,201,193,0.3)" }}>
+          <div className="wrap-mobile" style={{ display: "flex", gap: "0.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(191,201,193,0.3)" }}>
             <button
               onClick={() => setShowGrantsModal(true)}
               style={{
@@ -1356,7 +1356,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                 </div>
               </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
+            <div className="grid-2-mobile" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem" }}>
               <div style={{
                 background: "rgba(255,255,255,0.05)",
                 borderRadius: "0.75rem",
