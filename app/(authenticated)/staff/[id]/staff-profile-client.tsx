@@ -654,7 +654,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
         </div>
       </header>
 
-      {/* Top section: Details + Attendance Snapshot */}
+      {/* Two-column layout: Details + Leave Balances (left) | Attendance Snapshot + Documents (right) */}
       <div style={{
         display: "grid",
         gridTemplateColumns: "1fr 2fr",
@@ -662,6 +662,8 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
         gap: "1.5rem",
         marginBottom: "1.5rem",
       }}>
+        {/* Left column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         {/* Details Card */}
         <section style={{
           background: "rgba(250, 247, 240, 0.85)",
@@ -1003,6 +1005,62 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
           </div>
         </section>
 
+        {/* Leave Balances */}
+        <section style={{
+          background: "rgba(250, 247, 240, 0.85)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          border: "1px solid rgba(255, 255, 255, 0.4)",
+          borderRadius: "0.75rem",
+          boxShadow: "0 8px 32px rgba(31, 107, 77, 0.08), 0 2px 8px rgba(0,0,0,0.04)",
+          padding: "1.5rem",
+        }}>
+          <h2 style={{
+            fontSize: "0.75rem",
+            fontWeight: 600,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            color: "#1F6B4D",
+            fontFamily: "var(--font-mono)",
+            margin: "0 0 1.5rem",
+          }}>
+            LEAVE BALANCES
+          </h2>
+          {balancesState.length === 0 ? (
+            <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>No leave types configured.</p>
+          ) : (
+            balancesState.map((b) => {
+              const maxVal = Math.max(b.granted, b.remaining + b.used);
+              return (
+                <div key={b.leaveTypeId} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <RadialGauge value={b.remaining} max={maxVal} size={180} strokeWidth={10} gradient />
+                  <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: "0.5rem", marginBottom: "0.25rem" }}>
+                    Days Left
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "#1F6B4D", marginBottom: "0.25rem" }}>
+                    {b.leaveTypeName}
+                    {b.isAnnualRecurring && <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", marginLeft: "0.35rem" }}>(annual)</span>}
+                  </div>
+                  <div style={{ display: "flex", width: "100%", justifyContent: "space-around", padding: "0.75rem 0", background: "rgba(255,255,255,0.5)", borderRadius: "0.5rem", border: "1px solid rgba(191,201,193,0.2)", marginTop: "0.25rem" }}>
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginBottom: "0.25rem" }}>GRANTED</div>
+                      <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1F6B4D" }}>{formatDays(b.granted)}</div>
+                    </div>
+                    <div style={{ width: 1, background: "rgba(191,201,193,0.3)" }} />
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginBottom: "0.25rem" }}>USED</div>
+                      <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1F6B4D" }}>{formatDays(b.used)}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </section>
+        </div>
+
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         {/* Attendance Snapshot */}
         <section style={{
           background: "linear-gradient(135deg, #1F6B4D 0%, #0A261B 100%)",
@@ -1154,67 +1212,6 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
               </div>
             </div>
           </div>
-        </section>
-      </div>
-
-      {/* Middle section: Leave Balances + Documents */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 2fr",
-        gap: "1.5rem",
-        marginBottom: "1.5rem",
-      }}>
-        {/* Leave Balances */}
-        <section style={{
-          background: "rgba(250, 247, 240, 0.85)",
-          backdropFilter: "blur(20px)",
-          WebkitBackdropFilter: "blur(20px)",
-          border: "1px solid rgba(255, 255, 255, 0.4)",
-          borderRadius: "0.75rem",
-          boxShadow: "0 8px 32px rgba(31, 107, 77, 0.08), 0 2px 8px rgba(0,0,0,0.04)",
-          padding: "1.5rem",
-        }}>
-          <h2 style={{
-            fontSize: "0.75rem",
-            fontWeight: 600,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            color: "#1F6B4D",
-            fontFamily: "var(--font-mono)",
-            margin: "0 0 1.5rem",
-          }}>
-            LEAVE BALANCES
-          </h2>
-          {balancesState.length === 0 ? (
-            <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0" }}>No leave types configured.</p>
-          ) : (
-            balancesState.map((b) => {
-              const maxVal = Math.max(b.granted, b.remaining + b.used);
-              return (
-                <div key={b.leaveTypeId} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <RadialGauge value={b.remaining} max={maxVal} size={180} strokeWidth={10} gradient />
-                  <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginTop: "0.5rem", marginBottom: "0.25rem" }}>
-                    Days Left
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: "1.05rem", color: "#1F6B4D", marginBottom: "0.25rem" }}>
-                    {b.leaveTypeName}
-                    {b.isAnnualRecurring && <span style={{ fontSize: "0.75rem", color: "var(--color-text-muted)", marginLeft: "0.35rem" }}>(annual)</span>}
-                  </div>
-                  <div style={{ display: "flex", width: "100%", justifyContent: "space-around", padding: "0.75rem 0", background: "rgba(255,255,255,0.5)", borderRadius: "0.5rem", border: "1px solid rgba(191,201,193,0.2)", marginTop: "0.25rem" }}>
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginBottom: "0.25rem" }}>GRANTED</div>
-                      <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1F6B4D" }}>{formatDays(b.granted)}</div>
-                    </div>
-                    <div style={{ width: 1, background: "rgba(191,201,193,0.3)" }} />
-                    <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: "0.75rem", fontWeight: 600, letterSpacing: "0.08em", color: "var(--color-text-muted)", fontFamily: "var(--font-mono)", marginBottom: "0.25rem" }}>USED</div>
-                      <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1F6B4D" }}>{formatDays(b.used)}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
         </section>
 
         {/* Documents — card-grid layout */}
@@ -1627,6 +1624,7 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
             </div>
           )}
         </section>
+        </div>
       </div>
 
       {/* Request History */}
