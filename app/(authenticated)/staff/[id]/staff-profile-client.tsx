@@ -138,6 +138,9 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
   const [grantSaving, setGrantSaving] = useState(false);
   const [grantError, setGrantError] = useState("");
   const [deletingGrantId, setDeletingGrantId] = useState<string | null>(null);
+  const [deletingBalance, setDeletingBalance] = useState<Balance | null>(null);
+  const [balanceDeleteError, setBalanceDeleteError] = useState("");
+  const [balanceDeleting, setBalanceDeleting] = useState(false);
 
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetNewPassword, setResetNewPassword] = useState("");
@@ -487,6 +490,29 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
       router.refresh();
     }
     setDeletingGrantId(null);
+  }
+
+  async function confirmDeleteBalance() {
+    if (!deletingBalance) return;
+    setBalanceDeleting(true);
+    setBalanceDeleteError("");
+    const res = await fetch(
+      `/api/leave-grants?userId=${encodeURIComponent(staff.id)}&leaveTypeId=${encodeURIComponent(deletingBalance.leaveTypeId)}`,
+      { method: "DELETE" }
+    );
+    const data = await res.json();
+
+    if (!res.ok) {
+      setBalanceDeleteError(data.error || "Failed to remove leave grant.");
+      setBalanceDeleting(false);
+      return;
+    }
+
+    setDeletingBalance(null);
+    setBalanceDeleting(false);
+    setBalanceIndex((idx) => Math.max(0, Math.min(idx, balancesState.length - 2)));
+    await refreshProfileBalances();
+    router.refresh();
   }
 
   async function handleDocumentUpload(category: string, file: File) {
@@ -1189,6 +1215,28 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                       <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "#1F6B4D" }}>{formatDays(b.used)}</div>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => { setBalanceDeleteError(""); setDeletingBalance(b); }}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "0.4rem",
+                      marginTop: "0.75rem",
+                      padding: "0.35rem 0.75rem",
+                      background: "none",
+                      border: "1px solid rgba(186,26,26,0.4)",
+                      borderRadius: "0.5rem",
+                      color: "#ba1a1a",
+                      fontWeight: 600,
+                      fontSize: "0.75rem",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>delete</span>
+                    Remove this leave grant
+                  </button>
                 </div>
               );
             })()
@@ -2598,6 +2646,111 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete leave grant confirmation modal */}
+      {deletingBalance && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 130,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={() => { setDeletingBalance(null); setBalanceDeleteError(""); }}
+          />
+          <div
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #ba1a1a",
+              maxWidth: 480,
+              width: "calc(100% - 2rem)",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0, color: "#ba1a1a", fontSize: "1.05rem", fontWeight: 700 }}>Remove Leave Grant</h3>
+              <button
+                onClick={() => { setDeletingBalance(null); setBalanceDeleteError(""); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            {deletingBalance.used > 0 ? (
+              <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+                <strong>{deletingBalance.leaveTypeName}</strong> has already been used ({formatDays(deletingBalance.used)} days) and cannot be removed. Contact support if this was granted in error.
+              </p>
+            ) : (
+              <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+                Remove <strong>{deletingBalance.leaveTypeName}</strong> ({formatDays(deletingBalance.granted)} days granted) from this staff member? This cannot be undone.
+              </p>
+            )}
+            {balanceDeleteError && <p className="form-error mb-1">{balanceDeleteError}</p>}
+            <div className="flex-row gap-sm">
+              {deletingBalance.used === 0 ? (
+                <button
+                  onClick={confirmDeleteBalance}
+                  disabled={balanceDeleting}
+                  style={{
+                    padding: "0.4rem 1rem",
+                    background: "#ba1a1a",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "0.5rem",
+                    fontWeight: 600,
+                    fontSize: "0.8125rem",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {balanceDeleting ? "Removing..." : "Confirm"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setDeletingBalance(null); setBalanceDeleteError(""); }}
+                  className="btn btn-ghost"
+                >
+                  Close
+                </button>
+              )}
+              {deletingBalance.used === 0 && (
+                <button
+                  onClick={() => { setDeletingBalance(null); setBalanceDeleteError(""); }}
+                  style={{
+                    padding: "0.4rem 1rem",
+                    background: "none",
+                    border: "1px solid var(--color-border)",
+                    borderRadius: "0.5rem",
+                    fontWeight: 500,
+                    fontSize: "0.8125rem",
+                    cursor: "pointer",
+                    color: "var(--color-text)",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

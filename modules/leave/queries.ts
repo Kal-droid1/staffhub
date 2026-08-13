@@ -174,6 +174,11 @@ export async function deleteLeaveGrant(id: string): Promise<void> {
   await prisma.leaveGrant.delete({ where: { id } });
 }
 
+export async function deleteLeaveGrantsByType(userId: string, leaveTypeId: string): Promise<{ count: number }> {
+  const result = await prisma.leaveGrant.deleteMany({ where: { userId, leaveTypeId } });
+  return { count: result.count };
+}
+
 export async function deleteLeaveType(id: string): Promise<void> {
   await prisma.leaveGrant.deleteMany({ where: { leaveTypeId: id } });
   await prisma.leaveType.delete({ where: { id } });

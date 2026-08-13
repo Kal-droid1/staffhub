@@ -8,6 +8,7 @@ export {
   createBulkLeaveGrants,
   updateLeaveGrant,
   deleteLeaveGrant,
+  deleteLeaveGrantsByType,
   getLeaveBalances,
   getLeaveBalanceSummary,
   getLeaveTypeByStatus,

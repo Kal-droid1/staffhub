@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
-import { getLeaveGrants, createLeaveGrant, updateLeaveGrant, deleteLeaveGrant, createBulkLeaveGrants } from "@/modules/leave/queries";
+import { getLeaveGrants, createLeaveGrant, updateLeaveGrant, deleteLeaveGrant, deleteLeaveGrantsByType, createBulkLeaveGrants } from "@/modules/leave/queries";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -106,6 +106,18 @@ export async function DELETE(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
+  const userId = searchParams.get("userId");
+  const leaveTypeId = searchParams.get("leaveTypeId");
+
+  if (userId && leaveTypeId) {
+    try {
+      const result = await deleteLeaveGrantsByType(userId, leaveTypeId);
+      return NextResponse.json({ success: true, count: result.count });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to delete grants";
+      return NextResponse.json({ error: msg }, { status: 400 });
+    }
+  }
 
   if (!id) {
     return NextResponse.json({ error: "id query param is required." }, { status: 400 });
