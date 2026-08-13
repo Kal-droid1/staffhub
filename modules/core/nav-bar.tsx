@@ -98,7 +98,20 @@ export default function NavBar() {
                 }}
                 title="Profile picture"
               >
-                <span className="material-symbols-outlined" style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.5rem" }}>person</span>
+                {session.user?.avatarUrl ? (
+                  <span style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    background: `url(/api/account/avatar) center/cover`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    border: "1px solid rgba(255,255,255,0.4)",
+                    flexShrink: 0,
+                  }} />
+                ) : (
+                  <span className="material-symbols-outlined" style={{ color: "rgba(255,255,255,0.8)", fontSize: "1.5rem" }}>person</span>
+                )}
                 <div>
                   <p style={{ margin: 0, fontSize: "0.8rem", fontWeight: 700, color: "rgba(255,255,255,0.9)", lineHeight: 1.2 }}>{userName}</p>
                   <p style={{ margin: 0, fontSize: "0.65rem", fontWeight: 500, color: "rgba(255,255,255,0.55)", lineHeight: 1.2 }}>{userRoleLabel}</p>

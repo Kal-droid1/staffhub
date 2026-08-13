@@ -2,7 +2,41 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { prisma } from "@/lib/prisma";
-import { put } from "@vercel/blob";
+import { put, get } from "@vercel/blob";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { avatarUrl: true },
+  });
+
+  if (!user?.avatarUrl) {
+    return NextResponse.json({ error: "No avatar" }, { status: 404 });
+  }
+
+  try {
+    const result = await get(user.avatarUrl, { access: "private" });
+    if (!result || result.statusCode !== 200) {
+      return NextResponse.json({ error: "Avatar not found" }, { status: 404 });
+    }
+
+    return new NextResponse(result.stream, {
+      headers: {
+        "Content-Type": result.blob.contentType,
+        "Cache-Control": "private, max-age=300",
+      },
+    });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("Avatar fetch error:", e);
+    return NextResponse.json({ error: `Failed to fetch avatar: ${message}` }, { status: 500 });
+  }
+}
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -32,12 +66,13 @@ export async function POST(req: NextRequest) {
   let blob;
   try {
     blob = await put(`avatars/${session.user.id}/${file.name}`, file, {
-      access: "public",
+      access: "private",
       addRandomSuffix: true,
     });
   } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
     console.error("Blob upload error:", e);
-    return NextResponse.json({ error: "File upload to storage failed." }, { status: 500 });
+    return NextResponse.json({ error: `File upload to storage failed: ${message}` }, { status: 500 });
   }
 
   try {

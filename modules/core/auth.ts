@@ -9,6 +9,7 @@ declare module "next-auth" {
     role: Role;
     department: string | null;
     jobTitleName: string | null;
+    avatarUrl: string | null;
   }
   interface Session {
     user: {
@@ -18,6 +19,7 @@ declare module "next-auth" {
       role: Role;
       department: string | null;
       jobTitleName: string | null;
+      avatarUrl: string | null;
     };
   }
 }
@@ -28,6 +30,7 @@ declare module "next-auth/jwt" {
     role: Role;
     department: string | null;
     jobTitleName: string | null;
+    avatarUrl: string | null;
   }
 }
 
@@ -54,6 +57,7 @@ export const authOptions: AuthOptions = {
             department: true,
             isActive: true,
             password: true,
+            avatarUrl: true,
             jobTitle: { select: { name: true } },
           },
         });
@@ -78,6 +82,7 @@ export const authOptions: AuthOptions = {
           role: user.role,
           department: user.department,
           jobTitleName: user.jobTitle?.name ?? null,
+          avatarUrl: user.avatarUrl,
         };
       },
     }),
@@ -92,7 +97,17 @@ export const authOptions: AuthOptions = {
         token.role = user.role;
         token.department = user.department;
         token.jobTitleName = user.jobTitleName;
+        token.avatarUrl = user.avatarUrl;
       }
+
+      if (token.id) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { avatarUrl: true },
+        });
+        token.avatarUrl = dbUser?.avatarUrl ?? null;
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -101,6 +116,7 @@ export const authOptions: AuthOptions = {
         session.user.role = token.role;
         session.user.department = token.department;
         session.user.jobTitleName = token.jobTitleName;
+        session.user.avatarUrl = token.avatarUrl;
       }
       return session;
     },
