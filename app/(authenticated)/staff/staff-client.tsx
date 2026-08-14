@@ -1811,19 +1811,25 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
             <form onSubmit={handleBulkGrant}>
               <div style={{ marginBottom: "0.75rem" }}>
                 <label className="form-label">Leave Type</label>
-                <select
-                  value={bulkTypeId}
-                  onChange={(e) => {
-                    const selected = leaveTypes.find((t) => t.id === e.target.value);
-                    setBulkTypeId(e.target.value);
-                    if (selected) setBulkDays(selected.defaultDays);
-                  }}
-                  className="form-select"
-                >
-                  {leaveTypes.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
-                  ))}
-                </select>
+                {leaveTypes.length === 0 ? (
+                  <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem", color: "#7d5700", background: "rgba(217,164,65,0.12)", border: "1px solid rgba(217,164,65,0.4)", borderRadius: "0.5rem", padding: "0.6rem 0.75rem" }}>
+                    No leave types configured. Add one in Settings → Leave Types first.
+                  </p>
+                ) : (
+                  <select
+                    value={bulkTypeId}
+                    onChange={(e) => {
+                      const selected = leaveTypes.find((t) => t.id === e.target.value);
+                      setBulkTypeId(e.target.value);
+                      if (selected) setBulkDays(selected.defaultDays);
+                    }}
+                    className="form-select"
+                  >
+                    {leaveTypes.map((t) => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginBottom: "0.75rem" }}>
                 <div style={{ flex: 1, minWidth: 120 }}>
@@ -1859,7 +1865,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
               </div>
               {bulkError && <p className="form-error mb-1">{bulkError}</p>}
               <div className="flex-row gap-sm">
-                <button type="submit" disabled={bulkSaving} className="btn btn-success">
+                <button type="submit" disabled={bulkSaving || leaveTypes.length === 0} className="btn btn-success">
                   {bulkSaving ? "Granting..." : "Grant to All"}
                 </button>
                 <button

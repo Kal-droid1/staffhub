@@ -1025,23 +1025,29 @@ export default function AttendanceClient({
             <form onSubmit={handleLeaveRequest}>
               <div style={{ marginBottom: "0.75rem" }}>
                 <label className="form-label">Leave type</label>
-                <select
-                  value={leaveTypeId}
-                  onChange={(e) => {
-                    const selected = leaveTypes.find((lt) => lt.id === e.target.value);
-                    if (selected) {
-                      setLeaveTypeId(selected.id);
-                      setLeaveType(selected.mappedStatus);
-                    }
-                  }}
-                  className="form-select"
-                >
-                  {leaveTypes.map((lt) => (
-                    <option key={lt.id} value={lt.id}>
-                      {lt.name}
-                    </option>
-                  ))}
-                </select>
+                {leaveTypes.length === 0 ? (
+                  <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem", color: "#7d5700", background: "rgba(217,164,65,0.12)", border: "1px solid rgba(217,164,65,0.4)", borderRadius: "0.5rem", padding: "0.6rem 0.75rem" }}>
+                    No leave types configured. Add one in Settings → Leave Types first.
+                  </p>
+                ) : (
+                  <select
+                    value={leaveTypeId}
+                    onChange={(e) => {
+                      const selected = leaveTypes.find((lt) => lt.id === e.target.value);
+                      if (selected) {
+                        setLeaveTypeId(selected.id);
+                        setLeaveType(selected.mappedStatus);
+                      }
+                    }}
+                    className="form-select"
+                  >
+                    {leaveTypes.map((lt) => (
+                      <option key={lt.id} value={lt.id}>
+                        {lt.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
               {ownBalances.find((b) => b.leaveTypeId === leaveTypeId && b.remaining <= 0) && (
                 <p className="form-error mb-2" style={{ fontSize: "0.8rem" }}>
@@ -1070,7 +1076,7 @@ export default function AttendanceClient({
                   {leaveFile && <p className="form-hint">{leaveFile.name}</p>}
                 </div>
               )}
-              <button type="submit" disabled={loading || (selectedLeaveType?.requiresAttachment && !leaveFile)} className="btn btn-primary">
+              <button type="submit" disabled={loading || leaveTypes.length === 0 || (selectedLeaveType?.requiresAttachment && !leaveFile)} className="btn btn-primary">
                 {loading ? "Submitting..." : "Submit request"}
               </button>
             </form>
@@ -1326,23 +1332,29 @@ export default function AttendanceClient({
               <form onSubmit={handleLeaveRequest}>
                 <div style={{ marginBottom: "0.75rem" }}>
                   <label className="form-label">Leave type</label>
-                  <select
-                    value={leaveTypeId}
-                    onChange={(e) => {
-                      const selected = leaveTypes.find((lt) => lt.id === e.target.value);
-                      if (selected) {
-                        setLeaveTypeId(selected.id);
-                        setLeaveType(selected.mappedStatus);
-                      }
-                    }}
-                    className="form-select"
-                  >
-                    {leaveTypes.map((lt) => (
-                      <option key={lt.id} value={lt.id}>
-                        {lt.name}
-                      </option>
-                    ))}
-                  </select>
+                  {leaveTypes.length === 0 ? (
+                    <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem", color: "#7d5700", background: "rgba(217,164,65,0.12)", border: "1px solid rgba(217,164,65,0.4)", borderRadius: "0.5rem", padding: "0.6rem 0.75rem" }}>
+                      No leave types configured. Add one in Settings → Leave Types first.
+                    </p>
+                  ) : (
+                    <select
+                      value={leaveTypeId}
+                      onChange={(e) => {
+                        const selected = leaveTypes.find((lt) => lt.id === e.target.value);
+                        if (selected) {
+                          setLeaveTypeId(selected.id);
+                          setLeaveType(selected.mappedStatus);
+                        }
+                      }}
+                      className="form-select"
+                    >
+                      {leaveTypes.map((lt) => (
+                        <option key={lt.id} value={lt.id}>
+                          {lt.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 {ownBalances.find((b) => b.leaveTypeId === leaveTypeId && b.remaining <= 0) && (
                   <p className="form-error mb-2" style={{ fontSize: "0.8rem" }}>
@@ -1400,7 +1412,7 @@ export default function AttendanceClient({
 
                 <button
                   type="submit"
-                  disabled={loading || (selectedLeaveType?.requiresAttachment && !leaveFile)}
+                  disabled={loading || leaveTypes.length === 0 || (selectedLeaveType?.requiresAttachment && !leaveFile)}
                   className="btn btn-primary"
                 >
                   {loading ? "Submitting..." : "Submit request"}
