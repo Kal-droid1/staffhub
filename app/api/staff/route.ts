@@ -103,7 +103,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "id and action are required." }, { status: 400 });
   }
 
-  if (!(await canViewUser(session?.user?.isHidden === true, id))) {
+  if (!session?.user) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!(await canViewUser(session.user.isHidden === true, id))) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
@@ -119,6 +123,9 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json(await resetUserPassword(id, newPassword));
       }
       case "deactivate": {
+        if (session.user.id === id) {
+          return NextResponse.json({ error: "You cannot deactivate your own account." }, { status: 400 });
+        }
         const hide = hideFromReports === true;
         const user = await deactivateUser(id, hide);
         return NextResponse.json(user);
@@ -128,6 +135,9 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json(user);
       }
       case "delete": {
+        if (session.user.id === id) {
+          return NextResponse.json({ error: "You cannot delete your own account." }, { status: 400 });
+        }
         const user = await deleteUser(id);
         return NextResponse.json(user);
       }
@@ -136,6 +146,9 @@ export async function PATCH(req: NextRequest) {
         return NextResponse.json(user);
       }
       case "permanent-delete": {
+        if (session.user.id === id) {
+          return NextResponse.json({ error: "You cannot delete your own account." }, { status: 400 });
+        }
         if (confirmation !== "DELETE") {
           return NextResponse.json({ error: "Type DELETE to confirm permanent removal." }, { status: 400 });
         }

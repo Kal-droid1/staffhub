@@ -58,6 +58,7 @@ interface CompanyLeaveAction {
 }
 
 interface Props {
+  currentUserId: string;
   initialStaff: StaffMember[];
   leaveTypes: LeaveTypeOption[];
 }
@@ -163,7 +164,7 @@ function StaffAvatar({ name, userId, role, hasAvatar, isActive }: { name: string
   );
 }
 
-export default function StaffClient({ initialStaff, leaveTypes }: Props) {
+export default function StaffClient({ currentUserId, initialStaff, leaveTypes }: Props) {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
   const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
@@ -1209,6 +1210,7 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
           <tbody style={{ fontSize: "0.875rem" }}>
             {pagedStaff.map((s) => {
               const roleStyle = ROLE_STYLE[s.role] ?? ROLE_STYLE.STAFF;
+              const isSelf = s.id === currentUserId;
               return (
                 <tr
                   key={s.id}
@@ -1362,15 +1364,16 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                         <>
                           <button
                             onClick={() => setDeactivateTarget(s)}
-                            disabled={actingId === s.id}
-                            title="Deactivate"
+                            disabled={isSelf || actingId === s.id}
+                            title={isSelf ? "You cannot deactivate your own account" : "Deactivate"}
                             style={{
                               background: "none",
                               border: "none",
-                              cursor: "pointer",
+                              cursor: isSelf ? "not-allowed" : "pointer",
                               padding: "0.5rem",
                               borderRadius: "0.5rem",
                               color: "var(--color-text-muted)",
+                              opacity: isSelf ? 0.4 : 1,
                               transition: "all 0.15s",
                               display: "flex",
                               alignItems: "center",
@@ -1389,15 +1392,16 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                           </button>
                           <button
                             onClick={() => setDeleteTarget(s)}
-                            disabled={actingId === s.id}
-                            title="Delete"
+                            disabled={isSelf || actingId === s.id}
+                            title={isSelf ? "You cannot delete your own account" : "Delete"}
                             style={{
                               background: "none",
                               border: "none",
-                              cursor: "pointer",
+                              cursor: isSelf ? "not-allowed" : "pointer",
                               padding: "0.5rem",
                               borderRadius: "0.5rem",
                               color: "var(--color-text-muted)",
+                              opacity: isSelf ? 0.4 : 1,
                               transition: "all 0.15s",
                               display: "flex",
                               alignItems: "center",
@@ -1446,15 +1450,16 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                           </button>
                           <button
                             onClick={() => setDeleteTarget(s)}
-                            disabled={actingId === s.id}
-                            title="Delete"
+                            disabled={isSelf || actingId === s.id}
+                            title={isSelf ? "You cannot delete your own account" : "Delete"}
                             style={{
                               background: "none",
                               border: "none",
-                              cursor: "pointer",
+                              cursor: isSelf ? "not-allowed" : "pointer",
                               padding: "0.5rem",
                               borderRadius: "0.5rem",
                               color: "var(--color-text-muted)",
+                              opacity: isSelf ? 0.4 : 1,
                               transition: "all 0.15s",
                               display: "flex",
                               alignItems: "center",

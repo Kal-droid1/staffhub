@@ -90,6 +90,7 @@ interface JobTitleOption {
 }
 
 interface Props {
+  currentUserId: string;
   staff: StaffMember;
   balances: Balance[];
   records: RecordRow[];
@@ -121,8 +122,10 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-export default function StaffProfileClient({ staff, balances, records, grants: initialGrants, documents: initialDocuments, leaveTypes }: Props) {
+export default function StaffProfileClient({ currentUserId, staff, balances, records, grants: initialGrants, documents: initialDocuments, leaveTypes }: Props) {
   const router = useRouter();
+
+  const isSelf = staff.id === currentUserId;
 
   const [jobTitles, setJobTitles] = useState<JobTitleOption[]>([]);
 
@@ -1017,7 +1020,8 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
               <>
                 <button
                   onClick={() => setShowConfirmation("deactivate")}
-                  disabled={actingId === staff.id}
+                  disabled={isSelf || actingId === staff.id}
+                  title={isSelf ? "You cannot deactivate your own account" : "Deactivate"}
                   style={{
                     flex: 1,
                     padding: "0.5rem 1rem",
@@ -1027,8 +1031,9 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                     color: "#6b5a33",
                     fontWeight: 600,
                     fontSize: "0.8125rem",
-                    cursor: "pointer",
+                    cursor: isSelf ? "not-allowed" : "pointer",
                     fontFamily: "inherit",
+                    opacity: isSelf ? 0.4 : 1,
                     transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
                   }}
                   onMouseEnter={(e) => {
@@ -1048,7 +1053,8 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                 </button>
                 <button
                   onClick={() => setShowConfirmation("delete")}
-                  disabled={actingId === staff.id}
+                  disabled={isSelf || actingId === staff.id}
+                  title={isSelf ? "You cannot delete your own account" : "Delete"}
                   style={{
                     flex: 1,
                     padding: "0.5rem 1rem",
@@ -1058,8 +1064,9 @@ export default function StaffProfileClient({ staff, balances, records, grants: i
                     color: "#ba1a1a",
                     fontWeight: 600,
                     fontSize: "0.8125rem",
-                    cursor: "pointer",
+                    cursor: isSelf ? "not-allowed" : "pointer",
                     fontFamily: "inherit",
+                    opacity: isSelf ? 0.4 : 1,
                     transition: "background 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease",
                   }}
                   onMouseEnter={(e) => {

@@ -133,6 +133,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
 
   return (
     <StaffProfileClient
+      currentUserId={viewer.id}
       staff={JSON.parse(JSON.stringify(userJson))}
       balances={JSON.parse(JSON.stringify(balances))}
       records={JSON.parse(JSON.stringify(recordsJson))}

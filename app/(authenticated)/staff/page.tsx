@@ -10,6 +10,7 @@ export default async function StaffPage() {
 
   return (
     <StaffClient
+      currentUserId={user.id}
       initialStaff={JSON.parse(JSON.stringify(initialStaff))}
       leaveTypes={JSON.parse(JSON.stringify(leaveTypes))}
     />
