@@ -19,7 +19,8 @@
     "db:seed-feb-2026": "npx tsx prisma/seed-feb-2026.ts",
     "db:seed-feb-2026-cleanup": "npx tsx prisma/seed-feb-2026-cleanup.ts",
     "db:seed-july-2026": "npx tsx prisma/seed-july-2026.ts",
-    "db:seed-july-2026-cleanup": "npx tsx prisma/seed-july-2026-cleanup.ts"
+    "db:seed-july-2026-cleanup": "npx tsx prisma/seed-july-2026-cleanup.ts",
+    "db:cleanup": "npx tsx prisma/cleanup-production.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

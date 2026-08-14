@@ -443,6 +443,25 @@ body {
   to   { transform: translateY(-50%) rotate(360deg); }
 }
 
+@keyframes avatar-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.avatar-skeleton {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.12) 25%,
+    rgba(255, 255, 255, 0.35) 50%,
+    rgba(255, 255, 255, 0.12) 75%
+  );
+  background-size: 200% 100%;
+  animation: avatar-shimmer 1.2s ease-in-out infinite;
+}
+
 .navbar {
   background: #1F6B4D;
   color: white;

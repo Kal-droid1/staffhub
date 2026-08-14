@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const result = await get(user.avatarUrl, { access: "private", useCache: false });
+    const result = await get(user.avatarUrl, { access: "private", useCache: true });
     if (!result || result.statusCode !== 200) {
       return NextResponse.json({ error: "Avatar not found" }, { status: 404 });
     }
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(result.stream, {
       headers: {
         "Content-Type": result.blob.contentType,
-        "Cache-Control": "no-store",
+        "Cache-Control": "private, max-age=300",
       },
     });
   } catch (e) {

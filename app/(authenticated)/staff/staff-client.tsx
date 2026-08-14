@@ -90,6 +90,79 @@ const AVATAR_BG: Record<string, string> = {
   MANAGER: "#D9A441",
 };
 
+function StaffAvatar({ name, userId, role, hasAvatar, isActive }: { name: string; userId: string; role: string; hasAvatar: boolean; isActive: boolean }) {
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">("loading");
+  const avatarBg = AVATAR_BG[role] ?? AVATAR_BG.STAFF;
+
+  if (!hasAvatar) {
+    return (
+      <div style={{
+        width: 48,
+        height: 48,
+        borderRadius: "50%",
+        background: avatarBg,
+        color: "#fff",
+        border: "2px solid #fff",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "0.85rem",
+        fontWeight: 700,
+        flexShrink: 0,
+        opacity: isActive ? 1 : 0.6,
+        overflow: "hidden",
+      }}>
+        {getInitials(name)}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      width: 48,
+      height: 48,
+      borderRadius: "50%",
+      background: avatarBg,
+      color: "#fff",
+      border: "2px solid #fff",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "0.85rem",
+      fontWeight: 700,
+      flexShrink: 0,
+      opacity: isActive ? 1 : 0.6,
+      overflow: "hidden",
+      position: "relative",
+    }}>
+      {status === "loading" && <span className="avatar-skeleton" />}
+      {status !== "error" && (
+        <img
+          src={`/api/account/avatar?userId=${encodeURIComponent(userId)}`}
+          alt={`${name} avatar`}
+          loading="eager"
+          decoding="async"
+          onLoad={() => setStatus("loaded")}
+          onError={() => setStatus("error")}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            borderRadius: "50%",
+            opacity: status === "loaded" ? 1 : 0,
+            transition: "opacity 0.15s ease",
+          }}
+        />
+      )}
+      {status === "error" && getInitials(name)}
+    </div>
+  );
+}
+
 export default function StaffClient({ initialStaff, leaveTypes }: Props) {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
@@ -410,7 +483,8 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
   }
 
   async function openCompanyLeave() {
-    setClMode("typed");
+    const noLeaveTypes = leaveTypes.length === 0;
+    setClMode(noLeaveTypes ? "custom" : "typed");
     setClTypeId(leaveTypes[0]?.id ?? "");
     setClStartDate("");
     setClEndDate("");
@@ -1135,7 +1209,6 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
           <tbody style={{ fontSize: "0.875rem" }}>
             {pagedStaff.map((s) => {
               const roleStyle = ROLE_STYLE[s.role] ?? ROLE_STYLE.STAFF;
-              const avatarBg = AVATAR_BG[s.role] ?? AVATAR_BG.STAFF;
               return (
                 <tr
                   key={s.id}
@@ -1161,33 +1234,13 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
                 >
                   <td data-label="Name" style={{ padding: "1.5rem 1.5rem" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                      <div style={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: "50%",
-                        background: s.avatarUrl ? "none" : avatarBg,
-                        color: "#fff",
-                        border: "2px solid #fff",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: "0.85rem",
-                        fontWeight: 700,
-                        flexShrink: 0,
-                        opacity: s.isActive ? 1 : 0.6,
-                        overflow: "hidden",
-                      }}>
-                        {s.avatarUrl ? (
-                          <img
-                            src={`/api/account/avatar?userId=${encodeURIComponent(s.id)}`}
-                            alt={`${s.name} avatar`}
-                            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
-                          />
-                        ) : (
-                          getInitials(s.name)
-                        )}
-                      </div>
+                      <StaffAvatar
+                        name={s.name}
+                        userId={s.id}
+                        role={s.role}
+                        hasAvatar={Boolean(s.avatarUrl)}
+                        isActive={s.isActive}
+                      />
                       <Link
                         href={`/staff/${s.id}`}
                         style={{
@@ -1866,12 +1919,13 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
             </div>
             <form onSubmit={handleCompanyLeave}>
               <div style={{ display: "flex", gap: "1.25rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", fontWeight: 600, cursor: "pointer", color: "#1F6B4D" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", fontWeight: 600, cursor: leaveTypes.length === 0 ? "not-allowed" : "pointer", color: leaveTypes.length === 0 ? "var(--color-text-muted)" : "#1F6B4D", opacity: leaveTypes.length === 0 ? 0.6 : 1 }}>
                   <input
                     type="radio"
                     name="company-leave-mode"
                     checked={clMode === "typed"}
                     onChange={() => setClMode("typed")}
+                    disabled={leaveTypes.length === 0}
                   />
                   Use existing leave type
                 </label>
@@ -1889,15 +1943,21 @@ export default function StaffClient({ initialStaff, leaveTypes }: Props) {
               {clMode === "typed" && (
                 <div style={{ marginBottom: "0.75rem" }}>
                   <label className="form-label">Leave Type</label>
-                  <select
-                    value={clTypeId}
-                    onChange={(e) => setClTypeId(e.target.value)}
-                    className="form-select"
-                  >
-                    {leaveTypes.map((t) => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+                  {leaveTypes.length === 0 ? (
+                    <p style={{ margin: "0.35rem 0 0", fontSize: "0.85rem", color: "#7d5700", background: "rgba(217,164,65,0.12)", border: "1px solid rgba(217,164,65,0.4)", borderRadius: "0.5rem", padding: "0.6rem 0.75rem" }}>
+                      No leave types configured. Add one in Settings → Leave Types, or use a Custom reason instead.
+                    </p>
+                  ) : (
+                    <select
+                      value={clTypeId}
+                      onChange={(e) => setClTypeId(e.target.value)}
+                      className="form-select"
+                    >
+                      {leaveTypes.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               )}
 
