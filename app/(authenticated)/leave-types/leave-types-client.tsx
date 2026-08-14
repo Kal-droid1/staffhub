@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
+import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 
 interface LeaveType {
   id: string;
@@ -32,6 +33,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LeaveType | null>(null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -96,14 +98,16 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
     setError("");
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this leave type and all its grants?")) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     setDeletingId(id);
     const res = await fetch(`/api/leave-types?id=${id}`, { method: "DELETE" });
     if (res.ok) {
       setTypes((prev) => prev.filter((t) => t.id !== id));
     }
     setDeletingId(null);
+    setDeleteTarget(null);
     router.refresh();
   }
 
@@ -238,7 +242,7 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(t.id)}
+                        onClick={() => setDeleteTarget(t)}
                         disabled={deletingId === t.id}
                         className="btn btn-danger btn-sm"
                       >
@@ -253,6 +257,22 @@ export default function LeaveTypesClient({ initialTypes }: Props) {
           </div>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Leave Type"
+        message={
+          <>
+            Delete <strong>{deleteTarget?.name}</strong> and all its grants? This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        destructive
+        busy={deletingId === deleteTarget?.id}
+        busyLabel="Deleting…"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

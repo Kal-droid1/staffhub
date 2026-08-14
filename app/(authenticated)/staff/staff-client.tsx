@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
+import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 
 interface StaffMember {
   id: string;
@@ -216,6 +217,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
   const [clHistory, setClHistory] = useState<CompanyLeaveAction[]>([]);
   const [clHistoryLoading, setClHistoryLoading] = useState(false);
   const [clUndoingId, setClUndoingId] = useState<string | null>(null);
+  const [companyLeaveUndoTarget, setCompanyLeaveUndoTarget] = useState<CompanyLeaveAction | null>(null);
 
   useEffect(() => {
     fetch("/api/job-titles")
@@ -554,7 +556,6 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
   }
 
   async function handleCompanyLeaveUndo(id: string) {
-    if (!confirm("Undo this company leave? All records it created will be removed.")) return;
     setClUndoingId(id);
     const res = await fetch(`/api/company-leave?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     if (res.ok) {
@@ -562,6 +563,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
       router.refresh();
     }
     setClUndoingId(null);
+    setCompanyLeaveUndoTarget(null);
   }
 
   return (
@@ -2076,7 +2078,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleCompanyLeaveUndo(a.id)}
+                        onClick={() => setCompanyLeaveUndoTarget(a)}
                         disabled={clUndoingId === a.id}
                         style={{
                           padding: "0.35rem 0.75rem",
@@ -2101,6 +2103,18 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={companyLeaveUndoTarget !== null}
+        title="Undo Company Leave"
+        message="Undo this company leave? All records it created will be removed."
+        confirmLabel="Undo"
+        destructive
+        busy={clUndoingId === companyLeaveUndoTarget?.id}
+        busyLabel="Undoing…"
+        onConfirm={() => companyLeaveUndoTarget && handleCompanyLeaveUndo(companyLeaveUndoTarget.id)}
+        onCancel={() => setCompanyLeaveUndoTarget(null)}
+      />
     </>
   );
 }

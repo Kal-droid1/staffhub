@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
+import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 import { formatDate } from "@/lib/format";
 
 interface Holiday {
@@ -30,6 +31,7 @@ export default function HolidaysClient({ initialHolidays: initialData, initialYe
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Holiday | null>(null);
 
   async function fetchYear(year: number) {
     setLoading(true);
@@ -74,14 +76,16 @@ export default function HolidaysClient({ initialHolidays: initialData, initialYe
     router.refresh();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Remove this holiday?")) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     setDeletingId(id);
     const res = await fetch(`/api/holidays?id=${id}`, { method: "DELETE" });
     if (res.ok) {
       setHolidays((prev) => prev.filter((h) => h.id !== id));
     }
     setDeletingId(null);
+    setDeleteTarget(null);
     router.refresh();
   }
 
@@ -206,7 +210,7 @@ export default function HolidaysClient({ initialHolidays: initialData, initialYe
                   </td>
                   <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
                     <button
-                      onClick={() => handleDelete(h.id)}
+                      onClick={() => setDeleteTarget(h)}
                       disabled={deletingId === h.id}
                       className="btn btn-danger btn-sm"
                     >
@@ -220,6 +224,22 @@ export default function HolidaysClient({ initialHolidays: initialData, initialYe
           </div>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Remove Holiday"
+        message={
+          <>
+            Remove <strong>{deleteTarget?.name}</strong>?
+          </>
+        }
+        confirmLabel="Delete"
+        destructive
+        busy={deletingId === deleteTarget?.id}
+        busyLabel="Deleting…"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

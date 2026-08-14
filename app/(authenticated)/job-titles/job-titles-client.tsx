@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
+import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 
 interface JobTitle {
   id: string;
@@ -22,6 +23,7 @@ export default function JobTitlesClient({ initialTitles }: Props) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<JobTitle | null>(null);
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -71,14 +73,16 @@ export default function JobTitlesClient({ initialTitles }: Props) {
     setError("");
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this job title? Staff members currently assigned to it will keep their assignment.")) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     setDeletingId(id);
     const res = await fetch(`/api/job-titles?id=${id}`, { method: "DELETE" });
     if (res.ok) {
       setTitles((prev) => prev.filter((t) => t.id !== id));
     }
     setDeletingId(null);
+    setDeleteTarget(null);
     router.refresh();
   }
 
@@ -153,7 +157,7 @@ export default function JobTitlesClient({ initialTitles }: Props) {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(t.id)}
+                        onClick={() => setDeleteTarget(t)}
                         disabled={deletingId === t.id}
                         className="btn btn-danger btn-sm"
                       >
@@ -168,6 +172,22 @@ export default function JobTitlesClient({ initialTitles }: Props) {
           </div>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Job Title"
+        message={
+          <>
+            Delete <strong>{deleteTarget?.name}</strong>? Staff members currently assigned to it will keep their assignment.
+          </>
+        }
+        confirmLabel="Delete"
+        destructive
+        busy={deletingId === deleteTarget?.id}
+        busyLabel="Deleting…"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

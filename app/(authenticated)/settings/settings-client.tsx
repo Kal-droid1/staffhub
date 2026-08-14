@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
+import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 
 const TABS = [
   { id: "password", label: "Change Password" },
@@ -139,6 +140,7 @@ function LeaveTypesSection() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const STATUS_OPTIONS = ["PERMISSION", "ANNUAL_LEAVE", "OTHER"];
 
   useEffect(() => {
@@ -162,12 +164,14 @@ function LeaveTypesSection() {
   function startEdit(t: any) { setEditingId(t.id); setName(t.name); setIsAnnual(t.isAnnualRecurring); setMappedStatus(t.mappedStatus); setDefaultDays(t.defaultDays); setRequiresAttachment(t.requiresAttachment); setShowForm(true); }
   function cancelForm() { setShowForm(false); setEditingId(null); setName(""); setIsAnnual(false); setMappedStatus("PERMISSION"); setDefaultDays(20); setRequiresAttachment(false); setError(""); }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this leave type and all its grants?")) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     setDeletingId(id);
     const res = await fetch(`/api/leave-types?id=${id}`, { method: "DELETE" });
     if (res.ok) setTypes(prev => (prev ?? []).filter(t => t.id !== id));
     setDeletingId(null);
+    setDeleteTarget(null);
   }
 
   if (!types) return <p style={{ color: "var(--color-text-muted)", padding: "2rem 0", textAlign: "center" }}>Loading…</p>;
@@ -193,10 +197,26 @@ function LeaveTypesSection() {
         <div className="table-responsive"><table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
           <thead><tr><th>Name</th><th style={{ textAlign: "center" }}>Annual</th><th style={{ textAlign: "center" }}>Default Days</th><th>Mapped Status</th><th style={{ textAlign: "center" }}>Attachment</th><th>Actions</th></tr></thead>
           <tbody>{types.map((t: any) => (
-            <tr key={t.id}><td data-label="Name" style={{ fontWeight: 600 }}>{t.name}</td><td data-label="Annual" style={{ textAlign: "center" }}>{t.isAnnualRecurring ? "Yes" : "No"}</td><td data-label="Default Days" style={{ textAlign: "center" }}>{t.defaultDays}</td><td data-label="Mapped Status">{t.mappedStatus}</td><td data-label="Attachment" style={{ textAlign: "center" }}>{t.requiresAttachment ? "Yes" : "No"}</td><td data-label="Actions" style={{ whiteSpace: "nowrap" }}><div className="flex-row gap-sm"><button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">Edit</button><button onClick={() => handleDelete(t.id)} disabled={deletingId === t.id} className="btn btn-danger btn-sm">{deletingId === t.id ? "Deleting..." : "Delete"}</button></div></td></tr>
+            <tr key={t.id}><td data-label="Name" style={{ fontWeight: 600 }}>{t.name}</td><td data-label="Annual" style={{ textAlign: "center" }}>{t.isAnnualRecurring ? "Yes" : "No"}</td><td data-label="Default Days" style={{ textAlign: "center" }}>{t.defaultDays}</td><td data-label="Mapped Status">{t.mappedStatus}</td><td data-label="Attachment" style={{ textAlign: "center" }}>{t.requiresAttachment ? "Yes" : "No"}</td><td data-label="Actions" style={{ whiteSpace: "nowrap" }}><div className="flex-row gap-sm"><button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">Edit</button><button onClick={() => setDeleteTarget(t)} disabled={deletingId === t.id} className="btn btn-danger btn-sm">{deletingId === t.id ? "Deleting..." : "Delete"}</button></div></td></tr>
           ))}</tbody>
         </table></div>
       </Card>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Leave Type"
+        message={
+          <>
+            Delete <strong>{deleteTarget?.name}</strong> and all its grants? This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete"
+        destructive
+        busy={deletingId === deleteTarget?.id}
+        busyLabel="Deleting…"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
@@ -211,6 +231,7 @@ function JobTitlesSection() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     fetch("/api/job-titles").then(r => r.json()).then(setTitles);
@@ -232,12 +253,14 @@ function JobTitlesSection() {
   function startEdit(t: any) { setEditingId(t.id); setName(t.name); setShowForm(true); }
   function cancelForm() { setShowForm(false); setEditingId(null); setName(""); setError(""); }
 
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this job title? Staff members currently assigned to it will keep their assignment.")) return;
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    const id = deleteTarget.id;
     setDeletingId(id);
     const res = await fetch(`/api/job-titles?id=${id}`, { method: "DELETE" });
     if (res.ok) setTitles(prev => (prev ?? []).filter(t => t.id !== id));
     setDeletingId(null);
+    setDeleteTarget(null);
   }
 
   if (!titles) return <p style={{ color: "var(--color-text-muted)", padding: "2rem 0", textAlign: "center" }}>Loading…</p>;
@@ -259,10 +282,26 @@ function JobTitlesSection() {
         <div className="table-responsive"><table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0 }}>
           <thead><tr><th>Name</th><th>Actions</th></tr></thead>
           <tbody>{titles.map(t => (
-            <tr key={t.id}><td data-label="Name" style={{ fontWeight: 600 }}>{t.name}</td><td data-label="Actions" style={{ whiteSpace: "nowrap" }}><div className="flex-row gap-sm"><button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">Edit</button><button onClick={() => handleDelete(t.id)} disabled={deletingId === t.id} className="btn btn-danger btn-sm">{deletingId === t.id ? "Deleting..." : "Delete"}</button></div></td></tr>
+            <tr key={t.id}><td data-label="Name" style={{ fontWeight: 600 }}>{t.name}</td><td data-label="Actions" style={{ whiteSpace: "nowrap" }}><div className="flex-row gap-sm"><button onClick={() => startEdit(t)} className="btn btn-primary btn-sm">Edit</button><button onClick={() => setDeleteTarget(t)} disabled={deletingId === t.id} className="btn btn-danger btn-sm">{deletingId === t.id ? "Deleting..." : "Delete"}</button></div></td></tr>
           ))}</tbody>
         </table></div>
       </Card>
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Job Title"
+        message={
+          <>
+            Delete <strong>{deleteTarget?.name}</strong>? Staff members currently assigned to it will keep their assignment.
+          </>
+        }
+        confirmLabel="Delete"
+        destructive
+        busy={deletingId === deleteTarget?.id}
+        busyLabel="Deleting…"
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
