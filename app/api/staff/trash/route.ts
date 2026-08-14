@@ -16,6 +16,6 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const staff = await getTrashedStaff();
+  const staff = await getTrashedStaff(session?.user?.isHidden === true);
   return NextResponse.json(staff);
 }

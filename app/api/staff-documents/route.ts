@@ -4,6 +4,7 @@ import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { prisma } from "@/lib/prisma";
 import { put } from "@vercel/blob";
+import { canViewUser } from "@/lib/visibility";
 import type { Role } from "@prisma/client";
 
 const CATEGORIES = [
@@ -28,6 +29,10 @@ export async function GET(req: NextRequest) {
   const userId = searchParams.get("userId");
   if (!userId) {
     return NextResponse.json({ error: "userId is required" }, { status: 400 });
+  }
+
+  if (!(await canViewUser(session.user.isHidden === true, userId))) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
   const docs = await prisma.staffDocument.findMany({

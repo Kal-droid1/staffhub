@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { getMonthlyReport } from "@/modules/attendance/queries";
+import { canViewUser } from "@/lib/visibility";
 import { prisma } from "@/lib/prisma";
 import ExcelJS from "exceljs";
 import AdmZip from "adm-zip";
@@ -32,7 +33,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid year." }, { status: 400 });
   }
 
-  const { summary } = await getMonthlyReport(month, year, userId);
+  if (userId && !(await canViewUser(session.user.isHidden === true, userId))) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
+  }
+
+  const { summary } = await getMonthlyReport(month, year, userId, session.user.isHidden === true);
 
   if (format === "xlsx") {
     return buildXlsxResponse(summary, month, year);

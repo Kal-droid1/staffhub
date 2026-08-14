@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { visibleUserWhere } from "@/lib/visibility";
 
 const userSelect = {
   id: true,
@@ -49,18 +50,18 @@ export interface StaffRow {
   createdAt: string;
 }
 
-export async function getAllStaff(): Promise<StaffRow[]> {
+export async function getAllStaff(viewerIsHidden = false): Promise<StaffRow[]> {
   const rows = await prisma.user.findMany({
-    where: { deletedAt: null },
+    where: { deletedAt: null, ...visibleUserWhere(viewerIsHidden) },
     select: userSelect,
     orderBy: { name: "asc" },
   });
   return rows as unknown as StaffRow[];
 }
 
-export async function getTrashedStaff(): Promise<StaffRow[]> {
+export async function getTrashedStaff(viewerIsHidden = false): Promise<StaffRow[]> {
   const rows = await prisma.user.findMany({
-    where: { deletedAt: { not: null } },
+    where: { deletedAt: { not: null }, ...visibleUserWhere(viewerIsHidden) },
     select: userSelect,
     orderBy: { deletedAt: "desc" },
   });

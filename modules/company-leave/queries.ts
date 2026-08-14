@@ -30,7 +30,7 @@ export async function applyCompanyLeave(args: {
   if (dates.length === 0) throw new Error("Selected range contains no weekdays");
 
   const users = await prisma.user.findMany({
-    where: { isActive: true, hideFromReports: false, deletedAt: null },
+    where: { isActive: true, hideFromReports: false, deletedAt: null, isHidden: false },
     select: { id: true },
   });
 
@@ -117,15 +117,21 @@ export async function applyCompanyLeave(args: {
   };
 }
 
-export async function getCompanyLeaveActions() {
-  return prisma.bulkLeaveAction.findMany({
+export async function getCompanyLeaveActions(viewerIsHidden = false) {
+  const actions = await prisma.bulkLeaveAction.findMany({
     orderBy: { createdAt: "desc" },
     take: 25,
     include: {
       leaveType: { select: { name: true } },
-      createdBy: { select: { name: true } },
+      createdBy: { select: { name: true, isHidden: true } },
     },
   });
+
+  if (viewerIsHidden) return actions;
+
+  return actions.map((a) =>
+    a.createdBy?.isHidden ? { ...a, createdBy: { name: "Manager" } } : a
+  );
 }
 
 export type UpcomingCompanyLeave = {

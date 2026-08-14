@@ -10,6 +10,7 @@ declare module "next-auth" {
     department: string | null;
     jobTitleName: string | null;
     avatarUrl: string | null;
+    isHidden: boolean;
   }
   interface Session {
     user: {
@@ -20,6 +21,7 @@ declare module "next-auth" {
       department: string | null;
       jobTitleName: string | null;
       avatarUrl: string | null;
+      isHidden: boolean;
     };
   }
 }
@@ -31,6 +33,7 @@ declare module "next-auth/jwt" {
     department: string | null;
     jobTitleName: string | null;
     avatarUrl: string | null;
+    isHidden: boolean;
   }
 }
 
@@ -56,6 +59,7 @@ export const authOptions: AuthOptions = {
             role: true,
             department: true,
             isActive: true,
+            isHidden: true,
             password: true,
             avatarUrl: true,
             jobTitle: { select: { name: true } },
@@ -83,6 +87,7 @@ export const authOptions: AuthOptions = {
           department: user.department,
           jobTitleName: user.jobTitle?.name ?? null,
           avatarUrl: user.avatarUrl,
+          isHidden: user.isHidden,
         };
       },
     }),
@@ -98,14 +103,16 @@ export const authOptions: AuthOptions = {
         token.department = user.department;
         token.jobTitleName = user.jobTitleName;
         token.avatarUrl = user.avatarUrl;
+        token.isHidden = user.isHidden;
       }
 
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { avatarUrl: true },
+          select: { avatarUrl: true, isHidden: true },
         });
         token.avatarUrl = dbUser?.avatarUrl ?? null;
+        token.isHidden = dbUser?.isHidden ?? false;
       }
 
       return token;
@@ -117,6 +124,7 @@ export const authOptions: AuthOptions = {
         session.user.department = token.department;
         session.user.jobTitleName = token.jobTitleName;
         session.user.avatarUrl = token.avatarUrl;
+        session.user.isHidden = token.isHidden;
       }
       return session;
     },

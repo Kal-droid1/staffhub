@@ -22,7 +22,7 @@ interface PageProps {
 }
 
 export default async function StaffProfilePage({ params }: PageProps) {
-  await requireAuth("MANAGER");
+  const viewer = await requireAuth("MANAGER");
   const { id } = await params;
 
   const user = await prisma.user.findUnique({
@@ -36,6 +36,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
       jobTitleId: true,
       jobTitle: { select: { id: true, name: true } },
       isActive: true,
+      isHidden: true,
       hideFromReports: true,
       deactivatedAt: true,
       deletedAt: true,
@@ -43,7 +44,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
     },
   });
 
-  if (!user) {
+  if (!user || (user.isHidden && !viewer.isHidden)) {
     return (
       <div className="page-container">
         <h1 className="page-title">Staff not found</h1>

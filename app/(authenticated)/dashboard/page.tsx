@@ -73,8 +73,8 @@ export default async function DashboardPage() {
   const staffBalances = balances.filter((b) => b.granted > 0);
 
   const isManager = ROLE_HIERARCHY[user.role] >= ROLE_HIERARCHY.MANAGER;
-  const pendingApprovals = isManager ? await countPendingRequestGroups() : 0;
-  const teamToday = isManager ? await getTeamAttendanceToday() : null;
+  const pendingApprovals = isManager ? await countPendingRequestGroups(user.isHidden) : 0;
+  const teamToday = isManager ? await getTeamAttendanceToday(user.isHidden) : null;
 
   return (
     <div className="page-container">

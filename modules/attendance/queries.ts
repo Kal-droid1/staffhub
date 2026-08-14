@@ -231,9 +231,9 @@ export async function createLeaveRequestBatch(
   });
 }
 
-export async function getPendingRecords() {
+export async function getPendingRecords(viewerIsHidden = false) {
   return prisma.attendanceRecord.findMany({
-    where: { status: "PENDING" },
+    where: { status: "PENDING", user: { isHidden: viewerIsHidden ? undefined : false } },
     include: {
       user: { select: { id: true, name: true, email: true, department: true, jobTitle: { select: { name: true } } } },
     },
@@ -241,15 +241,15 @@ export async function getPendingRecords() {
   });
 }
 
-export async function countPendingRequestGroups(): Promise<number> {
+export async function countPendingRequestGroups(viewerIsHidden = false): Promise<number> {
   const records = await prisma.attendanceRecord.findMany({
-    where: { status: "PENDING" },
+    where: { status: "PENDING", user: { isHidden: viewerIsHidden ? undefined : false } },
     select: { batchId: true, id: true },
   });
   return new Set(records.map((r) => r.batchId || r.id)).size;
 }
 
-export async function getTeamAttendanceToday(): Promise<{
+export async function getTeamAttendanceToday(viewerIsHidden = false): Promise<{
   present: number;
   absent: number;
   onLeave: number;
@@ -257,7 +257,7 @@ export async function getTeamAttendanceToday(): Promise<{
 }> {
   const today = addisTodayDate();
   const records = await prisma.attendanceRecord.findMany({
-    where: { date: today },
+    where: { date: today, user: { isHidden: viewerIsHidden ? undefined : false } },
     select: { status: true },
   });
 
@@ -409,7 +409,7 @@ export async function markAbsentForMissingUsers() {
   if (dow === 0 || dow === 6) return 0;
 
   const allUsers = await prisma.user.findMany({
-    where: { isActive: true, hideFromReports: false, deletedAt: null },
+    where: { isActive: true, hideFromReports: false, deletedAt: null, isHidden: false },
     select: { id: true },
   });
 
@@ -454,7 +454,8 @@ export type MonthlyReportUser = {
 export async function getMonthlyReport(
   month: number,
   year: number,
-  userId?: string
+  userId?: string,
+  viewerIsHidden = false
 ): Promise<{ summary: MonthlyReportUser[] }> {
   const monthStart = new Date(year, month - 1, 1);
   const monthEnd = new Date(year, month, 1);
@@ -463,6 +464,7 @@ export async function getMonthlyReport(
     date: { gte: monthStart, lt: monthEnd },
   };
   if (userId) where.userId = userId;
+  if (!viewerIsHidden) where.user = { isHidden: false };
 
   const records = await prisma.attendanceRecord.findMany({
     where,
@@ -543,7 +545,7 @@ export async function getMonthlyReport(
 
   if (userId && byUser.size === 0) {
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: userId, ...(viewerIsHidden ? {} : { isHidden: false }) },
       select: { id: true, name: true, email: true, department: true },
     });
     if (user) {
@@ -561,6 +563,7 @@ export async function getMonthlyReport(
       where: {
         hideFromReports: false,
         deletedAt: null,
+        ...(viewerIsHidden ? {} : { isHidden: false }),
         OR: [
           { deactivatedAt: null },
           { deactivatedAt: { gte: monthStart } },

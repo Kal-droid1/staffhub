@@ -4,6 +4,7 @@ import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { prisma } from "@/lib/prisma";
 import { put, get, del } from "@vercel/blob";
+import { canViewUser } from "@/lib/visibility";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -17,6 +18,9 @@ export async function GET(req: NextRequest) {
   if (userId && userId !== session.user.id) {
     if (!session.user.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (!(await canViewUser(session.user.isHidden === true, userId))) {
+      return NextResponse.json({ error: "No avatar" }, { status: 404 });
     }
   }
 

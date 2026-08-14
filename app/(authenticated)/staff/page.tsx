@@ -4,8 +4,8 @@ import { getLeaveTypes } from "@/modules/leave/queries";
 import StaffClient from "./staff-client";
 
 export default async function StaffPage() {
-  await requireAuth("MANAGER");
-  const initialStaff = await getAllStaff();
+  const user = await requireAuth("MANAGER");
+  const initialStaff = await getAllStaff(user.isHidden);
   const leaveTypes = await getLeaveTypes();
 
   return (

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { getLeaveGrants, createLeaveGrant, updateLeaveGrant, deleteLeaveGrant, deleteLeaveGrantsByType, createBulkLeaveGrants } from "@/modules/leave/queries";
+import { canViewUser } from "@/lib/visibility";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -15,6 +16,10 @@ export async function GET(req: NextRequest) {
 
   if (userId && !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (userId && !(await canViewUser(session.user.isHidden === true, userId))) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
   const grants = await getLeaveGrants(userId || session.user.id);

@@ -14,6 +14,7 @@ import {
   permanentlyDeleteUser,
   resetUserPassword,
 } from "@/lib/staff";
+import { canViewUser } from "@/lib/visibility";
 
 function managerGuard(session: Session | null) {
   if (!session?.user?.role) return false;
@@ -26,7 +27,7 @@ export async function GET() {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const staff = await getAllStaff();
+  const staff = await getAllStaff(session?.user?.isHidden === true);
   return NextResponse.json(staff);
 }
 
@@ -71,6 +72,10 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "id is required." }, { status: 400 });
   }
 
+  if (!(await canViewUser(session?.user?.isHidden === true, id))) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
+  }
+
   try {
     const user = await updateStaffAccount(id, { name, email, role, department, jobTitleId });
     return NextResponse.json(user);
@@ -96,6 +101,10 @@ export async function PATCH(req: NextRequest) {
 
   if (!id || !action) {
     return NextResponse.json({ error: "id and action are required." }, { status: 400 });
+  }
+
+  if (!(await canViewUser(session?.user?.isHidden === true, id))) {
+    return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
   try {
