@@ -1,22 +1,29 @@
-import { getSession } from "@/modules/core/session";
+import { getValidSession } from "@/modules/core/session";
 import NavBar from "@/modules/core/nav-bar";
 import GlobalParticipantSearch from "./global-participant-search";
 import SessionProvider from "./session-provider";
+import SessionGuard from "./session-guard";
 
 export default async function AuthenticatedLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  const session = await getValidSession();
 
   return (
     <SessionProvider session={session}>
-      <GlobalParticipantSearch />
-      <div style={{ position: "relative" }}>
-        <NavBar />
-        {children}
-      </div>
+      <SessionGuard>
+        {session?.user ? (
+          <>
+            <GlobalParticipantSearch />
+            <div style={{ position: "relative" }}>
+              <NavBar />
+              {children}
+            </div>
+          </>
+        ) : null}
+      </SessionGuard>
     </SessionProvider>
   );
 }

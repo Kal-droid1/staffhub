@@ -1,4 +1,5 @@
 import NextAuth, { type AuthOptions } from "next-auth";
+import type { Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
@@ -22,7 +23,8 @@ declare module "next-auth" {
       jobTitleName: string | null;
       avatarUrl: string | null;
       isHidden: boolean;
-    };
+    } | null;
+    invalidReason?: "deleted" | "deactivated";
   }
 }
 
@@ -109,15 +111,32 @@ export const authOptions: AuthOptions = {
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { avatarUrl: true, isHidden: true },
+          select: { avatarUrl: true, isHidden: true, isActive: true, deletedAt: true },
         });
-        token.avatarUrl = dbUser?.avatarUrl ?? null;
-        token.isHidden = dbUser?.isHidden ?? false;
+
+        if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
+          return {
+            ...token,
+            invalid: true,
+            invalidReason: !dbUser || dbUser.deletedAt ? "deleted" : "deactivated",
+          };
+        }
+
+        token.avatarUrl = dbUser.avatarUrl;
+        token.isHidden = dbUser.isHidden;
       }
 
       return token;
     },
     async session({ session, token }) {
+      if ((token as { invalid?: boolean }).invalid) {
+        return {
+          ...session,
+          user: null,
+          invalidReason: (token as { invalidReason?: string }).invalidReason,
+        } as unknown as Session;
+      }
+
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;

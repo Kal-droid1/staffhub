@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Card from "@/modules/core/components/card";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const reasonMessage =
+    reason === "deleted"
+      ? "Your account is no longer active. Please contact your administrator."
+      : reason === "deactivated"
+        ? "Your account has been deactivated. Please contact your administrator."
+        : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,6 +52,15 @@ export default function LoginPage() {
         <p className="text-center text-muted mb-2" style={{ fontSize: "0.85rem" }}>
           Sign in to your account
         </p>
+        {reasonMessage && (
+          <p
+            className="form-error"
+            style={{ marginBottom: "1rem" }}
+            role="alert"
+          >
+            {reasonMessage}
+          </p>
+        )}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "1rem" }}>
             <label htmlFor="email" className="form-label">
@@ -82,5 +100,13 @@ export default function LoginPage() {
         </form>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
