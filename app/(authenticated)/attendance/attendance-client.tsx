@@ -111,6 +111,81 @@ function formatCountdown(totalSeconds: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
+const ADDIS_TIMEZONE = "Africa/Addis_Ababa";
+
+function getAddisWallClock(date: Date): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+} {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: ADDIS_TIMEZONE,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const map: Record<string, number> = {};
+  for (const p of formatter.formatToParts(date)) {
+    if (p.type !== "literal") map[p.type] = Number(p.value);
+  }
+  return {
+    year: map.year,
+    month: map.month,
+    day: map.day,
+    hour: map.hour,
+    minute: map.minute,
+    second: map.second,
+  };
+}
+
+function getAddisOffsetMs(date: Date): number {
+  const wc = getAddisWallClock(date);
+  return (
+    Date.UTC(wc.year, wc.month - 1, wc.day, wc.hour, wc.minute, wc.second) -
+    date.getTime()
+  );
+}
+
+function getCutoffTimestamp(cutoffTime: string, now: number): number {
+  const [hours, minutes] = cutoffTime.split(":").map(Number);
+  const date = new Date(now);
+  const wc = getAddisWallClock(date);
+  const offset = getAddisOffsetMs(date);
+  return Date.UTC(wc.year, wc.month - 1, wc.day, hours, minutes, 0) - offset;
+}
+
+function getNextCutoffTimestamp(cutoffTime: string, now: number): number {
+  const [hours, minutes] = cutoffTime.split(":").map(Number);
+  const date = new Date(now);
+  const wc = getAddisWallClock(date);
+  const offset = getAddisOffsetMs(date);
+
+  let next = new Date(Date.UTC(wc.year, wc.month - 1, wc.day + 1));
+  const dow = next.getUTCDay();
+  if (dow === 6) next = new Date(Date.UTC(wc.year, wc.month - 1, wc.day + 3));
+  else if (dow === 0) next = new Date(Date.UTC(wc.year, wc.month - 1, wc.day + 2));
+
+  return Date.UTC(
+    next.getUTCFullYear(),
+    next.getUTCMonth(),
+    next.getUTCDate(),
+    hours,
+    minutes,
+    0
+  ) - offset;
+}
+
+function getRemainingSeconds(targetTimestamp: number, now: number): number {
+  return Math.max(0, Math.floor((targetTimestamp - now) / 1000));
+}
+
 function getStatusVariant(status: string): "present" | "absent" | "pending" | "leave" {
   const s = status.toLowerCase();
   if (s === "present" || s === "approved" || s === "field_work") return "present";
@@ -182,11 +257,34 @@ export default function AttendanceClient({
 
   const [cutoff, setCutoff] = useState(cutoffTime);
 
+  const recalcCountdown = useCallback(() => {
+    const now = Date.now();
+    setSecondsLeft(getRemainingSeconds(getCutoffTimestamp(cutoff, now), now));
+    setSecondsUntilTomorrow(getRemainingSeconds(getNextCutoffTimestamp(cutoff, now), now));
+  }, [cutoff]);
+
   // Sync client state when server props change after router.refresh()
   useEffect(() => { setRecord(todayRecord); }, [todayRecord]);
   useEffect(() => { setPending(pendingRecords); }, [pendingRecords]);
 
-  // Periodically re-check the cutoff so countdowns stay accurate
+  // Recalculate remaining time from the actual cutoff timestamp on every tick
+  // instead of decrementing a stored counter, so missed/throttled ticks self-correct.
+  useEffect(() => {
+    recalcCountdown();
+    const interval = setInterval(recalcCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [recalcCountdown]);
+
+  // Immediately recalculate when the tab regains focus after being backgrounded.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") recalcCountdown();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [recalcCountdown]);
+
+  // Periodically refresh the cutoff time in case settings change on the server.
   useEffect(() => {
     let cancelled = false;
     async function refreshCutoff() {
@@ -195,11 +293,6 @@ export default function AttendanceClient({
         if (res.ok && !cancelled) {
           const data = await res.json();
           setCutoff(data.cutoffTime);
-          setSecondsLeft(data.secondsUntilCutoff);
-          const serverNow = Math.floor(new Date(data.serverTime).getTime() / 1000);
-          const clientNow = Math.floor(Date.now() / 1000);
-          const drift = clientNow - serverNow;
-          setSecondsLeft((prev) => Math.max(0, prev - drift));
         }
       } catch { /* ignore */ }
     }
@@ -234,29 +327,6 @@ export default function AttendanceClient({
 
   const totalOwnRemaining = ownBalances.reduce((sum, b) => sum + b.remaining, 0);
   const maxOwnGranted = Math.max(ownBalances.reduce((sum, b) => sum + b.granted, 0), totalOwnRemaining);
-
-  useEffect(() => {
-    if (record || secondsLeft <= 0) {
-      if (secondsUntilTomorrow <= 0) return;
-      const interval = setInterval(() => {
-        setSecondsUntilTomorrow((prev) => Math.max(0, prev - 1));
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-    if (secondsLeft <= 0) return;
-
-    const interval = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [record, secondsLeft]);
 
   useEffect(() => {
     if (record || cutoffPassed || isWeekend) return;
