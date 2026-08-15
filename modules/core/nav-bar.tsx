@@ -16,6 +16,7 @@ export default function NavBar() {
 
   const role = session.user?.role as string;
   const isManager = role === "MANAGER";
+  const isTeacher = session.user?.isTeacher === true;
   const userName = session.user?.name ?? "";
   const userRoleLabel =
     role === "MANAGER" ? "Manager" :
@@ -31,6 +32,7 @@ export default function NavBar() {
   const navItems = [
     { href: "/dashboard", label: "Dashboard" },
     { href: "/attendance", label: "Attendance" },
+    ...(isTeacher ? [{ href: "/my-class", label: "My Class" }] : []),
     ...(isManager ? [{ href: "/staff", label: "Staff" }] : []),
   ];
 
@@ -64,7 +66,7 @@ export default function NavBar() {
           <div className={`navbar-menu${menuOpen ? " navbar-menu--open" : ""}`}>
             <div className="navbar-links">
               {navItems.map((item) => {
-                const isActive = pathname === item.href || (item.href === "/attendance" && pathname.startsWith("/attendance"));
+                const isActive = pathname === item.href || (item.href === "/attendance" && pathname.startsWith("/attendance")) || (item.href === "/my-class" && pathname.startsWith("/my-class"));
                 return (
                   <Link
                     key={item.href}
