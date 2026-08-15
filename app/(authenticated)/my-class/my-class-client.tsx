@@ -1,6 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  SUNDAY_SCHOOL_EXPORT_MONTH_OPTIONS,
+  SUNDAY_SCHOOL_FIRST_EXPORT_MONTH,
+} from "@/modules/sunday-school/export-months";
 
 interface ClassOption {
   id: string;
@@ -23,11 +27,6 @@ interface RosterResponse {
   week: number;
   roster: RosterRow[];
 }
-
-const MONTH_LABELS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
 
 const WEEK_LABELS = ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"];
 
@@ -55,6 +54,8 @@ export default function MyClassClient({
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [week, setWeek] = useState(initialWeek);
+  const [query, setQuery] = useState("");
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
@@ -65,15 +66,11 @@ export default function MyClassClient({
 
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const monthOptions = useMemo(() => {
-    const options: { value: string; label: string }[] = [];
-    for (let y = initialYear - 1; y <= initialYear + 1; y++) {
-      for (let m = 1; m <= 12; m++) {
-        options.push({ value: `${y}-${m}`, label: `${MONTH_LABELS[m - 1]} ${y}` });
-      }
-    }
-    return options;
-  }, [initialYear]);
+  const monthOptions = SUNDAY_SCHOOL_EXPORT_MONTH_OPTIONS;
+
+  const safeMonthValue = monthOptions.some((o) => o.value === `${year}-${month}`)
+    ? `${year}-${month}`
+    : SUNDAY_SCHOOL_FIRST_EXPORT_MONTH;
 
   const loadRoster = useCallback(
     async (selectedClassId: string, selectedYear: number, selectedMonth: number, selectedWeek: number) => {
@@ -87,6 +84,8 @@ export default function MyClassClient({
       setLoading(true);
       setError("");
       setBanner(null);
+      setJustSubmitted(false);
+      setQuery("");
 
       try {
         const res = await fetch(
@@ -123,9 +122,12 @@ export default function MyClassClient({
     };
   }, []);
 
-  function togglePresent(index: number, present: boolean) {
-    setRoster((prev) => prev.map((row, i) => (i === index ? { ...row, present } : row)));
+  function togglePresent(participantId: string, present: boolean) {
+    setRoster((prev) =>
+      prev.map((row) => (row.participantId === participantId ? { ...row, present } : row))
+    );
     setBanner(null);
+    setJustSubmitted(false);
   }
 
   async function handleSubmit() {
@@ -151,16 +153,19 @@ export default function MyClassClient({
 
       if (!res.ok) {
         setError(data && typeof data === "object" && "error" in data ? String(data.error) : "Failed to save attendance");
+        setJustSubmitted(false);
       } else {
         const absent = roster.filter((r) => !r.present).length;
         const present = roster.length - absent;
         setBanner(`Saved — ${present} present, ${absent} absent`);
+        setJustSubmitted(true);
 
         if (bannerTimer.current) clearTimeout(bannerTimer.current);
-        bannerTimer.current = setTimeout(() => setBanner(null), 3500);
+        bannerTimer.current = setTimeout(() => setBanner(null), 5000);
       }
     } catch {
       setError("Network error while saving attendance.");
+      setJustSubmitted(false);
     } finally {
       setSubmitting(false);
     }
@@ -168,6 +173,10 @@ export default function MyClassClient({
 
   const presentCount = roster.filter((r) => r.present).length;
   const absentCount = roster.length - presentCount;
+
+  const filteredRoster = query.trim()
+    ? roster.filter((r) => r.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : roster;
 
   return (
     <div
@@ -223,7 +232,7 @@ export default function MyClassClient({
           <label htmlFor="month-select" style={labelStyle}>Month</label>
           <select
             id="month-select"
-            value={`${year}-${month}`}
+            value={safeMonthValue}
             onChange={(e) => {
               const [y, m] = e.target.value.split("-").map(Number);
               setYear(y);
@@ -262,15 +271,19 @@ export default function MyClassClient({
             zIndex: 120,
             background: COLORS.teal,
             color: "#fff",
-            padding: "0.6rem 1rem",
-            borderRadius: "0.5rem",
-            fontSize: "0.875rem",
-            fontWeight: 700,
-            boxShadow: "0 8px 24px rgba(31,107,77,0.35)",
+            padding: "0.75rem 1.25rem",
+            borderRadius: "0.75rem",
+            fontSize: "0.95rem",
+            fontWeight: 800,
+            boxShadow: "0 10px 30px rgba(31,107,77,0.4)",
             whiteSpace: "nowrap",
             maxWidth: "calc(100vw - 2rem)",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
           }}
         >
+          <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>check_circle</span>
           {banner}
         </div>
       )}
@@ -295,8 +308,51 @@ export default function MyClassClient({
             </span>
           </div>
 
+          <div style={{ position: "relative", marginBottom: "0.75rem" }}>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Filter by name…"
+              style={{
+                width: "100%",
+                minHeight: 44,
+                padding: "0 2.5rem 0 0.75rem",
+                fontSize: "0.9rem",
+                fontFamily: "inherit",
+                color: "#2B2B2B",
+                background: "#FFFFFF",
+                border: `1px solid ${COLORS.border}`,
+                borderRadius: "0.6rem",
+                outline: "none",
+              }}
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear filter"
+                style={{
+                  position: "absolute",
+                  right: 8,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: COLORS.muted,
+                  fontSize: "1.25rem",
+                  lineHeight: 1,
+                  padding: "0.25rem",
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            {roster.map((row, index) => {
+            {filteredRoster.map((row) => {
               const absent = !row.present;
               return (
                 <div
@@ -322,7 +378,7 @@ export default function MyClassClient({
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     <button
                       type="button"
-                      onClick={() => togglePresent(index, true)}
+                      onClick={() => togglePresent(row.participantId, true)}
                       aria-pressed={row.present}
                       style={{
                         minHeight: 52,
@@ -345,7 +401,7 @@ export default function MyClassClient({
                     </button>
                     <button
                       type="button"
-                      onClick={() => togglePresent(index, false)}
+                      onClick={() => togglePresent(row.participantId, false)}
                       aria-pressed={absent}
                       style={{
                         minHeight: 52,
@@ -371,6 +427,12 @@ export default function MyClassClient({
               );
             })}
           </div>
+
+          {query.trim() && filteredRoster.length === 0 && (
+            <div style={{ textAlign: "center", padding: "1.5rem 0", color: COLORS.muted }}>
+              <p style={{ margin: 0, fontSize: "0.875rem" }}>No participants match &ldquo;{query}&rdquo;.</p>
+            </div>
+          )}
         </>
       ) : classInfo && roster.length === 0 ? (
         <div style={{ textAlign: "center", padding: "2.5rem 0", color: COLORS.muted }}>
@@ -424,7 +486,7 @@ export default function MyClassClient({
               boxShadow: "0 4px 16px rgba(217,164,65,0.4)",
             }}
           >
-            {submitting ? "Saving…" : `Submit attendance (${roster.length})`}
+            {submitting ? "Saving…" : justSubmitted ? "Saved ✓" : `Submit attendance (${roster.length})`}
           </button>
         </div>
       )}
