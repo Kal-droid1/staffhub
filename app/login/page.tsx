@@ -39,7 +39,14 @@ function LoginForm() {
       return;
     }
 
-    router.push("/dashboard");
+    const session = await fetch("/api/auth/session").then((r) => r.json());
+    const isTeacher = session?.user?.isTeacher === true;
+    const jobTitleName = session?.user?.jobTitleName ?? null;
+    const role = session?.user?.role as string | undefined;
+    const hasOrgRole = role === "MANAGER" || role === "ADMIN" || Boolean(jobTitleName);
+    const isTeacherOnly = isTeacher && !hasOrgRole;
+
+    router.push(isTeacherOnly ? "/my-class" : "/dashboard");
     router.refresh();
   }
 

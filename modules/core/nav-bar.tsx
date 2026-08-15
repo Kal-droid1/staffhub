@@ -17,10 +17,15 @@ export default function NavBar() {
   const role = session.user?.role as string;
   const isManager = role === "MANAGER";
   const isTeacher = session.user?.isTeacher === true;
+  const jobTitleName = session.user?.jobTitleName ?? null;
+  const hasOrgRole = role === "MANAGER" || role === "ADMIN" || Boolean(jobTitleName);
+  const isTeacherOnly = isTeacher && !hasOrgRole;
   const userName = session.user?.name ?? "";
-  const userRoleLabel =
-    role === "MANAGER" ? "Manager" :
-    "Staff";
+  const userRoleLabel = isTeacherOnly
+    ? "Teacher"
+    : role === "MANAGER"
+      ? "Manager"
+      : "Staff";
 
   const linkStyle: React.CSSProperties = {
     color: "#FFFFFF",
@@ -29,13 +34,15 @@ export default function NavBar() {
     fontSize: "0.875rem",
   };
 
-  const navItems = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/attendance", label: "Attendance" },
-    ...(isTeacher ? [{ href: "/my-class", label: "My Class" }] : []),
-    ...(isManager ? [{ href: "/staff", label: "Staff" }] : []),
-    ...(isManager ? [{ href: "/sunday-school", label: "Sunday School" }] : []),
-  ];
+  const navItems = isTeacherOnly
+    ? [{ href: "/my-class", label: "My Class" }]
+    : [
+        { href: "/dashboard", label: "Dashboard" },
+        { href: "/attendance", label: "Attendance" },
+        ...(isTeacher ? [{ href: "/my-class", label: "My Class" }] : []),
+        ...(isManager ? [{ href: "/staff", label: "Staff" }] : []),
+        ...(isManager ? [{ href: "/sunday-school", label: "Sunday School" }] : []),
+      ];
 
   return (
     <>

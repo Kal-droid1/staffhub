@@ -1,4 +1,5 @@
 import { requireAuth } from "@/modules/core/require-auth";
+import { redirect } from "next/navigation";
 import { getTodayRecord, getSettings, getSecondsUntilCutoff, getSecondsUntilTomorrowCutoff, getPendingRecords, getMyPendingRecords, isWeekend } from "@/modules/attendance/queries";
 import { getLeaveTypes, getLeaveBalances } from "@/modules/leave/queries";
 import { prisma } from "@/lib/prisma";
@@ -6,6 +7,11 @@ import AttendanceClient from "./attendance-client";
 
 export default async function AttendancePage() {
   const user = await requireAuth();
+
+  if (user.isTeacher && !user.jobTitleName && user.role !== "MANAGER" && user.role !== "ADMIN") {
+    redirect("/my-class");
+  }
+
   const todayRecord = await getTodayRecord(user.id);
   const settings = await getSettings();
   const secondsUntil = getSecondsUntilCutoff(settings.cutoffTime);

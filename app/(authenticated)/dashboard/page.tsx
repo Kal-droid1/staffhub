@@ -1,5 +1,6 @@
 import { ROLE_HIERARCHY } from "@/modules/core/roles";
 import { requireAuth } from "@/modules/core/require-auth";
+import { redirect } from "next/navigation";
 import { getLeaveBalances } from "@/modules/leave/queries";
 import { countPendingRequestGroups, getTeamAttendanceToday, getMyFieldWorkBatches } from "@/modules/attendance/queries";
 import { getUpcomingCompanyLeaveForUser } from "@/modules/company-leave/queries";
@@ -55,6 +56,11 @@ const pillLabelStyle: React.CSSProperties = {
 
 export default async function DashboardPage() {
   const user = await requireAuth();
+
+  if (user.isTeacher && !user.jobTitleName && user.role !== "MANAGER" && user.role !== "ADMIN") {
+    redirect("/my-class");
+  }
+
   const roleLabel = getRoleLabel(user.role);
   const balances = await getLeaveBalances(user.id);
   const greeting = getGreeting();
