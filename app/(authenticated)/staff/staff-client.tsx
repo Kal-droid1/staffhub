@@ -167,6 +167,49 @@ function StaffAvatar({ name, userId, role, hasAvatar, isActive }: { name: string
   );
 }
 
+function IconActionButton({
+  icon,
+  label,
+  onClick,
+  accent = "green",
+}: {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  accent?: "green" | "amber";
+}) {
+  const border = accent === "amber" ? "1px solid #D9A441" : "1px solid #1F6B4D";
+  const hoverBg = accent === "amber" ? "rgba(217,164,65,0.12)" : "rgba(31,107,77,0.08)";
+
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      aria-label={label}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 40,
+        height: 40,
+        padding: 0,
+        background: "rgba(255, 255, 255, 0.3)",
+        backdropFilter: "blur(8px)",
+        border,
+        borderRadius: "0.5rem",
+        color: "#1F6B4D",
+        cursor: "pointer",
+        transition: "background 0.15s",
+        fontFamily: "inherit",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = hoverBg)}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: "1.3rem" }}>{icon}</span>
+    </button>
+  );
+}
+
 export default function StaffClient({ currentUserId, initialStaff, initialTeachers, leaveTypes }: Props) {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
@@ -175,6 +218,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
   const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [jobTitleId, setJobTitleId] = useState("");
@@ -246,6 +290,14 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
     return autoRole(jt?.name);
   }
 
+  const isTeacherOnlyEdit = Boolean(
+    editingMember &&
+    editingMember.isTeacher &&
+    !editingMember.jobTitleId &&
+    editingMember.role !== "MANAGER" &&
+    editingMember.role !== "ADMIN"
+  );
+
   function upsertInView(updated: StaffMember) {
     if (view === "teachers") {
       setTeachers((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
@@ -265,6 +317,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
   function resetForm() {
     setShowForm(false);
     setEditingId(null);
+    setEditingMember(null);
     setName("");
     setEmail("");
     setJobTitleId("");
@@ -277,6 +330,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
 
   function startEdit(s: StaffMember) {
     setEditingId(s.id);
+    setEditingMember(s);
     setName(s.name);
     setEmail(s.email);
     setJobTitleId(s.jobTitleId ?? "");
@@ -621,131 +675,38 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
               : "Manage your workforce, roles, and status."}
           </p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
           {view === "teachers" && (
-            <button
+            <IconActionButton
+              icon="group"
+              label="Staff"
               onClick={() => { setView("staff"); setPage(0); }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.5rem 1rem",
-                background: "rgba(255, 255, 255, 0.3)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid #1F6B4D",
-                borderRadius: "0.5rem",
-                color: "#1F6B4D",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                cursor: "pointer",
-                transition: "background 0.15s",
-                fontFamily: "inherit",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(31,107,77,0.08)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>group</span>
-              Staff
-            </button>
+            />
           )}
           {view === "staff" && (
-            <button
+            <IconActionButton
+              icon="school"
+              label="Teachers"
+              accent="amber"
               onClick={() => { setView("teachers"); setPage(0); }}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-                padding: "0.5rem 1rem",
-                background: "rgba(255, 255, 255, 0.3)",
-                backdropFilter: "blur(8px)",
-                border: "1px solid #D9A441",
-                borderRadius: "0.5rem",
-                color: "#1F6B4D",
-                fontWeight: 600,
-                fontSize: "0.875rem",
-                cursor: "pointer",
-                transition: "background 0.15s",
-                fontFamily: "inherit",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(217,164,65,0.12)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>menu_book</span>
-              Teachers
-            </button>
+            />
           )}
-          <button
+          <IconActionButton
+            icon="group_add"
+            label="Grant to All Staff"
+            accent="amber"
             onClick={openBulkGrant}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.5rem 1rem",
-              background: "rgba(255, 255, 255, 0.3)",
-              backdropFilter: "blur(8px)",
-              border: "1px solid #D9A441",
-              borderRadius: "0.5rem",
-              color: "#1F6B4D",
-              fontWeight: 600,
-              fontSize: "0.875rem",
-              cursor: "pointer",
-              transition: "background 0.15s",
-              fontFamily: "inherit",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(217,164,65,0.12)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>group_add</span>
-            Grant to All Staff
-          </button>
-          <button
+          />
+          <IconActionButton
+            icon="event_available"
+            label="Company Leave"
             onClick={openCompanyLeave}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.5rem 1rem",
-              background: "rgba(255, 255, 255, 0.3)",
-              backdropFilter: "blur(8px)",
-              border: "1px solid #1F6B4D",
-              borderRadius: "0.5rem",
-              color: "#1F6B4D",
-              fontWeight: 600,
-              fontSize: "0.875rem",
-              cursor: "pointer",
-              transition: "background 0.15s",
-              fontFamily: "inherit",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(31,107,77,0.08)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>event_available</span>
-            Company Leave
-          </button>
-          <button
+          />
+          <IconActionButton
+            icon="delete"
+            label="Trash"
             onClick={openTrash}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              padding: "0.5rem 1rem",
-              background: "rgba(255, 255, 255, 0.3)",
-              backdropFilter: "blur(8px)",
-              border: "1px solid #1F6B4D",
-              borderRadius: "0.5rem",
-              color: "#1F6B4D",
-              fontWeight: 600,
-              fontSize: "0.875rem",
-              cursor: "pointer",
-              transition: "background 0.15s",
-              fontFamily: "inherit",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(31,107,77,0.08)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>delete</span>
-            Trash
-          </button>
+          />
           <button
             onClick={() => setShowForm(true)}
             style={{
@@ -860,51 +821,77 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
                 />
               </div>
 
-              <div style={{ marginBottom: "0.75rem" }}>
-                <label className="form-label">Job Title</label>
-                <select
-                  value={jobTitleId}
-                  onChange={(e) => setJobTitleId(e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">— Select a job title —</option>
-                  {jobTitles.map((jt) => (
-                    <option key={jt.id} value={jt.id}>
-                      {jt.name}
-                    </option>
-                  ))}
-                </select>
-                <p className="form-hint" style={{ marginTop: "0.35rem" }}>
-                  Role will be set automatically: Director → MANAGER, all others → STAFF
-                </p>
-              </div>
-
-              <div style={{ marginBottom: "0.75rem" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem", fontWeight: 500 }}>
-                  <input
-                    type="checkbox"
-                    checked={grantElevated}
-                    onChange={(e) => setGrantElevated(e.target.checked)}
-                  />
-                  Grant elevated access
-                </label>
-                {grantElevated && (
-                  <div style={{ marginTop: "0.5rem", marginLeft: "1.5rem" }}>
-                    <label className="form-label">Override Role</label>
+              {isTeacherOnlyEdit ? (
+                <div style={{ marginBottom: "0.75rem" }}>
+                  <label className="form-label">Account Type</label>
+                  <div style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    padding: "0.35rem 0.75rem",
+                    borderRadius: "999px",
+                    fontSize: "0.8rem",
+                    fontWeight: 600,
+                    backgroundColor: "rgba(217,164,65,0.15)",
+                    color: "#7d5700",
+                    border: "1px solid rgba(217,164,65,0.4)",
+                  }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: "1rem" }}>school</span>
+                    Teacher
+                  </div>
+                  <p className="form-hint" style={{ marginTop: "0.35rem" }}>
+                    This account is a teacher-only account and does not use a job title or elevated access.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <label className="form-label">Job Title</label>
                     <select
-                      value={overrideRole}
-                      onChange={(e) => setOverrideRole(e.target.value)}
+                      value={jobTitleId}
+                      onChange={(e) => setJobTitleId(e.target.value)}
                       className="form-select"
                     >
-                      {ROLE_OVERRIDE_OPTIONS.map((r) => (
-                        <option key={r} value={r}>
-                          {r}
+                      <option value="">— Select a job title —</option>
+                      {jobTitles.map((jt) => (
+                        <option key={jt.id} value={jt.id}>
+                          {jt.name}
                         </option>
                       ))}
                     </select>
+                    <p className="form-hint" style={{ marginTop: "0.35rem" }}>
+                      Role will be set automatically: Director → MANAGER, all others → STAFF
+                    </p>
                   </div>
-                )}
-              </div>
+
+                  <div style={{ marginBottom: "0.75rem" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem", fontWeight: 500 }}>
+                      <input
+                        type="checkbox"
+                        checked={grantElevated}
+                        onChange={(e) => setGrantElevated(e.target.checked)}
+                      />
+                      Grant elevated access
+                    </label>
+                    {grantElevated && (
+                      <div style={{ marginTop: "0.5rem", marginLeft: "1.5rem" }}>
+                        <label className="form-label">Override Role</label>
+                        <select
+                          value={overrideRole}
+                          onChange={(e) => setOverrideRole(e.target.value)}
+                          className="form-select"
+                        >
+                          {ROLE_OVERRIDE_OPTIONS.map((r) => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div style={{ marginBottom: "0.75rem" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem", fontWeight: 500 }}>
