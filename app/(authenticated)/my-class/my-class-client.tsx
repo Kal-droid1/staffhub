@@ -56,6 +56,7 @@ export default function MyClassClient({
   const [week, setWeek] = useState(initialWeek);
   const [query, setQuery] = useState("");
   const [justSubmitted, setJustSubmitted] = useState(false);
+  const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
 
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
@@ -71,6 +72,9 @@ export default function MyClassClient({
   const safeMonthValue = monthOptions.some((o) => o.value === `${year}-${month}`)
     ? `${year}-${month}`
     : SUNDAY_SCHOOL_FIRST_EXPORT_MONTH;
+
+  const currentKey = `${classId}-${year}-${month}-${week}`;
+  const isCollapsed = collapsedWeeks.has(currentKey);
 
   const loadRoster = useCallback(
     async (selectedClassId: string, selectedYear: number, selectedMonth: number, selectedWeek: number) => {
@@ -159,6 +163,7 @@ export default function MyClassClient({
         const present = roster.length - absent;
         setBanner(`Saved — ${present} present, ${absent} absent`);
         setJustSubmitted(true);
+        setCollapsedWeeks((prev) => new Set(prev).add(currentKey));
 
         if (bannerTimer.current) clearTimeout(bannerTimer.current);
         bannerTimer.current = setTimeout(() => setBanner(null), 5000);
@@ -175,7 +180,13 @@ export default function MyClassClient({
   const absentCount = roster.length - presentCount;
 
   const filteredRoster = query.trim()
-    ? roster.filter((r) => r.name.toLowerCase().includes(query.trim().toLowerCase()))
+    ? roster.filter((r) => {
+        const q = query.trim().toLowerCase();
+        return (
+          r.name.toLowerCase().includes(q) ||
+          r.localParticipantId.toLowerCase().includes(q)
+        );
+      })
     : roster;
 
   return (
@@ -301,137 +312,190 @@ export default function MyClassClient({
         </div>
       ) : classInfo && roster.length > 0 ? (
         <>
-          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "0.5rem", padding: "0 0.1rem" }}>
-            <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: COLORS.teal }}>{classInfo.name}</h2>
-            <span style={{ fontSize: "0.75rem", fontWeight: 700, color: COLORS.muted }}>
-              {presentCount} P · {absentCount} A
-            </span>
-          </div>
-
-          <div style={{ position: "relative", marginBottom: "0.75rem" }}>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Filter by name…"
+          {isCollapsed ? (
+            <button
+              type="button"
+              onClick={() =>
+                setCollapsedWeeks((prev) => {
+                  const next = new Set(prev);
+                  next.delete(currentKey);
+                  return next;
+                })
+              }
               style={{
                 width: "100%",
-                minHeight: 44,
-                padding: "0 2.5rem 0 0.75rem",
-                fontSize: "0.9rem",
-                fontFamily: "inherit",
-                color: "#2B2B2B",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.75rem",
+                padding: "1rem 1.1rem",
                 background: "#FFFFFF",
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "0.6rem",
-                outline: "none",
+                border: `1px solid ${COLORS.teal}`,
+                borderRadius: "0.9rem",
+                boxShadow: "0 2px 10px rgba(31,107,77,0.08)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                textAlign: "left",
               }}
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Clear filter"
-                style={{
-                  position: "absolute",
-                  right: 8,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: COLORS.muted,
-                  fontSize: "1.25rem",
-                  lineHeight: 1,
-                  padding: "0.25rem",
-                }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", minWidth: 0 }}>
+                <span
+                  className="material-symbols-outlined"
+                  style={{ color: COLORS.teal, fontSize: "1.4rem", flexShrink: 0 }}
+                >
+                  check_circle
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#2B2B2B" }}>
+                    Week {week} — Complete
+                  </p>
+                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: COLORS.muted }}>
+                    {presentCount} present · {absentCount} absent
+                  </p>
+                </div>
+              </div>
+              <span
+                className="material-symbols-outlined"
+                style={{ color: COLORS.muted, fontSize: "1.25rem", flexShrink: 0 }}
               >
-                ✕
-              </button>
-            )}
-          </div>
+                expand_more
+              </span>
+            </button>
+          ) : (
+            <>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "0.5rem", padding: "0 0.1rem" }}>
+                <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: COLORS.teal }}>{classInfo.name}</h2>
+                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: COLORS.muted }}>
+                  {presentCount} P · {absentCount} A
+                </span>
+              </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            {filteredRoster.map((row) => {
-              const absent = !row.present;
-              return (
-                <div
-                  key={row.participantId}
+              <div style={{ position: "relative", marginBottom: "0.75rem" }}>
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Filter by name or ID…"
                   style={{
+                    width: "100%",
+                    minHeight: 44,
+                    padding: "0 2.5rem 0 0.75rem",
+                    fontSize: "0.9rem",
+                    fontFamily: "inherit",
+                    color: "#2B2B2B",
                     background: "#FFFFFF",
                     border: `1px solid ${COLORS.border}`,
-                    borderRadius: "0.75rem",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
-                    padding: "0.7rem 0.75rem",
+                    borderRadius: "0.6rem",
+                    outline: "none",
                   }}
-                >
-                  <div style={{ marginBottom: "0.55rem" }}>
-                    <p style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "#2B2B2B", lineHeight: 1.25, overflowWrap: "anywhere" }}>
-                      {row.name}
-                    </p>
-                    <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: COLORS.muted, fontFamily: "var(--font-mono)" }}>
-                      {row.localParticipantId}
-                      {row.gradeLevel ? ` · ${row.gradeLevel}` : ""}
-                    </p>
-                  </div>
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    aria-label="Clear filter"
+                    style={{
+                      position: "absolute",
+                      right: 8,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: COLORS.muted,
+                      fontSize: "1.25rem",
+                      lineHeight: 1,
+                      padding: "0.25rem",
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
-                    <button
-                      type="button"
-                      onClick={() => togglePresent(row.participantId, true)}
-                      aria-pressed={row.present}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                {filteredRoster.map((row) => {
+                  const absent = !row.present;
+                  return (
+                    <div
+                      key={row.participantId}
                       style={{
-                        minHeight: 52,
-                        borderRadius: "0.6rem",
-                        border: row.present ? "2px solid #1F6B4D" : "1px solid #E8E3D9",
-                        background: row.present ? "#1F6B4D" : "#FFFFFF",
-                        color: row.present ? "#FFFFFF" : "#1F6B4D",
-                        fontWeight: 800,
-                        fontSize: "1rem",
-                        fontFamily: "inherit",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.3rem",
-                        transition: "background 0.12s ease, color 0.12s ease, border-color 0.12s ease",
+                        background: "#FFFFFF",
+                        border: `1px solid ${COLORS.border}`,
+                        borderRadius: "0.75rem",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                        padding: "0.7rem 0.75rem",
                       }}
                     >
-                      Present
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => togglePresent(row.participantId, false)}
-                      aria-pressed={absent}
-                      style={{
-                        minHeight: 52,
-                        borderRadius: "0.6rem",
-                        border: absent ? "2px solid #D64545" : "1px solid #E8E3D9",
-                        background: absent ? "#D64545" : "#FFFFFF",
-                        color: absent ? "#FFFFFF" : "#D64545",
-                        fontWeight: 800,
-                        fontSize: "1rem",
-                        fontFamily: "inherit",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.3rem",
-                        transition: "background 0.12s ease, color 0.12s ease, border-color 0.12s ease",
-                      }}
-                    >
-                      Absent
-                    </button>
-                  </div>
+                      <div style={{ marginBottom: "0.55rem" }}>
+                        <p style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "#2B2B2B", lineHeight: 1.25, overflowWrap: "anywhere" }}>
+                          {row.name}
+                        </p>
+                        <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: COLORS.muted, fontFamily: "var(--font-mono)" }}>
+                          {row.localParticipantId}
+                          {row.gradeLevel ? ` · ${row.gradeLevel}` : ""}
+                        </p>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                        <button
+                          type="button"
+                          onClick={() => togglePresent(row.participantId, true)}
+                          aria-pressed={row.present}
+                          style={{
+                            minHeight: 52,
+                            borderRadius: "0.6rem",
+                            border: row.present ? "2px solid #1F6B4D" : "1px solid #E8E3D9",
+                            background: row.present ? "#1F6B4D" : "#FFFFFF",
+                            color: row.present ? "#FFFFFF" : "#1F6B4D",
+                            fontWeight: 800,
+                            fontSize: "1rem",
+                            fontFamily: "inherit",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "0.3rem",
+                            transition: "background 0.12s ease, color 0.12s ease, border-color 0.12s ease",
+                          }}
+                        >
+                          Present
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => togglePresent(row.participantId, false)}
+                          aria-pressed={absent}
+                          style={{
+                            minHeight: 52,
+                            borderRadius: "0.6rem",
+                            border: absent ? "2px solid #D64545" : "1px solid #E8E3D9",
+                            background: absent ? "#D64545" : "#FFFFFF",
+                            color: absent ? "#FFFFFF" : "#D64545",
+                            fontWeight: 800,
+                            fontSize: "1rem",
+                            fontFamily: "inherit",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "0.3rem",
+                            transition: "background 0.12s ease, color 0.12s ease, border-color 0.12s ease",
+                          }}
+                        >
+                          Absent
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {query.trim() && filteredRoster.length === 0 && (
+                <div style={{ textAlign: "center", padding: "1.5rem 0", color: COLORS.muted }}>
+                  <p style={{ margin: 0, fontSize: "0.875rem" }}>No participants match &ldquo;{query}&rdquo;.</p>
                 </div>
-              );
-            })}
-          </div>
-
-          {query.trim() && filteredRoster.length === 0 && (
-            <div style={{ textAlign: "center", padding: "1.5rem 0", color: COLORS.muted }}>
-              <p style={{ margin: 0, fontSize: "0.875rem" }}>No participants match &ldquo;{query}&rdquo;.</p>
-            </div>
+              )}
+            </>
           )}
         </>
       ) : classInfo && roster.length === 0 ? (
@@ -446,7 +510,7 @@ export default function MyClassClient({
         </div>
       )}
 
-      {roster.length > 0 && (
+      {roster.length > 0 && !isCollapsed && (
         <div
           style={{
             position: "fixed",
