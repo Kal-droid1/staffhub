@@ -43,6 +43,7 @@ model User {
   isActive        Boolean            @default(true)
   isHidden        Boolean            @default(false)
   hideFromReports Boolean            @default(false)
+  isTeacher       Boolean            @default(false)
   deactivatedAt   DateTime?
   deletedAt       DateTime?
   createdAt       DateTime           @default(now())
@@ -53,6 +54,7 @@ model User {
   documents       StaffDocument[]    @relation("StaffDocuments")
   uploadedDocs    StaffDocument[]    @relation("UploadedDocuments")
   bulkLeaveActions BulkLeaveAction[] @relation("BulkLeaveCreator")
+  sundaySchoolClasses SundaySchoolClass[]
 }
 
 model Settings {
@@ -151,6 +153,9 @@ model Participant {
   status             String
   createdAt          DateTime @default(now())
 
+  sundaySchoolClasses    SundaySchoolClassParticipant[]
+  sundaySchoolAttendance SundaySchoolAttendance[]
+
   @@index([name])
   @@index([localParticipantId])
 }
@@ -168,4 +173,45 @@ model StaffDocument {
   deletedAt    DateTime?
 
   @@index([userId, category])
+}
+
+model SundaySchoolClass {
+  id           String                       @id @default(uuid())
+  name         String
+  teacherId    String
+  teacher      User                         @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  participants SundaySchoolClassParticipant[]
+  attendance   SundaySchoolAttendance[]
+  createdAt    DateTime                     @default(now())
+  updatedAt    DateTime                     @updatedAt
+}
+
+model SundaySchoolClassParticipant {
+  id            String            @id @default(uuid())
+  classId       String
+  class         SundaySchoolClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   Participant       @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  assignedAt    DateTime          @default(now())
+
+  @@unique([classId, participantId])
+  @@index([participantId])
+}
+
+model SundaySchoolAttendance {
+  id            String            @id @default(uuid())
+  participantId String
+  participant   Participant       @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  classId       String
+  class         SundaySchoolClass @relation(fields: [classId], references: [id], onDelete: Restrict)
+  year          Int
+  month         Int
+  week          Int
+  present       Boolean           @default(true)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([participantId, year, month, week])
+  @@index([classId])
+  @@index([year, month])
 }
