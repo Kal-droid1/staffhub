@@ -34,6 +34,7 @@ export default function NavBar() {
     { href: "/attendance", label: "Attendance" },
     ...(isTeacher ? [{ href: "/my-class", label: "My Class" }] : []),
     ...(isManager ? [{ href: "/staff", label: "Staff" }] : []),
+    ...(isManager ? [{ href: "/sunday-school", label: "Sunday School" }] : []),
   ];
 
   return (
@@ -66,7 +67,7 @@ export default function NavBar() {
           <div className={`navbar-menu${menuOpen ? " navbar-menu--open" : ""}`}>
             <div className="navbar-links">
               {navItems.map((item) => {
-                const isActive = pathname === item.href || (item.href === "/attendance" && pathname.startsWith("/attendance")) || (item.href === "/my-class" && pathname.startsWith("/my-class"));
+                const isActive = pathname === item.href || (item.href === "/attendance" && pathname.startsWith("/attendance")) || (item.href === "/my-class" && pathname.startsWith("/my-class")) || (item.href === "/sunday-school" && pathname.startsWith("/sunday-school"));
                 return (
                   <Link
                     key={item.href}

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 
 export interface RosterParticipant {
   participantId: string;
@@ -22,6 +23,14 @@ export async function isUserTeacher(userId: string): Promise<boolean> {
     select: { isTeacher: true },
   });
   return user?.isTeacher === true;
+}
+
+export async function listTeachers() {
+  return prisma.user.findMany({
+    where: { isTeacher: true, deletedAt: null, isActive: true },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: "asc" },
+  });
 }
 
 export async function listMyClasses(teacherId: string) {
@@ -233,13 +242,10 @@ export async function createClass(args: {
     throw new Error(`Participants not found: ${missingIds.join(", ")}`);
   }
 
-  return prisma.sundaySchoolClass.create({
+  const classRecord = await prisma.sundaySchoolClass.create({
     data: {
       name: args.name.trim(),
       teacherId: args.teacherId,
-      participants: {
-        create: args.participantIds.map((participantId) => ({ participantId })),
-      },
     },
     select: {
       id: true,
@@ -247,6 +253,12 @@ export async function createClass(args: {
       teacherId: true,
     },
   });
+
+  if (args.participantIds.length > 0) {
+    await assignParticipantsToClass(classRecord.id, args.participantIds);
+  }
+
+  return classRecord;
 }
 
 export async function updateClass(args: {
@@ -284,15 +296,13 @@ export async function updateClass(args: {
   if (args.teacherId !== undefined) data.teacherId = args.teacherId;
 
   if (args.participantIds) {
-    await prisma.$transaction([
-      prisma.sundaySchoolClassParticipant.deleteMany({ where: { classId: args.id } }),
-      prisma.sundaySchoolClassParticipant.createMany({
-        data: args.participantIds.map((participantId) => ({
-          classId: args.id,
-          participantId,
-        })),
-      }),
-    ]);
+    const participantIds = args.participantIds;
+    await prisma.$transaction(async (tx) => {
+      await tx.sundaySchoolClassParticipant.deleteMany({
+        where: { classId: args.id, participantId: { notIn: participantIds } },
+      });
+      await assignParticipantsToClass(args.id, participantIds, tx);
+    });
   }
 
   return prisma.sundaySchoolClass.update({
@@ -304,6 +314,20 @@ export async function updateClass(args: {
       teacherId: true,
     },
   });
+}
+
+async function assignParticipantsToClass(
+  classId: string,
+  participantIds: string[],
+  tx: Prisma.TransactionClient = prisma
+) {
+  for (const participantId of participantIds) {
+    await tx.sundaySchoolClassParticipant.upsert({
+      where: { participantId },
+      update: { classId },
+      create: { participantId, classId },
+    });
+  }
 }
 
 export async function getSundaySchoolAttendanceForExport(args: { year: number; month: number }) {

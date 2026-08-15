@@ -32,6 +32,10 @@ export async function GET(req: NextRequest) {
     });
   } catch (e) {
     console.error("Failed to generate Sunday School export:", e);
-    return NextResponse.json({ error: "Failed to generate export" }, { status: 500 });
+    const message =
+      e instanceof Error && (e as NodeJS.ErrnoException).code === "ENOENT"
+        ? "Sunday School report template is missing. Place sunday-school-report-template.xlsx in the project root."
+        : "Failed to generate export";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

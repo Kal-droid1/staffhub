@@ -1,6 +1,7 @@
 export {
   isUserTeacher,
   listMyClasses,
+  listTeachers,
   getClassRosterForTeacher,
   submitClassAttendance,
   listClasses,

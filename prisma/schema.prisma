@@ -194,8 +194,8 @@ model SundaySchoolClassParticipant {
   participant   Participant       @relation(fields: [participantId], references: [id], onDelete: Cascade)
   assignedAt    DateTime          @default(now())
 
-  @@unique([classId, participantId])
-  @@index([participantId])
+  @@unique([participantId])
+  @@index([classId])
 }
 
 model SundaySchoolAttendance {
