@@ -15,6 +15,7 @@ export interface ClassRoster {
   month: number;
   week: number;
   roster: RosterParticipant[];
+  submittedAt: string | null;
 }
 
 export async function isUserTeacher(userId: string): Promise<boolean> {
@@ -58,7 +59,7 @@ export async function getClassRosterForTeacher(args: {
   });
 
   if (!classInfo) {
-    return { classInfo: null, year: args.year, month: args.month, week: args.week, roster: [] };
+    return { classInfo: null, year: args.year, month: args.month, week: args.week, roster: [], submittedAt: null };
   }
 
   const assignments = await prisma.sundaySchoolClassParticipant.findMany({
@@ -79,7 +80,7 @@ export async function getClassRosterForTeacher(args: {
   const participantIds = assignments.map((a) => a.participant.id);
 
   if (participantIds.length === 0) {
-    return { classInfo, year: args.year, month: args.month, week: args.week, roster: [] };
+    return { classInfo, year: args.year, month: args.month, week: args.week, roster: [], submittedAt: null };
   }
 
   const records = await prisma.sundaySchoolAttendance.findMany({
@@ -89,7 +90,7 @@ export async function getClassRosterForTeacher(args: {
       month: args.month,
       week: args.week,
     },
-    select: { participantId: true, present: true },
+    select: { participantId: true, present: true, submittedAt: true },
   });
 
   const presentByParticipant = new Map(
@@ -97,6 +98,12 @@ export async function getClassRosterForTeacher(args: {
       .filter((r) => r.present !== null)
       .map((r) => [r.participantId, r.present as boolean])
   );
+
+  const submittedAt = records.reduce<string | null>((latest, r) => {
+    if (!r.submittedAt) return latest;
+    if (!latest) return r.submittedAt.toISOString();
+    return r.submittedAt.toISOString() > latest ? r.submittedAt.toISOString() : latest;
+  }, null);
 
   const roster = assignments.map((a) => ({
     participantId: a.participant.id,
@@ -106,7 +113,7 @@ export async function getClassRosterForTeacher(args: {
     present: presentByParticipant.get(a.participant.id) ?? null,
   }));
 
-  return { classInfo, year: args.year, month: args.month, week: args.week, roster };
+  return { classInfo, year: args.year, month: args.month, week: args.week, roster, submittedAt };
 }
 
 export async function submitClassAttendance(args: {
@@ -116,14 +123,14 @@ export async function submitClassAttendance(args: {
   month: number;
   week: number;
   records: { participantId: string; present: boolean }[];
-}): Promise<{ updated: number; invalidParticipantIds: string[]; missingCount: number }> {
+}): Promise<{ updated: number; invalidParticipantIds: string[]; missingCount: number; submittedAt: string | null }> {
   const classInfo = await prisma.sundaySchoolClass.findFirst({
     where: { id: args.classId, teacherId: args.teacherId, deletedAt: null },
     select: { id: true },
   });
 
   if (!classInfo) {
-    return { updated: 0, invalidParticipantIds: [], missingCount: 0 };
+    return { updated: 0, invalidParticipantIds: [], missingCount: 0, submittedAt: null };
   }
 
   const assignments = await prisma.sundaySchoolClassParticipant.findMany({
@@ -147,12 +154,14 @@ export async function submitClassAttendance(args: {
       updated: 0,
       invalidParticipantIds,
       missingCount: assignedIds.size - validRecords.length,
+      submittedAt: null,
     };
   }
 
   await prisma.$transaction(
-    validRecords.map((r) =>
-      prisma.sundaySchoolAttendance.upsert({
+    validRecords.map((r) => {
+      const submittedAt = new Date();
+      return prisma.sundaySchoolAttendance.upsert({
         where: {
           participantId_year_month_week: {
             participantId: r.participantId,
@@ -161,7 +170,7 @@ export async function submitClassAttendance(args: {
             week: args.week,
           },
         },
-        update: { present: r.present, classId: classInfo.id },
+        update: { present: r.present, classId: classInfo.id, submittedAt },
         create: {
           participantId: r.participantId,
           classId: classInfo.id,
@@ -169,12 +178,14 @@ export async function submitClassAttendance(args: {
           month: args.month,
           week: args.week,
           present: r.present,
+          submittedAt,
         },
-      })
-    )
+      });
+    })
   );
 
-  return { updated: validRecords.length, invalidParticipantIds, missingCount: 0 };
+  const submittedAt = validRecords.length > 0 ? new Date().toISOString() : null;
+  return { updated: validRecords.length, invalidParticipantIds, missingCount: 0, submittedAt };
 }
 
 export async function listClasses() {

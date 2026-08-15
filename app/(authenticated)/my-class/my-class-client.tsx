@@ -26,6 +26,7 @@ interface RosterResponse {
   month: number;
   week: number;
   roster: RosterRow[];
+  submittedAt: string | null;
 }
 
 const WEEK_LABELS = ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"];
@@ -38,6 +39,20 @@ const COLORS = {
   muted: "#6B7280",
   border: "#E8E3D9",
 };
+
+function formatSubmittedAt(value: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "Africa/Addis_Ababa",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
 
 export default function MyClassClient({
   initialClasses,
@@ -57,6 +72,8 @@ export default function MyClassClient({
   const [query, setQuery] = useState("");
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
+  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
 
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
@@ -90,6 +107,7 @@ export default function MyClassClient({
       setBanner(null);
       setJustSubmitted(false);
       setQuery("");
+      setSubmittedAt(null);
 
       try {
         const res = await fetch(
@@ -104,6 +122,7 @@ export default function MyClassClient({
         } else {
           setRoster(data.roster);
           setClassInfo(data.classInfo);
+          setSubmittedAt(data.submittedAt ?? null);
         }
       } catch {
         setError("Network error while loading roster.");
@@ -170,6 +189,11 @@ export default function MyClassClient({
         const present = roster.length - absent;
         setBanner(`Saved — ${present} present, ${absent} absent`);
         setJustSubmitted(true);
+        setSubmittedAt(
+          data && typeof data === "object" && "submittedAt" in data
+            ? String(data.submittedAt)
+            : new Date().toISOString()
+        );
         setCollapsedWeeks((prev) => new Set(prev).add(currentKey));
 
         if (bannerTimer.current) clearTimeout(bannerTimer.current);
@@ -247,22 +271,107 @@ export default function MyClassClient({
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "0.6rem", marginBottom: "0.75rem" }}>
-        <div>
-          <label htmlFor="month-select" style={labelStyle}>Month</label>
-          <select
-            id="month-select"
-            value={safeMonthValue}
-            onChange={(e) => {
-              const [y, m] = e.target.value.split("-").map(Number);
-              setYear(y);
-              setMonth(m);
+        <div style={{ position: "relative" }}>
+          <label style={labelStyle}>Month</label>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={monthPickerOpen}
+            onClick={() => setMonthPickerOpen((open) => !open)}
+            style={{
+              width: "100%",
+              minHeight: 48,
+              padding: "0 0.75rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "0.5rem",
+              fontSize: "0.95rem",
+              fontWeight: 700,
+              fontFamily: "inherit",
+              color: "#2B2B2B",
+              background: "#FFFFFF",
+              border: `1px solid ${monthPickerOpen ? COLORS.teal : COLORS.border}`,
+              borderRadius: "0.6rem",
+              cursor: "pointer",
+              textAlign: "left",
             }}
-            style={selectStyle}
           >
-            {monthOptions.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
+            <span>{monthOptions.find((o) => o.value === safeMonthValue)?.label ?? safeMonthValue}</span>
+            <span
+              className="material-symbols-outlined"
+              style={{ color: COLORS.muted, fontSize: "1.25rem", transition: "transform 0.15s ease" }}
+            >
+              {monthPickerOpen ? "expand_less" : "expand_more"}
+            </span>
+          </button>
+
+          {monthPickerOpen && (
+            <>
+              <div
+                style={{ position: "fixed", inset: 0, zIndex: 130, background: "rgba(0,0,0,0.25)" }}
+                onClick={() => setMonthPickerOpen(false)}
+                aria-hidden="true"
+              />
+              <div
+                role="dialog"
+                aria-label="Choose month"
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 0.35rem)",
+                  left: 0,
+                  right: 0,
+                  zIndex: 131,
+                  background: "#FFFFFF",
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: "0.9rem",
+                  boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
+                  padding: "0.75rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: "0.45rem",
+                }}
+              >
+                {monthOptions.map((o) => {
+                  const selected = o.value === safeMonthValue;
+                  return (
+                    <button
+                      key={o.value}
+                      type="button"
+                      onClick={() => {
+                        const [y, m] = o.value.split("-").map(Number);
+                        setYear(y);
+                        setMonth(m);
+                        setMonthPickerOpen(false);
+                      }}
+                      style={{
+                        minHeight: 40,
+                        padding: "0 0.35rem",
+                        borderRadius: "0.55rem",
+                        border: selected ? "2px solid #1F6B4D" : `1px solid ${COLORS.border}`,
+                        background: selected ? COLORS.teal : "#FFFFFF",
+                        color: selected ? "#FFFFFF" : "#2B2B2B",
+                        fontWeight: selected ? 800 : 600,
+                        fontSize: "0.75rem",
+                        fontFamily: "inherit",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "0.25rem",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {o.label.split(" ")[0]}
+                      <span style={{ opacity: selected ? 0.85 : 0.55, fontSize: "0.68rem" }}>
+                        {o.label.split(" ")[1]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
         <div>
           <label htmlFor="week-select" style={labelStyle}>Week</label>
@@ -357,12 +466,16 @@ export default function MyClassClient({
                 </span>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#2B2B2B" }}>
-                    {unreviewedCount > 0 ? `Week ${week} — In progress` : `Week ${week} — Complete`}
+                    {unreviewedCount > 0
+                      ? `Week ${week} — In progress`
+                      : `Week ${week} — Submitted`}
                   </p>
                   <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: COLORS.muted }}>
                     {unreviewedCount > 0
                       ? `${roster.length - unreviewedCount} of ${roster.length} reviewed · ${unreviewedCount} still need a selection`
-                      : `${presentCount} present · ${absentCount} absent`}
+                      : submittedAt
+                        ? `${formatSubmittedAt(submittedAt)} · ${presentCount} present · ${absentCount} absent`
+                        : `${presentCount} present · ${absentCount} absent`}
                   </p>
                 </div>
               </div>

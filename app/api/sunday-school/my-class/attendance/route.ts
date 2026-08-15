@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
       success: true,
       updated: result.updated,
       skipped: result.invalidParticipantIds,
+      submittedAt: result.submittedAt,
     });
   } catch (e) {
     console.error("Failed to submit attendance:", e);
