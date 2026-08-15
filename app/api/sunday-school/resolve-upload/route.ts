@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "file is required." }, { status: 400 });
   }
 
-  let ids: string[];
+  let parsed: { rows: { id: string; name: string }[] };
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -38,15 +38,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No worksheet found in the uploaded file." }, { status: 400 });
     }
 
-    ids = parseRosterUpload(sheet).ids;
+    parsed = parseRosterUpload(sheet);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Could not read the uploaded Excel file.";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 
-  if (ids.length === 0) {
+  if (parsed.rows.length === 0) {
     return NextResponse.json({ error: "No participant IDs found in the uploaded file." }, { status: 400 });
   }
+
+  const ids = parsed.rows.map((row) => row.id);
 
   const participants = await prisma.participant.findMany({
     where: { localParticipantId: { in: ids } },
@@ -59,10 +61,12 @@ export async function POST(req: NextRequest) {
   });
 
   const matchedById = new Map(participants.map((p) => [p.localParticipantId.toUpperCase(), p]));
-  const matched = ids
-    .filter((id) => matchedById.has(id))
-    .map((id) => matchedById.get(id)!);
-  const notFound = ids.filter((id) => !matchedById.has(id));
+  const matched = parsed.rows
+    .filter((row) => matchedById.has(row.id))
+    .map((row) => matchedById.get(row.id)!);
+  const notFound = parsed.rows
+    .filter((row) => !matchedById.has(row.id))
+    .map((row) => ({ id: row.id, name: row.name }));
 
   return NextResponse.json({ matched, notFound });
 }

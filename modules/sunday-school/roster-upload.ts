@@ -4,8 +4,13 @@ const ID_HEADER_RE = /\bid\b/i;
 const NAME_HEADER_RE = /\bname\b/i;
 const HEADER_SCAN_ROWS = 10;
 
+export interface RosterUploadRow {
+  id: string;
+  name: string;
+}
+
 export interface RosterUploadParse {
-  ids: string[];
+  rows: RosterUploadRow[];
   headerRow: number;
   idColumn: number;
   nameColumn: number;
@@ -98,7 +103,7 @@ export function parseRosterUpload(sheet: ExcelJS.Worksheet): RosterUploadParse {
     throw new Error("Could not find a header row with ID and Name columns.");
   }
 
-  const ids: string[] = [];
+  const rows: RosterUploadRow[] = [];
   const idSet = new Set<string>();
   let hasData = false;
 
@@ -120,9 +125,12 @@ export function parseRosterUpload(sheet: ExcelJS.Worksheet): RosterUploadParse {
     const normalized = rawId.toUpperCase();
     if (!idSet.has(normalized)) {
       idSet.add(normalized);
-      ids.push(normalized);
+      rows.push({
+        id: normalized,
+        name: cellText(row.getCell(nameColumn)),
+      });
     }
   }
 
-  return { ids, headerRow, idColumn, nameColumn };
+  return { rows, headerRow, idColumn, nameColumn };
 }

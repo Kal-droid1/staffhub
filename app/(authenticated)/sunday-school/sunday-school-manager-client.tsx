@@ -219,7 +219,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
       }
 
       const matched = (data.matched ?? []) as SelectedParticipant[];
-      const notFound = (data.notFound ?? []) as string[];
+      const notFound = (data.notFound ?? []) as { id: string; name: string }[];
 
       const conflicts: { name: string; fromClass: string }[] = [];
       for (const p of matched) {
@@ -243,8 +243,17 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
       }
 
       if (notFound.length > 0) {
+        const skipped = notFound
+          .map((row) => {
+            const displayName = row.name.trim();
+            return displayName
+              ? `${displayName} (${row.id})`
+              : row.id;
+          })
+          .join(", ");
+
         setUploadError(
-          `Skipped ${notFound.length} ID${notFound.length !== 1 ? "s" : ""} not found: ${notFound.join(", ")}`
+          `Skipped ${notFound.length} not found: ${skipped}`
         );
       }
     } catch {
