@@ -546,7 +546,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                   {uploading && <span className="text-muted text-sm">Reading file…</span>}
                 </div>
                 <p className="form-hint" style={{ margin: "0.35rem 0 0" }}>
-                  Column A: Local Participant ID, Column B: Name. First row is a header. Uploading replaces the current roster.
+                  The ID and Name columns are detected automatically from the file&rsquo;s header row. Uploading replaces the current roster.
                 </p>
                 {uploadMessage && <p className="form-success" style={{ margin: "0.35rem 0 0" }}>{uploadMessage}</p>}
                 {uploadError && <p className="form-error" style={{ margin: "0.35rem 0 0" }}>{uploadError}</p>}

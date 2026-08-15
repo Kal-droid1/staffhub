@@ -124,8 +124,11 @@ export async function buildSundaySchoolXlsx(args: { year: number; month: number 
     for (let w = 0; w < weekCount; w++) {
       row.getCell(WEEK_COLS[w]).value = p.weeks[w]?.present ? 1 : 0;
     }
+    const totalTerms = usedWeekCols
+      .map((c) => `${colLetter(c)}${r}`)
+      .join("+");
     row.getCell(TOTAL_COL).value = {
-      formula: `(H${r}+I${r}+J${r}+K${r}+L${r})`,
+      formula: `(${totalTerms})`,
     };
   }
 

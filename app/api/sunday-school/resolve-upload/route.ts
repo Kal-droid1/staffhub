@@ -4,6 +4,7 @@ import ExcelJS from "exceljs";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { prisma } from "@/lib/prisma";
+import { parseRosterUpload } from "@/modules/sunday-school/roster-upload";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -24,8 +25,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "file is required." }, { status: 400 });
   }
 
-  const ids: string[] = [];
-  const idSet = new Set<string>();
+  let ids: string[];
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -38,20 +38,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No worksheet found in the uploaded file." }, { status: 400 });
     }
 
-    sheet.eachRow((row, rowNumber) => {
-      if (rowNumber === 1) return;
-
-      const rawId = row.getCell(1).text?.trim();
-      if (!rawId) return;
-
-      const normalized = rawId.toUpperCase();
-      if (!idSet.has(normalized)) {
-        idSet.add(normalized);
-        ids.push(normalized);
-      }
-    });
-  } catch {
-    return NextResponse.json({ error: "Could not read the uploaded Excel file." }, { status: 400 });
+    ids = parseRosterUpload(sheet).ids;
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Could not read the uploaded Excel file.";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   if (ids.length === 0) {
