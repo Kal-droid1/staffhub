@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Card from "@/modules/core/components/card";
 import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 import {
@@ -415,6 +416,10 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
           </button>
         )}
 
+        <Link href="/sunday-school/trash" className="btn btn-ghost">
+          Trash
+        </Link>
+
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginLeft: "auto" }}>
           <select
             value={exportMonth}
@@ -762,8 +767,8 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
         busy={deleting}
         message={
           <>
-            Delete <strong>{deleteTarget?.name}</strong>? Participants in this class will become unassigned, not
-            deleted. Classes with attendance records cannot be deleted.
+            Move <strong>{deleteTarget?.name}</strong> to trash? Its participants will become unassigned and it can
+            be restored later. Attendance records are preserved.
           </>
         }
         confirmLabel="Delete"

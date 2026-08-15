@@ -182,6 +182,7 @@ model SundaySchoolClass {
   teacher      User                         @relation(fields: [teacherId], references: [id], onDelete: Restrict)
   participants SundaySchoolClassParticipant[]
   attendance   SundaySchoolAttendance[]
+  deletedAt    DateTime?
   createdAt    DateTime                     @default(now())
   updatedAt    DateTime                     @updatedAt
 }
@@ -202,8 +203,8 @@ model SundaySchoolAttendance {
   id            String            @id @default(uuid())
   participantId String
   participant   Participant       @relation(fields: [participantId], references: [id], onDelete: Cascade)
-  classId       String
-  class         SundaySchoolClass @relation(fields: [classId], references: [id], onDelete: Restrict)
+  classId       String?
+  class         SundaySchoolClass? @relation(fields: [classId], references: [id], onDelete: SetNull)
   year          Int
   month         Int
   week          Int

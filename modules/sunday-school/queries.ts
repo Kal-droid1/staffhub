@@ -35,7 +35,7 @@ export async function listTeachers() {
 
 export async function listMyClasses(teacherId: string) {
   return prisma.sundaySchoolClass.findMany({
-    where: { teacherId },
+    where: { teacherId, deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -53,7 +53,7 @@ export async function getClassRosterForTeacher(args: {
   week: number;
 }): Promise<ClassRoster> {
   const classInfo = await prisma.sundaySchoolClass.findFirst({
-    where: { id: args.classId, teacherId: args.teacherId },
+    where: { id: args.classId, teacherId: args.teacherId, deletedAt: null },
     select: { id: true, name: true },
   });
 
@@ -147,7 +147,7 @@ export async function submitClassAttendance(args: {
   records: { participantId: string; present: boolean }[];
 }): Promise<{ updated: number; invalidParticipantIds: string[] }> {
   const classInfo = await prisma.sundaySchoolClass.findFirst({
-    where: { id: args.classId, teacherId: args.teacherId },
+    where: { id: args.classId, teacherId: args.teacherId, deletedAt: null },
     select: { id: true },
   });
 
@@ -197,6 +197,7 @@ export async function submitClassAttendance(args: {
 
 export async function listClasses() {
   return prisma.sundaySchoolClass.findMany({
+    where: { deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -334,14 +335,51 @@ export async function deleteClass(id: string) {
   const existing = await prisma.sundaySchoolClass.findUnique({ where: { id } });
   if (!existing) throw new Error("Class not found");
 
-  const attendanceCount = await prisma.sundaySchoolAttendance.count({
-    where: { classId: id },
+  await prisma.$transaction(async (tx) => {
+    await tx.sundaySchoolClassParticipant.deleteMany({ where: { classId: id } });
+    await tx.sundaySchoolClass.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   });
-  if (attendanceCount > 0) {
-    throw new Error(`"${existing.name}" has attendance records and cannot be deleted.`);
-  }
+}
+
+export async function restoreClass(id: string) {
+  const existing = await prisma.sundaySchoolClass.findUnique({ where: { id } });
+  if (!existing) throw new Error("Class not found");
+
+  return prisma.sundaySchoolClass.update({
+    where: { id },
+    data: { deletedAt: null },
+    select: { id: true, name: true, teacherId: true },
+  });
+}
+
+export async function permanentlyDeleteClass(id: string) {
+  const existing = await prisma.sundaySchoolClass.findUnique({ where: { id } });
+  if (!existing) throw new Error("Class not found");
+
+  await prisma.sundaySchoolAttendance.updateMany({
+    where: { classId: id },
+    data: { classId: null },
+  });
+
+  await prisma.sundaySchoolClassParticipant.deleteMany({ where: { classId: id } });
 
   await prisma.sundaySchoolClass.delete({ where: { id } });
+}
+
+export async function listTrashedClasses() {
+  return prisma.sundaySchoolClass.findMany({
+    where: { deletedAt: { not: null } },
+    select: {
+      id: true,
+      name: true,
+      teacher: { select: { id: true, name: true } },
+      deletedAt: true,
+    },
+    orderBy: { deletedAt: "desc" },
+  });
 }
 
 export async function getSundaySchoolAttendanceForExport(args: { year: number; month: number }) {

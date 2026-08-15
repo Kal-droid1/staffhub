@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
-import { updateClass, deleteClass } from "@/modules/sunday-school/queries";
+import { updateClass, deleteClass, restoreClass, permanentlyDeleteClass } from "@/modules/sunday-school/queries";
 
 export async function PUT(
   req: NextRequest,
@@ -67,6 +67,46 @@ export async function DELETE(
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to delete class";
     console.error("Failed to delete Sunday School class:", e);
+    if (message === "Class not found") {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const body = await req.json().catch(() => ({}));
+  const { action, confirmation } = body;
+
+  try {
+    switch (action) {
+      case "restore": {
+        const classRecord = await restoreClass(id);
+        return NextResponse.json(classRecord);
+      }
+      case "permanent-delete": {
+        if (confirmation !== "DELETE") {
+          return NextResponse.json({ error: "Type DELETE to confirm permanent removal." }, { status: 400 });
+        }
+        await permanentlyDeleteClass(id);
+        return NextResponse.json({ ok: true });
+      }
+      default:
+        return NextResponse.json({ error: "Invalid action." }, { status: 400 });
+    }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed to update class";
+    console.error("Failed to update Sunday School class:", e);
     if (message === "Class not found") {
       return NextResponse.json({ error: message }, { status: 404 });
     }
