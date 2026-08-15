@@ -64,6 +64,13 @@ export async function POST(req: NextRequest) {
       records,
     });
 
+    if (result.missingCount > 0) {
+      return NextResponse.json(
+        { error: `Every kid must be marked Present or Absent before submitting. ${result.missingCount} still need a selection.` },
+        { status: 400 }
+      );
+    }
+
     if (result.updated === 0 && result.invalidParticipantIds.length === 0) {
       return NextResponse.json({ error: "Class not found." }, { status: 404 });
     }

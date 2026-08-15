@@ -208,7 +208,7 @@ model SundaySchoolAttendance {
   year          Int
   month         Int
   week          Int
-  present       Boolean           @default(true)
+  present       Boolean?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 

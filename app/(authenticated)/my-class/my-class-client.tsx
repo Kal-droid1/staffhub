@@ -17,7 +17,7 @@ interface RosterRow {
   localParticipantId: string;
   name: string;
   gradeLevel: string | null;
-  present: boolean;
+  present: boolean | null;
 }
 
 interface RosterResponse {
@@ -57,7 +57,6 @@ export default function MyClassClient({
   const [query, setQuery] = useState("");
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
-  const [touchedIds, setTouchedIds] = useState<Set<string>>(new Set());
 
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
@@ -91,7 +90,6 @@ export default function MyClassClient({
       setBanner(null);
       setJustSubmitted(false);
       setQuery("");
-      setTouchedIds(new Set());
 
       try {
         const res = await fetch(
@@ -132,13 +130,19 @@ export default function MyClassClient({
     setRoster((prev) =>
       prev.map((row) => (row.participantId === participantId ? { ...row, present } : row))
     );
-    setTouchedIds((prev) => new Set(prev).add(participantId));
     setBanner(null);
     setJustSubmitted(false);
   }
 
   async function handleSubmit() {
     if (!classId || roster.length === 0 || submitting) return;
+
+    const unreviewedCount = roster.filter((r) => r.present === null).length;
+    if (unreviewedCount > 0) {
+      setError(`${unreviewedCount} kid${unreviewedCount === 1 ? "" : "s"} still need${unreviewedCount === 1 ? "s" : ""} a Present or Absent selection.`);
+      setBanner(null);
+      return;
+    }
 
     setSubmitting(true);
     setError("");
@@ -153,7 +157,7 @@ export default function MyClassClient({
           year,
           month,
           week,
-          records: roster.map((r) => ({ participantId: r.participantId, present: r.present })),
+          records: roster.map((r) => ({ participantId: r.participantId, present: r.present as boolean })),
         }),
       });
       const data = await res.json();
@@ -162,7 +166,7 @@ export default function MyClassClient({
         setError(data && typeof data === "object" && "error" in data ? String(data.error) : "Failed to save attendance");
         setJustSubmitted(false);
       } else {
-        const absent = roster.filter((r) => !r.present).length;
+        const absent = roster.filter((r) => r.present === false).length;
         const present = roster.length - absent;
         setBanner(`Saved — ${present} present, ${absent} absent`);
         setJustSubmitted(true);
@@ -179,8 +183,9 @@ export default function MyClassClient({
     }
   }
 
-  const presentCount = roster.filter((r) => r.present).length;
-  const absentCount = roster.length - presentCount;
+  const presentCount = roster.filter((r) => r.present === true).length;
+  const absentCount = roster.filter((r) => r.present === false).length;
+  const unreviewedCount = roster.filter((r) => r.present === null).length;
 
   const filteredRoster = query.trim()
     ? roster.filter((r) => {
@@ -333,9 +338,11 @@ export default function MyClassClient({
                 gap: "0.75rem",
                 padding: "1rem 1.1rem",
                 background: "#FFFFFF",
-                border: `1px solid ${COLORS.teal}`,
+                border: `1px solid ${unreviewedCount > 0 ? COLORS.amber : COLORS.teal}`,
                 borderRadius: "0.9rem",
-                boxShadow: "0 2px 10px rgba(31,107,77,0.08)",
+                boxShadow: unreviewedCount > 0
+                  ? "0 2px 10px rgba(217,164,65,0.12)"
+                  : "0 2px 10px rgba(31,107,77,0.08)",
                 cursor: "pointer",
                 fontFamily: "inherit",
                 textAlign: "left",
@@ -344,16 +351,18 @@ export default function MyClassClient({
               <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", minWidth: 0 }}>
                 <span
                   className="material-symbols-outlined"
-                  style={{ color: COLORS.teal, fontSize: "1.4rem", flexShrink: 0 }}
+                  style={{ color: unreviewedCount > 0 ? COLORS.amber : COLORS.teal, fontSize: "1.4rem", flexShrink: 0 }}
                 >
-                  check_circle
+                  {unreviewedCount > 0 ? "edit_note" : "check_circle"}
                 </span>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "#2B2B2B" }}>
-                    Week {week} — Complete
+                    {unreviewedCount > 0 ? `Week ${week} — In progress` : `Week ${week} — Complete`}
                   </p>
                   <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: COLORS.muted }}>
-                    {presentCount} present · {absentCount} absent
+                    {unreviewedCount > 0
+                      ? `${roster.length - unreviewedCount} of ${roster.length} reviewed · ${unreviewedCount} still need a selection`
+                      : `${presentCount} present · ${absentCount} absent`}
                   </p>
                 </div>
               </div>
@@ -370,6 +379,7 @@ export default function MyClassClient({
                 <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: COLORS.teal }}>{classInfo.name}</h2>
                 <span style={{ fontSize: "0.75rem", fontWeight: 700, color: COLORS.muted, flexShrink: 0 }}>
                   {presentCount} P · {absentCount} A
+                  {unreviewedCount > 0 ? ` · ${unreviewedCount} to review` : ""}
                 </span>
               </div>
 
@@ -447,8 +457,9 @@ export default function MyClassClient({
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
                 {filteredRoster.map((row) => {
-                  const absent = !row.present;
-                  const touched = touchedIds.has(row.participantId);
+                  const present = row.present === true;
+                  const absent = row.present === false;
+                  const touched = row.present !== null;
                   return (
                     <div
                       key={row.participantId}
@@ -473,7 +484,7 @@ export default function MyClassClient({
                             {row.gradeLevel ? ` · ${row.gradeLevel}` : ""}
                           </p>
                         </div>
-                        {touched && (
+                        {touched ? (
                           <span
                             style={{
                               display: "flex",
@@ -491,6 +502,24 @@ export default function MyClassClient({
                             <span className="material-symbols-outlined" style={{ fontSize: "0.9rem" }}>check_circle</span>
                             Reviewed
                           </span>
+                        ) : (
+                          <span
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "0.25rem",
+                              flexShrink: 0,
+                              padding: "0.2rem 0.5rem",
+                              borderRadius: "999px",
+                              background: "#FDF0F0",
+                              color: COLORS.danger,
+                              fontSize: "0.7rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: "0.9rem" }}>priority_high</span>
+                            Needs selection
+                          </span>
                         )}
                       </div>
 
@@ -498,13 +527,13 @@ export default function MyClassClient({
                         <button
                           type="button"
                           onClick={() => togglePresent(row.participantId, true)}
-                          aria-pressed={row.present}
+                          aria-pressed={present}
                           style={{
                             minHeight: 52,
                             borderRadius: "0.6rem",
-                            border: row.present ? "2px solid #1F6B4D" : "1px solid #E8E3D9",
-                            background: row.present ? "#1F6B4D" : "#FFFFFF",
-                            color: row.present ? "#FFFFFF" : "#1F6B4D",
+                            border: present ? "2px solid #1F6B4D" : "1px solid #E8E3D9",
+                            background: present ? "#1F6B4D" : "#FFFFFF",
+                            color: present ? "#FFFFFF" : "#1F6B4D",
                             fontWeight: 800,
                             fontSize: "1rem",
                             fontFamily: "inherit",
@@ -586,7 +615,7 @@ export default function MyClassClient({
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={submitting}
+            disabled={submitting || unreviewedCount > 0}
             style={{
               width: "100%",
               maxWidth: 720,
@@ -598,16 +627,23 @@ export default function MyClassClient({
               minHeight: 54,
               borderRadius: "0.75rem",
               border: "none",
-              background: submitting ? "#6b7b6f" : COLORS.amber,
+              background: submitting ? "#6b7b6f" : unreviewedCount > 0 ? "#C9C4B8" : COLORS.amber,
               color: "#0A261B",
               fontWeight: 800,
               fontSize: "1.05rem",
               fontFamily: "inherit",
-              cursor: submitting ? "not-allowed" : "pointer",
-              boxShadow: "0 4px 16px rgba(217,164,65,0.4)",
+              cursor: submitting || unreviewedCount > 0 ? "not-allowed" : "pointer",
+              boxShadow: unreviewedCount > 0 ? "none" : "0 4px 16px rgba(217,164,65,0.4)",
+              opacity: unreviewedCount > 0 ? 0.75 : 1,
             }}
           >
-            {submitting ? "Saving…" : justSubmitted ? "Saved ✓" : `Submit attendance (${roster.length})`}
+            {submitting
+              ? "Saving…"
+              : unreviewedCount > 0
+                ? `${unreviewedCount} still need a selection`
+                : justSubmitted
+                  ? "Saved ✓"
+                  : `Submit attendance (${roster.length})`}
           </button>
         </div>
       )}

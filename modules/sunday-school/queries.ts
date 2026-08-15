@@ -6,7 +6,7 @@ export interface RosterParticipant {
   localParticipantId: string;
   name: string;
   gradeLevel: string | null;
-  present: boolean;
+  present: boolean | null;
 }
 
 export interface ClassRoster {
@@ -82,39 +82,6 @@ export async function getClassRosterForTeacher(args: {
     return { classInfo, year: args.year, month: args.month, week: args.week, roster: [] };
   }
 
-  const existing = await prisma.sundaySchoolAttendance.findMany({
-    where: {
-      participantId: { in: participantIds },
-      year: args.year,
-      month: args.month,
-      week: args.week,
-    },
-    select: { participantId: true },
-  });
-
-  const existingIds = new Set(existing.map((r) => r.participantId));
-  const missingIds = participantIds.filter((id) => !existingIds.has(id));
-
-  if (missingIds.length > 0) {
-    try {
-      await prisma.sundaySchoolAttendance.createMany({
-        data: missingIds.map((participantId) => ({
-          participantId,
-          classId: classInfo.id,
-          year: args.year,
-          month: args.month,
-          week: args.week,
-          present: true,
-        })),
-      });
-    } catch (e) {
-      // Race-safe fallback: another request may have created defaults concurrently.
-      if ((e as { code?: string }).code !== "P2002") {
-        throw e;
-      }
-    }
-  }
-
   const records = await prisma.sundaySchoolAttendance.findMany({
     where: {
       participantId: { in: participantIds },
@@ -125,14 +92,18 @@ export async function getClassRosterForTeacher(args: {
     select: { participantId: true, present: true },
   });
 
-  const presentByParticipant = new Map(records.map((r) => [r.participantId, r.present]));
+  const presentByParticipant = new Map(
+    records
+      .filter((r) => r.present !== null)
+      .map((r) => [r.participantId, r.present as boolean])
+  );
 
   const roster = assignments.map((a) => ({
     participantId: a.participant.id,
     localParticipantId: a.participant.localParticipantId,
     name: a.participant.name,
     gradeLevel: a.participant.gradeLevel,
-    present: presentByParticipant.get(a.participant.id) ?? true,
+    present: presentByParticipant.get(a.participant.id) ?? null,
   }));
 
   return { classInfo, year: args.year, month: args.month, week: args.week, roster };
@@ -145,14 +116,14 @@ export async function submitClassAttendance(args: {
   month: number;
   week: number;
   records: { participantId: string; present: boolean }[];
-}): Promise<{ updated: number; invalidParticipantIds: string[] }> {
+}): Promise<{ updated: number; invalidParticipantIds: string[]; missingCount: number }> {
   const classInfo = await prisma.sundaySchoolClass.findFirst({
     where: { id: args.classId, teacherId: args.teacherId, deletedAt: null },
     select: { id: true },
   });
 
   if (!classInfo) {
-    return { updated: 0, invalidParticipantIds: [] };
+    return { updated: 0, invalidParticipantIds: [], missingCount: 0 };
   }
 
   const assignments = await prisma.sundaySchoolClassParticipant.findMany({
@@ -161,38 +132,49 @@ export async function submitClassAttendance(args: {
   });
 
   const assignedIds = new Set(assignments.map((a) => a.participantId));
-  const validRecords = args.records.filter((r) => assignedIds.has(r.participantId));
+  const seenIds = new Set<string>();
+  const validRecords = args.records.filter((r) => {
+    if (!assignedIds.has(r.participantId) || seenIds.has(r.participantId)) return false;
+    seenIds.add(r.participantId);
+    return true;
+  });
   const invalidParticipantIds = args.records
     .filter((r) => !assignedIds.has(r.participantId))
     .map((r) => r.participantId);
 
-  if (validRecords.length > 0) {
-    await prisma.$transaction(
-      validRecords.map((r) =>
-        prisma.sundaySchoolAttendance.upsert({
-          where: {
-            participantId_year_month_week: {
-              participantId: r.participantId,
-              year: args.year,
-              month: args.month,
-              week: args.week,
-            },
-          },
-          update: { present: r.present, classId: classInfo.id },
-          create: {
+  if (validRecords.length !== assignedIds.size) {
+    return {
+      updated: 0,
+      invalidParticipantIds,
+      missingCount: assignedIds.size - validRecords.length,
+    };
+  }
+
+  await prisma.$transaction(
+    validRecords.map((r) =>
+      prisma.sundaySchoolAttendance.upsert({
+        where: {
+          participantId_year_month_week: {
             participantId: r.participantId,
-            classId: classInfo.id,
             year: args.year,
             month: args.month,
             week: args.week,
-            present: r.present,
           },
-        })
-      )
-    );
-  }
+        },
+        update: { present: r.present, classId: classInfo.id },
+        create: {
+          participantId: r.participantId,
+          classId: classInfo.id,
+          year: args.year,
+          month: args.month,
+          week: args.week,
+          present: r.present,
+        },
+      })
+    )
+  );
 
-  return { updated: validRecords.length, invalidParticipantIds };
+  return { updated: validRecords.length, invalidParticipantIds, missingCount: 0 };
 }
 
 export async function listClasses() {
@@ -407,6 +389,7 @@ export async function getSundaySchoolAttendanceForExport(args: { year: number; m
   >();
 
   for (const r of records) {
+    if (r.present === null) continue;
     let entry = byParticipant.get(r.participantId);
     if (!entry) {
       entry = {
