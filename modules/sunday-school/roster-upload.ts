@@ -12,7 +12,47 @@ export interface RosterUploadParse {
 }
 
 function cellText(cell: ExcelJS.Cell): string {
-  return (cell.text ?? "").toString().trim();
+  if (!cell) return "";
+
+  try {
+    const value = cell.value as unknown;
+
+    if (value === null || value === undefined) return "";
+
+    if (typeof value === "string") return value.trim();
+    if (typeof value === "number" || typeof value === "boolean") {
+      return String(value).trim();
+    }
+
+    if (typeof value === "object") {
+      const obj = value as {
+        text?: unknown;
+        result?: unknown;
+        richText?: { text?: unknown }[];
+      };
+
+      if (Array.isArray(obj.richText)) {
+        return obj.richText
+          .map((part) => (part?.text === null || part?.text === undefined ? "" : String(part.text)))
+          .join("")
+          .trim();
+      }
+
+      if (obj.text !== null && obj.text !== undefined) {
+        return String(obj.text).trim();
+      }
+
+      if (obj.result !== null && obj.result !== undefined) {
+        return String(obj.result).trim();
+      }
+
+      return "";
+    }
+
+    return String(value).trim();
+  } catch {
+    return "";
+  }
 }
 
 function isRowEmpty(row: ExcelJS.Row): boolean {
@@ -60,14 +100,23 @@ export function parseRosterUpload(sheet: ExcelJS.Worksheet): RosterUploadParse {
 
   const ids: string[] = [];
   const idSet = new Set<string>();
+  let hasData = false;
 
   for (let r = headerRow + 1; r <= sheet.rowCount; r++) {
     const row = sheet.getRow(r);
-    if (isRowEmpty(row)) break;
+
+    if (isRowEmpty(row)) {
+      if (hasData) break;
+      continue;
+    }
 
     const rawId = cellText(row.getCell(idColumn));
-    if (!rawId) continue;
+    if (!rawId) {
+      if (hasData) break;
+      continue;
+    }
 
+    hasData = true;
     const normalized = rawId.toUpperCase();
     if (!idSet.has(normalized)) {
       idSet.add(normalized);
