@@ -4,84 +4,17 @@ import { getSundaySchoolAttendanceForExport } from "./queries";
 
 const TEMPLATE_FILE = "sunday-school-report-template.xlsx";
 
-interface ColumnMap {
-  no: number;
-  id: number;
-  name: number;
-  weeks: number[];
-  total: number;
-  headerRow: number;
-  dataStart: number;
-}
+const DATA_START_ROW = 11;
+const NO_COL = 5; // E
+const ID_COL = 6; // F
+const NAME_COL = 7; // G
+const WEEK_COLS = [8, 9, 10, 11, 12]; // H, I, J, K, L
+const TOTAL_COL = 13; // M
 
-function findColumnByHeader(
-  sheet: ExcelJS.Worksheet,
-  headerRow: number,
-  candidates: string[]
-): number | null {
-  for (let c = 1; c <= sheet.columnCount; c++) {
-    const value = String(sheet.getCell(headerRow, c).value ?? "").trim().toLowerCase();
-    for (const candidate of candidates) {
-      if (value === candidate.toLowerCase() || value.includes(candidate.toLowerCase())) {
-        return c;
-      }
-    }
-  }
-  return null;
-}
-
-function detectColumns(sheet: ExcelJS.Worksheet): ColumnMap | null {
-  let headerRow = -1;
-  for (let r = 1; r <= Math.min(sheet.rowCount, 20); r++) {
-    const row = sheet.getRow(r);
-    const values: string[] = [];
-    for (let c = 1; c <= sheet.columnCount; c++) {
-      values.push(String(row.getCell(c).value ?? "").trim().toLowerCase());
-    }
-    if (values.some((v) => v === "id" || v.startsWith("id ") || v === "participant id")) {
-      headerRow = r;
-      break;
-    }
-  }
-
-  if (headerRow === -1) return null;
-
-  const no = findColumnByHeader(sheet, headerRow, ["no", "no.", "#", "s/n"]) ?? 1;
-  const id = findColumnByHeader(sheet, headerRow, ["id", "participant id"]) ?? 2;
-  const name = findColumnByHeader(sheet, headerRow, ["name", "participant name"]) ?? 3;
-
-  const weeks: number[] = [];
-  for (let w = 1; w <= 5; w++) {
-    const col = findColumnByHeader(sheet, headerRow, [`week ${w}`, `w${w}`]);
-    if (col) weeks.push(col);
-  }
-
-  const total =
-    findColumnByHeader(sheet, headerRow, ["total", "sum"]) ??
-    Math.max(id, name, ...weeks) + 1;
-
-  return { no, id, name, weeks, total, headerRow, dataStart: headerRow + 1 };
-}
-
-function detectFormulaStyle(sheet: ExcelJS.Worksheet, map: ColumnMap): string | null {
-  const templateTotalCell = sheet.getCell(map.dataStart, map.total);
-  const value = templateTotalCell.value;
-  if (value && typeof value === "object" && "formula" in value) {
-    return String(value.formula);
-  }
-  return null;
-}
-
-function formulaForRow(templateFormula: string | null, map: ColumnMap, row: number): string | null {
-  if (templateFormula) {
-    return templateFormula.replace(/[0-9]+/g, (match) => String(row));
-  }
-
-  if (map.weeks.length === 0) return null;
-  const startCol = colLetter(map.weeks[0]);
-  const endCol = colLetter(map.weeks[map.weeks.length - 1]);
-  return `=SUM(${startCol}${row}:${endCol}${row})`;
-}
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
 
 function colLetter(col: number): string {
   let result = "";
@@ -94,58 +27,156 @@ function colLetter(col: number): string {
   return result;
 }
 
-export async function buildSundaySchoolXlsx(args: {
-  year: number;
-  month: number;
-}) {
-  const cleanTemplate = stripCommentsFromTemplate(TEMPLATE_FILE);
+function monthSheetName(year: number, month: number): string | null {
+  const name = MONTH_NAMES[month - 1];
+  if (year === 2026 && month >= 7 && month <= 12) {
+    return `${name} ${year}`;
+  }
+  if (year === 2027 && month >= 1 && month <= 6) {
+    if (month === 1) return "January2027";
+    if (month === 2) return "Febuary 2027";
+    return `${name} ${year}`;
+  }
+  return null;
+}
 
+function rowHasLabel(sheet: ExcelJS.Worksheet, row: number, label: string): boolean {
+  const f = String(sheet.getCell(row, ID_COL).value ?? "");
+  const g = String(sheet.getCell(row, NAME_COL).value ?? "");
+  return f.includes(label) || g.includes(label);
+}
+
+function findRowByLabel(sheet: ExcelJS.Worksheet, startRow: number, label: string): number | null {
+  for (let r = startRow; r <= sheet.rowCount; r++) {
+    if (rowHasLabel(sheet, r, label)) return r;
+  }
+  return null;
+}
+
+function getWeekCount(sheet: ExcelJS.Worksheet): number {
+  const raw = sheet.getCell(6, WEEK_COLS[0]).value;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  return Number.isInteger(n) && n >= 1 && n <= 5 ? n : 5;
+}
+
+export async function buildSundaySchoolXlsx(args: { year: number; month: number }) {
+  const sheetName = monthSheetName(args.year, args.month);
+  if (!sheetName) {
+    throw new Error(
+      `No Sunday School template sheet for ${MONTH_NAMES[args.month - 1]} ${args.year}.`
+    );
+  }
+
+  const cleanTemplate = stripCommentsFromTemplate(TEMPLATE_FILE);
   const workbook = new ExcelJS.Workbook();
   // @ts-expect-error -- Buffer type mismatch between Node and exceljs types; works at runtime
   await workbook.xlsx.load(cleanTemplate);
 
-  const sheet = workbook.worksheets[0];
+  const sheet = workbook.getWorksheet(sheetName);
   if (!sheet) {
-    throw new Error("Sunday school report template is missing a worksheet");
+    throw new Error(`Sunday School template sheet "${sheetName}" not found.`);
   }
 
-  const map = detectColumns(sheet);
-  if (!map) {
-    throw new Error("Sunday school report template header row not found");
-  }
-
-  const rows = await getSundaySchoolAttendanceForExport(args);
-  const templateRow = sheet.getRow(map.dataStart);
-  const templateFormula = detectFormulaStyle(sheet, map);
-
-  const templateRows = 1;
-  const neededRows = Math.max(templateRows, rows.length);
-  if (neededRows > templateRows) {
-    for (let i = 0; i < neededRows - templateRows; i++) {
-      const insertPos = map.dataStart + 1 + i;
-      const newRow = sheet.insertRow(insertPos, []);
-      copyRowStyle(templateRow, newRow);
+  for (const ws of [...workbook.worksheets]) {
+    if (ws.id !== sheet.id) {
+      workbook.removeWorksheet(ws.id);
     }
   }
 
-  for (let i = 0; i < Math.max(templateRows, rows.length); i++) {
-    const rowNumber = map.dataStart + i;
-    const row = sheet.getRow(rowNumber);
+  const weekCount = getWeekCount(sheet);
+  const usedWeekCols = WEEK_COLS.slice(0, weekCount);
+  const unusedWeekCols = WEEK_COLS.slice(weekCount);
 
-    if (i < rows.length) {
-      const entry = rows[i];
-      row.getCell(map.no).value = i + 1;
-      row.getCell(map.id).value = entry.localParticipantId;
-      row.getCell(map.name).value = entry.name;
-      for (let w = 0; w < map.weeks.length && w < 5; w++) {
-        row.getCell(map.weeks[w]).value = entry.weeks[w]?.present ? 1 : 0;
+  const originalSummaryRow = findRowByLabel(sheet, DATA_START_ROW, "Total weekly attendants");
+  if (originalSummaryRow === null) {
+    throw new Error(`Sunday School template sheet "${sheetName}" is missing its summary rows.`);
+  }
+
+  const originalDataEnd = originalSummaryRow - 1;
+  const originalDataCount = Math.max(0, originalDataEnd - DATA_START_ROW + 1);
+
+  for (let r = DATA_START_ROW; r <= originalDataEnd; r++) {
+    const row = sheet.getRow(r);
+    for (let c = NO_COL; c <= TOTAL_COL; c++) {
+      row.getCell(c).value = null;
+    }
+  }
+
+  const participants = await getSundaySchoolAttendanceForExport(args);
+
+  const extraNeeded = Math.max(0, participants.length - originalDataCount);
+  for (let i = 0; i < extraNeeded; i++) {
+    const insertPos = originalSummaryRow + i;
+    const srcRow = sheet.getRow(DATA_START_ROW);
+    const newRow = sheet.insertRow(insertPos, []);
+    copyRowStyle(srcRow, newRow);
+  }
+
+  for (let i = 0; i < participants.length; i++) {
+    const r = DATA_START_ROW + i;
+    const row = sheet.getRow(r);
+    const p = participants[i];
+
+    row.getCell(NO_COL).value = i + 1;
+    row.getCell(ID_COL).value = p.localParticipantId;
+    row.getCell(NAME_COL).value = p.name;
+    for (let w = 0; w < weekCount; w++) {
+      row.getCell(WEEK_COLS[w]).value = p.weeks[w]?.present ? 1 : 0;
+    }
+    row.getCell(TOTAL_COL).value = {
+      formula: `(H${r}+I${r}+J${r}+K${r}+L${r})`,
+    };
+  }
+
+  const totalParticipants = participants.length;
+  const row10 = sheet.getRow(10);
+  for (const c of usedWeekCols) {
+    row10.getCell(c).value = totalParticipants;
+  }
+  for (const c of unusedWeekCols) {
+    row10.getCell(c).value = null;
+  }
+
+  if (participants.length > 0) {
+    const sumEnd = DATA_START_ROW + participants.length - 1;
+    const summaryRow = findRowByLabel(sheet, DATA_START_ROW, "Total weekly attendants");
+    if (summaryRow === null) {
+      throw new Error("Failed to locate Sunday School summary rows after writing data.");
+    }
+
+    const totalRow = sheet.getRow(summaryRow);
+    for (const c of usedWeekCols) {
+      const letter = colLetter(c);
+      totalRow.getCell(c).value = {
+        formula: `SUM(${letter}${DATA_START_ROW}:${letter}${sumEnd})`,
+      };
+    }
+    for (const c of unusedWeekCols) {
+      totalRow.getCell(c).value = null;
+    }
+
+    const percentRow = findRowByLabel(sheet, summaryRow + 1, "Percentage of Weekly attendants");
+    if (percentRow !== null) {
+      const pRow = sheet.getRow(percentRow);
+      for (const c of usedWeekCols) {
+        const letter = colLetter(c);
+        pRow.getCell(c).value = {
+          formula: `(${letter}${summaryRow}*100/${letter}10)`,
+        };
       }
-      const formula = formulaForRow(templateFormula, map, rowNumber);
-      row.getCell(map.total).value = formula ? { formula } : 0;
-    } else {
-      for (let c = 1; c <= sheet.columnCount; c++) {
-        row.getCell(c).value = null;
+      for (const c of unusedWeekCols) {
+        pRow.getCell(c).value = null;
       }
+    }
+
+    const monthlyRow = findRowByLabel(sheet, summaryRow + 1, "Monthly average");
+    if (monthlyRow !== null && percentRow !== null) {
+      const terms = usedWeekCols
+        .map((c) => `${colLetter(c)}${percentRow}`)
+        .join("+");
+      sheet.getCell(monthlyRow, WEEK_COLS[0]).value = {
+        formula: `(${terms})/H6`,
+      };
     }
   }
 
