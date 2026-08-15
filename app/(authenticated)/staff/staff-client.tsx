@@ -17,6 +17,7 @@ interface StaffMember {
   avatarUrl: string | null;
   isActive: boolean;
   hideFromReports: boolean;
+  isTeacher: boolean;
   deactivatedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
@@ -175,6 +176,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
   const [email, setEmail] = useState("");
   const [jobTitleId, setJobTitleId] = useState("");
   const [grantElevated, setGrantElevated] = useState(false);
+  const [isTeacher, setIsTeacher] = useState(false);
   const [overrideRole, setOverrideRole] = useState("MANAGER");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -247,6 +249,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
     setEmail("");
     setJobTitleId("");
     setGrantElevated(false);
+    setIsTeacher(false);
     setOverrideRole("MANAGER");
     setPassword("");
     setError("");
@@ -258,6 +261,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
     setEmail(s.email);
     setJobTitleId(s.jobTitleId ?? "");
     setGrantElevated(s.role === "MANAGER");
+    setIsTeacher(s.isTeacher === true);
     setOverrideRole("MANAGER");
     setPassword("");
     setShowForm(true);
@@ -280,6 +284,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
       email: email.trim(),
       role,
       jobTitleId: jobTitleId || null,
+      isTeacher,
     };
     if (isNew) (payload as { password: string }).password = password;
     if (!isNew) payload.id = editingId;
@@ -827,6 +832,20 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
                 )}
               </div>
 
+              <div style={{ marginBottom: "0.75rem" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem", fontWeight: 500 }}>
+                  <input
+                    type="checkbox"
+                    checked={isTeacher}
+                    onChange={(e) => setIsTeacher(e.target.checked)}
+                  />
+                  Sunday School Teacher
+                </label>
+                <p className="form-hint" style={{ marginTop: "0.35rem" }}>
+                  Grants access to the My Class page regardless of role or job title.
+                </p>
+              </div>
+
               {!editingId && (
                 <div style={{ marginBottom: "0.75rem" }}>
                   <label className="form-label">Initial Password</label>
@@ -1196,6 +1215,16 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
                 color: "#fff",
                 fontFamily: "var(--font-mono)",
                 textAlign: "center",
+              }}>Teacher</th>
+              <th style={{
+                padding: "1.25rem 1.5rem",
+                fontSize: "0.75rem",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#fff",
+                fontFamily: "var(--font-mono)",
+                textAlign: "center",
               }}>Active</th>
               <th style={{
                 padding: "1.25rem 1.5rem",
@@ -1282,6 +1311,27 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
                   </td>
                   <td data-label="Job Title" style={{ padding: "1.5rem 1.5rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
                     {s.jobTitle?.name || "\u2014"}
+                  </td>
+                  <td data-label="Teacher" style={{ padding: "1.5rem 1.5rem", textAlign: "center" }}>
+                    {s.isTeacher ? (
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        padding: "0.2rem 0.75rem",
+                        borderRadius: "999px",
+                        fontSize: "0.75rem",
+                        fontWeight: 600,
+                        fontFamily: "var(--font-mono)",
+                        backgroundColor: "rgba(217,164,65,0.15)",
+                        color: "#7d5700",
+                        border: "1px solid rgba(217,164,65,0.4)",
+                      }}>
+                        Yes
+                      </span>
+                    ) : (
+                      <span style={{ color: "var(--color-text-light)", fontSize: "0.85rem" }}>\u2014</span>
+                    )}
                   </td>
                   <td data-label="Active" style={{ padding: "1.5rem 1.5rem", textAlign: "center" }}>
                     <span style={{

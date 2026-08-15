@@ -1,10 +1,7 @@
-import { readFileSync } from "fs";
-import { join } from "path";
 import AdmZip from "adm-zip";
 import type ExcelJS from "exceljs";
 
-export function stripCommentsFromTemplate(fileName: string): Buffer {
-  const raw = readFileSync(join(process.cwd(), fileName));
+export function stripCommentsFromTemplate(raw: Buffer): Buffer {
   const zip = new AdmZip(raw);
 
   const entries = zip.getEntries();

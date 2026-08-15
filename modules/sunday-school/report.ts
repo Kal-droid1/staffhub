@@ -1,8 +1,8 @@
 import ExcelJS from "exceljs";
+import { readFileSync } from "fs";
+import { join } from "path";
 import { stripCommentsFromTemplate, copyRowStyle } from "@/lib/excel-template";
 import { getSundaySchoolAttendanceForExport } from "./queries";
-
-const TEMPLATE_FILE = "sunday-school-report-template.xlsx";
 
 const DATA_START_ROW = 11;
 const NO_COL = 5; // E
@@ -67,7 +67,8 @@ export async function buildSundaySchoolXlsx(args: { year: number; month: number 
     );
   }
 
-  const cleanTemplate = stripCommentsFromTemplate(TEMPLATE_FILE);
+  const rawTemplate = readFileSync(join(process.cwd(), "sunday-school-report-template.xlsx"));
+  const cleanTemplate = stripCommentsFromTemplate(rawTemplate);
   const workbook = new ExcelJS.Workbook();
   // @ts-expect-error -- Buffer type mismatch between Node and exceljs types; works at runtime
   await workbook.xlsx.load(cleanTemplate);
