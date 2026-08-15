@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { visibleUserWhere } from "@/lib/visibility";
 
@@ -53,9 +54,32 @@ export interface StaffRow {
   createdAt: string;
 }
 
+const teacherOnlyWhere: Prisma.UserWhereInput = {
+  isTeacher: true,
+  jobTitleId: null,
+  role: { notIn: ["MANAGER", "ADMIN"] },
+};
+
 export async function getAllStaff(viewerIsHidden = false): Promise<StaffRow[]> {
   const rows = await prisma.user.findMany({
-    where: { deletedAt: null, ...visibleUserWhere(viewerIsHidden) },
+    where: {
+      deletedAt: null,
+      ...visibleUserWhere(viewerIsHidden),
+      NOT: teacherOnlyWhere,
+    },
+    select: userSelect,
+    orderBy: { name: "asc" },
+  });
+  return rows as unknown as StaffRow[];
+}
+
+export async function getTeacherOnlyStaff(viewerIsHidden = false): Promise<StaffRow[]> {
+  const rows = await prisma.user.findMany({
+    where: {
+      deletedAt: null,
+      ...visibleUserWhere(viewerIsHidden),
+      ...teacherOnlyWhere,
+    },
     select: userSelect,
     orderBy: { name: "asc" },
   });

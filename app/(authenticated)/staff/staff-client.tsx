@@ -62,6 +62,7 @@ interface CompanyLeaveAction {
 interface Props {
   currentUserId: string;
   initialStaff: StaffMember[];
+  initialTeachers: StaffMember[];
   leaveTypes: LeaveTypeOption[];
 }
 
@@ -166,9 +167,11 @@ function StaffAvatar({ name, userId, role, hasAvatar, isActive }: { name: string
   );
 }
 
-export default function StaffClient({ currentUserId, initialStaff, leaveTypes }: Props) {
+export default function StaffClient({ currentUserId, initialStaff, initialTeachers, leaveTypes }: Props) {
   const router = useRouter();
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff);
+  const [teachers, setTeachers] = useState<StaffMember[]>(initialTeachers);
+  const [view, setView] = useState<"staff" | "teachers">("staff");
   const [jobTitles, setJobTitles] = useState<JobTitle[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -230,16 +233,33 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
       .catch(() => {});
   }, []);
 
-  const totalPages = Math.max(1, Math.ceil(staff.length / PAGE_SIZE));
+  const visibleRows = view === "teachers" ? teachers : staff;
+  const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
   const clampedPage = Math.min(page, totalPages - 1);
-  const pagedStaff = staff.slice(clampedPage * PAGE_SIZE, (clampedPage + 1) * PAGE_SIZE);
-  const showingFrom = staff.length === 0 ? 0 : clampedPage * PAGE_SIZE + 1;
-  const showingTo = Math.min((clampedPage + 1) * PAGE_SIZE, staff.length);
+  const pagedRows = visibleRows.slice(clampedPage * PAGE_SIZE, (clampedPage + 1) * PAGE_SIZE);
+  const showingFrom = visibleRows.length === 0 ? 0 : clampedPage * PAGE_SIZE + 1;
+  const showingTo = Math.min((clampedPage + 1) * PAGE_SIZE, visibleRows.length);
 
   function computedRole(): string {
     if (grantElevated) return overrideRole;
     const jt = jobTitles.find((t) => t.id === jobTitleId);
     return autoRole(jt?.name);
+  }
+
+  function upsertInView(updated: StaffMember) {
+    if (view === "teachers") {
+      setTeachers((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    } else {
+      setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    }
+  }
+
+  function removeFromView(id: string) {
+    if (view === "teachers") {
+      setTeachers((prev) => prev.filter((s) => s.id !== id));
+    } else {
+      setStaff((prev) => prev.filter((s) => s.id !== id));
+    }
   }
 
   function resetForm() {
@@ -305,7 +325,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
     if (isNew) {
       setStaff((prev) => [...prev, data]);
     } else {
-      setStaff((prev) => prev.map((s) => (s.id === editingId ? data : s)));
+      upsertInView(data);
     }
 
     resetForm();
@@ -322,7 +342,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
     });
     if (res.ok) {
       const updated = await res.json();
-      setStaff((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      upsertInView(updated);
     }
     setActingId(null);
     setDeactivateTarget(null);
@@ -339,7 +359,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
     });
     if (res.ok) {
       const updated = await res.json();
-      setStaff((prev) => prev.map((s) => (s.id === id ? updated : s)));
+      upsertInView(updated);
     }
     setActingId(null);
     router.refresh();
@@ -353,7 +373,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
       body: JSON.stringify({ id, action: "delete" }),
     });
     if (res.ok) {
-      setStaff((prev) => prev.filter((s) => s.id !== id));
+      removeFromView(id);
     }
     setActingId(null);
     setDeleteTarget(null);
@@ -593,13 +613,67 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
             letterSpacing: "-0.02em",
             lineHeight: 1.2,
           }}>
-            Staff
+            {view === "teachers" ? "Teachers" : "Staff"}
           </h1>
           <p style={{ margin: 0, fontSize: "0.95rem", color: "var(--color-text-muted)" }}>
-            Manage your workforce, roles, and status.
+            {view === "teachers"
+              ? "Manage teacher-only accounts."
+              : "Manage your workforce, roles, and status."}
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+          {view === "teachers" && (
+            <button
+              onClick={() => { setView("staff"); setPage(0); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                padding: "0.5rem 1rem",
+                background: "rgba(255, 255, 255, 0.3)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid #1F6B4D",
+                borderRadius: "0.5rem",
+                color: "#1F6B4D",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                cursor: "pointer",
+                transition: "background 0.15s",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(31,107,77,0.08)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>group</span>
+              Staff
+            </button>
+          )}
+          {view === "staff" && (
+            <button
+              onClick={() => { setView("teachers"); setPage(0); }}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                padding: "0.5rem 1rem",
+                background: "rgba(255, 255, 255, 0.3)",
+                backdropFilter: "blur(8px)",
+                border: "1px solid #D9A441",
+                borderRadius: "0.5rem",
+                color: "#1F6B4D",
+                fontWeight: 600,
+                fontSize: "0.875rem",
+                cursor: "pointer",
+                transition: "background 0.15s",
+                fontFamily: "inherit",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(217,164,65,0.12)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.3)")}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: "1.25rem" }}>menu_book</span>
+              Teachers
+            </button>
+          )}
           <button
             onClick={openBulkGrant}
             style={{
@@ -1239,7 +1313,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
             </tr>
           </thead>
           <tbody style={{ fontSize: "0.875rem" }}>
-            {pagedStaff.map((s) => {
+            {pagedRows.map((s) => {
               const roleStyle = ROLE_STYLE[s.role] ?? ROLE_STYLE.STAFF;
               const isSelf = s.id === currentUserId;
               return (
@@ -1330,7 +1404,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
                         Yes
                       </span>
                     ) : (
-                      <span style={{ color: "var(--color-text-light)", fontSize: "0.85rem" }}>\u2014</span>
+                      <span style={{ color: "var(--color-text-light)", fontSize: "0.85rem" }}>—</span>
                     )}
                   </td>
                   <td data-label="Active" style={{ padding: "1.5rem 1.5rem", textAlign: "center" }}>
@@ -1551,7 +1625,7 @@ export default function StaffClient({ currentUserId, initialStaff, leaveTypes }:
           color: "var(--color-text-muted)",
         }}>
           <span style={{ fontWeight: 500 }}>
-            Showing {showingFrom} to {showingTo} of {staff.length} entries
+            Showing {showingFrom} to {showingTo} of {visibleRows.length} entries
           </span>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <button
