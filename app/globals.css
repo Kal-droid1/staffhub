@@ -65,6 +65,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+body.teacher-only {
+  padding-top: 64px;
+}
+
 /* ---- Layout ---- */
 
 .page-container {
@@ -472,6 +476,10 @@ body {
   right: 0;
   z-index: 50;
   height: 64px;
+}
+
+body.teacher-only .navbar {
+  top: 0;
 }
 
 .navbar-inner {

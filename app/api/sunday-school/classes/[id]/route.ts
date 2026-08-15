@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
-import { updateClass } from "@/modules/sunday-school/queries";
+import { updateClass, deleteClass } from "@/modules/sunday-school/queries";
 
 export async function PUT(
   req: NextRequest,
@@ -42,6 +42,31 @@ export async function PUT(
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to update class";
     console.error("Failed to update Sunday School class:", e);
+    if (message === "Class not found") {
+      return NextResponse.json({ error: message }, { status: 404 });
+    }
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.role || !hasRole(session.user.role as "MANAGER" | "ADMIN", "MANAGER")) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  try {
+    await deleteClass(id);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Failed to delete class";
+    console.error("Failed to delete Sunday School class:", e);
     if (message === "Class not found") {
       return NextResponse.json({ error: message }, { status: 404 });
     }

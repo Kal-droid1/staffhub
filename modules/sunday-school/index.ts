@@ -7,6 +7,7 @@ export {
   listClasses,
   createClass,
   updateClass,
+  deleteClass,
   getSundaySchoolAttendanceForExport,
 } from "./queries";
 export type { RosterParticipant, ClassRoster } from "./queries";

@@ -330,6 +330,20 @@ async function assignParticipantsToClass(
   }
 }
 
+export async function deleteClass(id: string) {
+  const existing = await prisma.sundaySchoolClass.findUnique({ where: { id } });
+  if (!existing) throw new Error("Class not found");
+
+  const attendanceCount = await prisma.sundaySchoolAttendance.count({
+    where: { classId: id },
+  });
+  if (attendanceCount > 0) {
+    throw new Error(`"${existing.name}" has attendance records and cannot be deleted.`);
+  }
+
+  await prisma.sundaySchoolClass.delete({ where: { id } });
+}
+
 export async function getSundaySchoolAttendanceForExport(args: { year: number; month: number }) {
   const records = await prisma.sundaySchoolAttendance.findMany({
     where: { year: args.year, month: args.month },

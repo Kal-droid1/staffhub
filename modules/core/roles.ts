@@ -22,3 +22,14 @@ export function requireRole(requiredRole: Role) {
 export function getServerRole(session: Session | null): Role | null {
   return (session?.user?.role as Role) ?? null;
 }
+
+export function isTeacherOnlyUser(user: {
+  role?: string | null;
+  isTeacher?: boolean | null;
+  jobTitleName?: string | null;
+} | null | undefined): boolean {
+  if (!user?.isTeacher) return false;
+  const hasOrgRole =
+    user.role === "MANAGER" || user.role === "ADMIN" || Boolean(user.jobTitleName);
+  return !hasOrgRole;
+}

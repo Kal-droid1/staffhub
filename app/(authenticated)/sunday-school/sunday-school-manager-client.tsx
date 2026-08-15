@@ -1,9 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/modules/core/components/card";
 import ConfirmDialog from "@/modules/core/components/confirm-dialog";
+import {
+  SUNDAY_SCHOOL_EXPORT_MONTH_OPTIONS,
+  SUNDAY_SCHOOL_FIRST_EXPORT_MONTH,
+} from "@/modules/sunday-school/export-months";
 
 interface TeacherOption {
   id: string;
@@ -40,11 +44,6 @@ interface SelectedParticipant {
   gradeLevel: string | null;
 }
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
-
 export default function SundaySchoolManagerClient({ initialClasses, initialTeachers }: Props) {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassRow[]>(initialClasses);
@@ -63,25 +62,24 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
     fromClass: string;
   } | null>(null);
 
+  // Bulk upload state
+  const [uploading, setUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [pendingBulkMove, setPendingBulkMove] = useState<{
+    participants: SelectedParticipant[];
+    conflicts: { name: string; fromClass: string }[];
+  } | null>(null);
+
+  // Delete state
+  const [deleteTarget, setDeleteTarget] = useState<ClassRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   // Export state
-  const [exportMonth, setExportMonth] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${now.getMonth() + 1}`;
-  });
+  const [exportMonth, setExportMonth] = useState(SUNDAY_SCHOOL_FIRST_EXPORT_MONTH);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
-
-  const exportMonthOptions = useMemo(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const options: { value: string; label: string }[] = [];
-    for (let y = year - 1; y <= year + 1; y++) {
-      for (let m = 1; m <= 12; m++) {
-        options.push({ value: `${y}-${m}`, label: `${MONTH_NAMES[m - 1]} ${y}` });
-      }
-    }
-    return options;
-  }, []);
 
   function openCreate() {
     setEditingId(null);
@@ -91,6 +89,10 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
     setParticipantQuery("");
     setParticipantResults([]);
     setPendingMove(null);
+    setUploading(false);
+    setUploadMessage("");
+    setUploadError("");
+    setPendingBulkMove(null);
     setError("");
     setShowForm(true);
   }
@@ -110,6 +112,10 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
     setParticipantQuery("");
     setParticipantResults([]);
     setPendingMove(null);
+    setUploading(false);
+    setUploadMessage("");
+    setUploadError("");
+    setPendingBulkMove(null);
     setError("");
     setShowForm(true);
   }
@@ -123,6 +129,10 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
     setParticipantQuery("");
     setParticipantResults([]);
     setPendingMove(null);
+    setUploading(false);
+    setUploadMessage("");
+    setUploadError("");
+    setPendingBulkMove(null);
     setError("");
   }
 
@@ -185,6 +195,112 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
 
   function removeParticipant(id: string) {
     setSelectedParticipants((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function handleRosterUpload(file: File) {
+    setUploading(true);
+    setUploadError("");
+    setUploadMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/sunday-school/resolve-upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setUploadError(data.error || "Failed to read the uploaded file.");
+        setUploading(false);
+        return;
+      }
+
+      const matched = (data.matched ?? []) as SelectedParticipant[];
+      const notFound = (data.notFound ?? []) as string[];
+
+      const conflicts: { name: string; fromClass: string }[] = [];
+      for (const p of matched) {
+        const otherClass = classes.find(
+          (cls) =>
+            cls.id !== editingId &&
+            cls.participants.some((cp) => cp.participant.id === p.id)
+        );
+        if (otherClass) {
+          conflicts.push({ name: p.name, fromClass: otherClass.name });
+        }
+      }
+
+      if (conflicts.length > 0) {
+        setPendingBulkMove({ participants: matched, conflicts });
+      } else {
+        setSelectedParticipants(matched);
+        setUploadMessage(
+          `Matched ${matched.length} participant${matched.length !== 1 ? "s" : ""}.`
+        );
+      }
+
+      if (notFound.length > 0) {
+        setUploadError(
+          `Skipped ${notFound.length} ID${notFound.length !== 1 ? "s" : ""} not found: ${notFound.join(", ")}`
+        );
+      }
+    } catch {
+      setUploadError("Network error while reading the uploaded file.");
+    }
+
+    setUploading(false);
+  }
+
+  function confirmBulkMove() {
+    if (!pendingBulkMove) return;
+    setSelectedParticipants(pendingBulkMove.participants);
+    setPendingBulkMove(null);
+    setUploadMessage(
+      `Matched ${pendingBulkMove.participants.length} participant${
+        pendingBulkMove.participants.length !== 1 ? "s" : ""
+      }.`
+    );
+  }
+
+  function cancelBulkMove() {
+    setPendingBulkMove(null);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setDeleteError("");
+
+    try {
+      const res = await fetch(`/api/sunday-school/classes/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setDeleteError(data.error || "Failed to delete class.");
+        setDeleting(false);
+        setDeleteTarget(null);
+        return;
+      }
+
+      const listRes = await fetch("/api/sunday-school/classes");
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        setClasses(listData.classes);
+      }
+
+      setDeleteTarget(null);
+      router.refresh();
+    } catch {
+      setDeleteError("Network error while deleting.");
+      setDeleteTarget(null);
+    }
+
+    setDeleting(false);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -298,7 +414,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
             style={{ minWidth: 180 }}
             aria-label="Export month"
           >
-            {exportMonthOptions.map((o) => (
+            {SUNDAY_SCHOOL_EXPORT_MONTH_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
@@ -315,11 +431,67 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
       )}
 
       {showForm && (
-        <Card style={{ marginBottom: "1.5rem" }}>
-          <form onSubmit={handleSave}>
-            <h3 style={{ marginTop: 0, color: "var(--color-brand)", fontSize: "1rem" }}>
-              {editingId ? "Edit Class" : "New Class"}
-            </h3>
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 120,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.4)",
+              backdropFilter: "blur(4px)",
+            }}
+            onClick={saving ? undefined : cancelForm}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: "relative",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              border: "1px solid rgba(255, 255, 255, 0.4)",
+              boxShadow: "0 20px 40px rgba(31, 107, 77, 0.25)",
+              borderTop: "4px solid #D9A441",
+              maxWidth: 640,
+              width: "calc(100% - 2rem)",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              margin: "0 1rem",
+              padding: "1.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <h3 style={{ margin: 0, color: "var(--color-brand)", fontSize: "1.05rem", fontWeight: 700 }}>
+                {editingId ? "Edit Class" : "New Class"}
+              </h3>
+              <button
+                type="button"
+                onClick={cancelForm}
+                disabled={saving}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: saving ? "default" : "pointer",
+                  fontSize: "1.5rem",
+                  color: "#1F6B4D",
+                  lineHeight: 1,
+                  padding: "0.25rem",
+                  opacity: saving ? 0.6 : 1,
+                }}
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleSave}>
 
             <div className="grid-2-mobile" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
               <div>
@@ -354,8 +526,31 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
             <div style={{ marginTop: "0.75rem" }}>
               <label className="form-label">Participants</label>
               <p className="form-hint" style={{ marginTop: 0, marginBottom: "0.5rem" }}>
-                Search by name or ID. Assigning a participant already in another class moves them to this class.
+                Search by name or ID, or upload a class roster (.xlsx). Assigning a participant already in another class moves them to this class.
               </p>
+
+              <div style={{ marginBottom: "0.75rem" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <input
+                    type="file"
+                    accept=".xlsx"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleRosterUpload(file);
+                        e.target.value = "";
+                      }
+                    }}
+                  />
+                  {uploading && <span className="text-muted text-sm">Reading file…</span>}
+                </div>
+                <p className="form-hint" style={{ margin: "0.35rem 0 0" }}>
+                  Column A: Local Participant ID, Column B: Name. First row is a header. Uploading replaces the current roster.
+                </p>
+                {uploadMessage && <p className="form-success" style={{ margin: "0.35rem 0 0" }}>{uploadMessage}</p>}
+                {uploadError && <p className="form-error" style={{ margin: "0.35rem 0 0" }}>{uploadError}</p>}
+              </div>
 
               <input
                 type="text"
@@ -448,8 +643,9 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                 Cancel
               </button>
             </div>
-          </form>
-        </Card>
+            </form>
+          </div>
+        </div>
       )}
 
       {classes.length === 0 ? (
@@ -479,9 +675,20 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                       {cls.participants.length}
                     </td>
                     <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
-                      <button onClick={() => openEdit(cls)} className="btn btn-primary btn-sm">
-                        Edit
-                      </button>
+                      <div className="flex-row gap-sm">
+                        <button onClick={() => openEdit(cls)} className="btn btn-primary btn-sm">
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeleteError("");
+                            setDeleteTarget(cls);
+                          }}
+                          className="btn btn-danger btn-sm"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -489,6 +696,12 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
             </table>
           </div>
         </Card>
+      )}
+
+      {deleteError && (
+        <div className="form-error mb-2" role="alert">
+          {deleteError}
+        </div>
       )}
 
       <ConfirmDialog
@@ -504,6 +717,50 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
         cancelLabel="Cancel"
         onConfirm={confirmMove}
         onCancel={cancelMove}
+      />
+
+      <ConfirmDialog
+        open={pendingBulkMove !== null}
+        title="Assign uploaded participants?"
+        message={
+          <>
+            <p style={{ margin: "0 0 0.5rem" }}>
+              The following participants are currently assigned to other classes and will be moved:
+            </p>
+            <ul style={{ margin: "0 0 0.5rem", paddingLeft: "1.25rem" }}>
+              {pendingBulkMove?.conflicts.map((c, i) => (
+                <li key={i}>
+                  <strong>{c.name}</strong> (from {c.fromClass})
+                </li>
+              ))}
+            </ul>
+            <p style={{ margin: 0 }}>
+              Saving will replace this class&rsquo;s roster with the {pendingBulkMove?.participants.length} matched
+              participant{pendingBulkMove?.participants.length === 1 ? "" : "s"} from the file.
+            </p>
+          </>
+        }
+        confirmLabel="Assign"
+        cancelLabel="Cancel"
+        onConfirm={confirmBulkMove}
+        onCancel={cancelBulkMove}
+      />
+
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete class?"
+        destructive
+        busy={deleting}
+        message={
+          <>
+            Delete <strong>{deleteTarget?.name}</strong>? Participants in this class will become unassigned, not
+            deleted. Classes with attendance records cannot be deleted.
+          </>
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );
