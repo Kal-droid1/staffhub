@@ -57,6 +57,7 @@ export default function MyClassClient({
   const [query, setQuery] = useState("");
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
+  const [touchedIds, setTouchedIds] = useState<Set<string>>(new Set());
 
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
@@ -90,6 +91,7 @@ export default function MyClassClient({
       setBanner(null);
       setJustSubmitted(false);
       setQuery("");
+      setTouchedIds(new Set());
 
       try {
         const res = await fetch(
@@ -130,6 +132,7 @@ export default function MyClassClient({
     setRoster((prev) =>
       prev.map((row) => (row.participantId === participantId ? { ...row, present } : row))
     );
+    setTouchedIds((prev) => new Set(prev).add(participantId));
     setBanner(null);
     setJustSubmitted(false);
   }
@@ -363,11 +366,40 @@ export default function MyClassClient({
             </button>
           ) : (
             <>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "0.5rem", padding: "0 0.1rem" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.5rem", padding: "0 0.1rem", gap: "0.75rem" }}>
                 <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: COLORS.teal }}>{classInfo.name}</h2>
-                <span style={{ fontSize: "0.75rem", fontWeight: 700, color: COLORS.muted }}>
-                  {presentCount} P · {absentCount} A
-                </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexShrink: 0 }}>
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700, color: COLORS.muted }}>
+                    {presentCount} P · {absentCount} A
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCollapsedWeeks((prev) => new Set(prev).add(currentKey))
+                    }
+                    aria-label="Collapse roster"
+                    title="Collapse roster"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "0.25rem",
+                      minHeight: 32,
+                      padding: "0 0.6rem",
+                      borderRadius: "0.5rem",
+                      border: `1px solid ${COLORS.border}`,
+                      background: "#FFFFFF",
+                      color: COLORS.muted,
+                      fontSize: "0.75rem",
+                      fontWeight: 800,
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>expand_less</span>
+                    Collapse
+                  </button>
+                </div>
               </div>
 
               <div style={{ position: "relative", marginBottom: "0.75rem" }}>
@@ -416,25 +448,42 @@ export default function MyClassClient({
               <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
                 {filteredRoster.map((row) => {
                   const absent = !row.present;
+                  const touched = touchedIds.has(row.participantId);
                   return (
                     <div
                       key={row.participantId}
                       style={{
                         background: "#FFFFFF",
-                        border: `1px solid ${COLORS.border}`,
+                        border: `1px solid ${touched ? COLORS.teal : COLORS.border}`,
                         borderRadius: "0.75rem",
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                        boxShadow: touched
+                          ? "0 1px 3px rgba(31,107,77,0.12)"
+                          : "0 1px 3px rgba(0,0,0,0.05)",
                         padding: "0.7rem 0.75rem",
+                        opacity: touched ? 1 : 0.92,
+                        transition: "border-color 0.15s ease, opacity 0.15s ease",
                       }}
                     >
-                      <div style={{ marginBottom: "0.55rem" }}>
-                        <p style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "#2B2B2B", lineHeight: 1.25, overflowWrap: "anywhere" }}>
-                          {row.name}
-                        </p>
-                        <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: COLORS.muted, fontFamily: "var(--font-mono)" }}>
-                          {row.localParticipantId}
-                          {row.gradeLevel ? ` · ${row.gradeLevel}` : ""}
-                        </p>
+                      <div style={{ marginBottom: "0.55rem", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.5rem" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: "1.05rem", fontWeight: 700, color: "#2B2B2B", lineHeight: 1.25, overflowWrap: "anywhere" }}>
+                            {row.name}
+                          </p>
+                          <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: COLORS.muted, fontFamily: "var(--font-mono)" }}>
+                            {row.localParticipantId}
+                            {row.gradeLevel ? ` · ${row.gradeLevel}` : ""}
+                          </p>
+                        </div>
+                        {touched && (
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ color: COLORS.teal, fontSize: "1.25rem", flexShrink: 0 }}
+                            aria-label="Reviewed"
+                            title="Reviewed"
+                          >
+                            check_circle
+                          </span>
+                        )}
                       </div>
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
