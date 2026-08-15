@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, email, password, role, department, jobTitleId } = body;
+  const { name, email, password, role, department, jobTitleId, isTeacher } = body;
 
   if (!name || !email || !password || !role) {
     return NextResponse.json({ error: "name, email, password, and role are required." }, { status: 400 });
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const user = await createStaffAccount({ name, email, password, role, department, jobTitleId });
+    const user = await createStaffAccount({ name, email, password, role, department, jobTitleId, isTeacher });
     return NextResponse.json(user, { status: 201 });
   } catch (e: unknown) {
     if ((e as { code?: string }).code === "P2002") {
@@ -66,7 +66,7 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { id, name, email, role, department, jobTitleId } = body;
+  const { id, name, email, role, department, jobTitleId, isTeacher } = body;
 
   if (!id) {
     return NextResponse.json({ error: "id is required." }, { status: 400 });
@@ -77,7 +77,7 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    const user = await updateStaffAccount(id, { name, email, role, department, jobTitleId });
+    const user = await updateStaffAccount(id, { name, email, role, department, jobTitleId, isTeacher });
     return NextResponse.json(user);
   } catch (e: unknown) {
     if ((e as { code?: string }).code === "P2002") {

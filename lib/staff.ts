@@ -13,6 +13,7 @@ const userSelect = {
   avatarUrl: true,
   isActive: true,
   hideFromReports: true,
+  isTeacher: true,
   deactivatedAt: true,
   deletedAt: true,
   createdAt: true,
@@ -29,6 +30,7 @@ const userSelectSerialized = {
   avatarUrl: true,
   isActive: true,
   hideFromReports: true,
+  isTeacher: true,
   deactivatedAt: true,
   deletedAt: true,
   createdAt: true,
@@ -45,6 +47,7 @@ export interface StaffRow {
   avatarUrl: string | null;
   isActive: boolean;
   hideFromReports: boolean;
+  isTeacher: boolean;
   deactivatedAt: string | null;
   deletedAt: string | null;
   createdAt: string;
@@ -75,6 +78,7 @@ export async function createStaffAccount(data: {
   role: string;
   department?: string;
   jobTitleId?: string | null;
+  isTeacher?: boolean;
 }) {
   const hashed = await bcrypt.hash(data.password, 12);
   return prisma.user.create({
@@ -85,6 +89,7 @@ export async function createStaffAccount(data: {
       role: data.role as "STAFF" | "MANAGER",
       department: data.department || null,
       jobTitleId: data.jobTitleId || null,
+      isTeacher: data.isTeacher === true,
     },
     select: userSelect,
   });
@@ -98,6 +103,7 @@ export async function updateStaffAccount(
     role?: string;
     department?: string;
     jobTitleId?: string | null;
+    isTeacher?: boolean;
   }
 ) {
   const updateData: Record<string, unknown> = {};
@@ -106,6 +112,7 @@ export async function updateStaffAccount(
   if (data.role !== undefined) updateData.role = data.role;
   if (data.department !== undefined) updateData.department = data.department || null;
   if (data.jobTitleId !== undefined) updateData.jobTitleId = data.jobTitleId || null;
+  if (data.isTeacher !== undefined) updateData.isTeacher = data.isTeacher === true;
 
   return prisma.user.update({
     where: { id },

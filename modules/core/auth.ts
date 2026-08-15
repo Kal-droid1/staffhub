@@ -12,6 +12,7 @@ declare module "next-auth" {
     jobTitleName: string | null;
     avatarUrl: string | null;
     isHidden: boolean;
+    isTeacher: boolean;
   }
   interface Session {
     user: {
@@ -23,6 +24,7 @@ declare module "next-auth" {
       jobTitleName: string | null;
       avatarUrl: string | null;
       isHidden: boolean;
+      isTeacher: boolean;
     } | null;
     invalidReason?: "deleted" | "deactivated";
   }
@@ -36,6 +38,7 @@ declare module "next-auth/jwt" {
     jobTitleName: string | null;
     avatarUrl: string | null;
     isHidden: boolean;
+    isTeacher: boolean;
   }
 }
 
@@ -62,6 +65,7 @@ export const authOptions: AuthOptions = {
             department: true,
             isActive: true,
             isHidden: true,
+            isTeacher: true,
             password: true,
             avatarUrl: true,
             jobTitle: { select: { name: true } },
@@ -90,6 +94,7 @@ export const authOptions: AuthOptions = {
           jobTitleName: user.jobTitle?.name ?? null,
           avatarUrl: user.avatarUrl,
           isHidden: user.isHidden,
+          isTeacher: user.isTeacher,
         };
       },
     }),
@@ -106,12 +111,13 @@ export const authOptions: AuthOptions = {
         token.jobTitleName = user.jobTitleName;
         token.avatarUrl = user.avatarUrl;
         token.isHidden = user.isHidden;
+        token.isTeacher = user.isTeacher;
       }
 
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { avatarUrl: true, isHidden: true, isActive: true, deletedAt: true },
+          select: { avatarUrl: true, isHidden: true, isActive: true, deletedAt: true, isTeacher: true },
         });
 
         if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
@@ -124,6 +130,7 @@ export const authOptions: AuthOptions = {
 
         token.avatarUrl = dbUser.avatarUrl;
         token.isHidden = dbUser.isHidden;
+        token.isTeacher = dbUser.isTeacher;
       }
 
       return token;
@@ -144,6 +151,7 @@ export const authOptions: AuthOptions = {
         session.user.jobTitleName = token.jobTitleName;
         session.user.avatarUrl = token.avatarUrl;
         session.user.isHidden = token.isHidden;
+        session.user.isTeacher = token.isTeacher;
       }
       return session;
     },
