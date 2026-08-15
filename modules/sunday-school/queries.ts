@@ -95,7 +95,7 @@ export async function getClassRosterForTeacher(args: {
 
   const presentByParticipant = new Map(
     records
-      .filter((r) => r.present !== null)
+      .filter((r) => r.present !== null && r.submittedAt !== null)
       .map((r) => [r.participantId, r.present as boolean])
   );
 
