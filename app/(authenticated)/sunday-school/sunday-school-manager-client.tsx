@@ -683,26 +683,72 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
               <tbody>
                 {classes.map((cls) => (
                   <tr key={cls.id}>
-                    <td data-label="Class" style={{ fontWeight: 700, color: "#1F6B4D" }}>{cls.name}</td>
+                    <td data-label="Class">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(cls)}
+                        title="Edit class"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.25rem 0.15rem",
+                          borderRadius: "0.4rem",
+                          fontFamily: "inherit",
+                          fontWeight: 700,
+                          color: "#1F6B4D",
+                          fontSize: "1rem",
+                          textAlign: "left",
+                          transition: "background 0.15s, text-decoration 0.15s",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = "rgba(31,107,77,0.08)";
+                          e.currentTarget.style.textDecoration = "underline";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = "none";
+                          e.currentTarget.style.textDecoration = "none";
+                        }}
+                      >
+                        {cls.name}
+                      </button>
+                    </td>
                     <td data-label="Teacher">{cls.teacher.name}</td>
                     <td data-label="Participants" style={{ textAlign: "center" }}>
                       {cls.participants.length}
                     </td>
                     <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
-                      <div className="flex-row gap-sm">
-                        <button onClick={() => openEdit(cls)} className="btn btn-primary btn-sm">
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => {
-                            setDeleteError("");
-                            setDeleteTarget(cls);
-                          }}
-                          className="btn btn-danger btn-sm"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeleteError("");
+                          setDeleteTarget(cls);
+                        }}
+                        title="Delete"
+                        aria-label={`Delete ${cls.name}`}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          padding: "0.5rem",
+                          borderRadius: "0.5rem",
+                          color: "var(--color-text-muted)",
+                          transition: "all 0.15s",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = "#D64545";
+                          e.currentTarget.style.background = "rgba(214,69,69,0.08)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = "var(--color-text-muted)";
+                          e.currentTarget.style.background = "none";
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>delete</span>
+                      </button>
                     </td>
                   </tr>
                 ))}
