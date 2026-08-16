@@ -39,8 +39,7 @@ export async function POST(req: NextRequest) {
     substituteId?: string;
     year?: number;
     month?: number;
-    weekStart?: number;
-    weekEnd?: number;
+    weeks?: number[];
   };
   try {
     body = await req.json();
@@ -48,7 +47,7 @@ export async function POST(req: NextRequest) {
     body = {};
   }
 
-  const { classId, substituteId, year, month, weekStart, weekEnd } = body;
+  const { classId, substituteId, year, month, weeks } = body;
 
   if (!classId || typeof classId !== "string") {
     return NextResponse.json({ error: "classId is required." }, { status: 400 });
@@ -62,8 +61,19 @@ export async function POST(req: NextRequest) {
   if (!Number.isInteger(month) || (month as number) < 1 || (month as number) > 12) {
     return NextResponse.json({ error: "Invalid month. Must be 1-12." }, { status: 400 });
   }
-  if (!Number.isInteger(weekStart) || !Number.isInteger(weekEnd)) {
-    return NextResponse.json({ error: "Invalid week range." }, { status: 400 });
+  if (!Array.isArray(weeks) || weeks.length === 0) {
+    return NextResponse.json(
+      { error: "weeks must be a non-empty array of week numbers (1-5)." },
+      { status: 400 }
+    );
+  }
+  for (const w of weeks) {
+    if (!Number.isInteger(w) || (w as number) < 1 || (w as number) > 5) {
+      return NextResponse.json(
+        { error: "Each week must be an integer between 1 and 5." },
+        { status: 400 }
+      );
+    }
   }
 
   try {
@@ -77,8 +87,7 @@ export async function POST(req: NextRequest) {
       substituteId,
       year: year as number,
       month: month as number,
-      weekStart: weekStart as number,
-      weekEnd: weekEnd as number,
+      weeks: weeks as number[],
     });
 
     return NextResponse.json(coverage, { status: 201 });

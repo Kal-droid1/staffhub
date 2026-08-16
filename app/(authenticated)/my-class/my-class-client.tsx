@@ -29,6 +29,13 @@ interface CoverageArrangement {
   createdAt: string;
 }
 
+interface IncomingCoverage {
+  id: string;
+  class: { id: string; name: string };
+  teacher: { id: string; name: string };
+  weeks: { year: number; month: number; week: number }[];
+}
+
 interface RosterRow {
   participantId: string;
   localParticipantId: string;
@@ -72,6 +79,23 @@ function formatSubmittedAt(value: string | null): string {
   }).format(date);
 }
 
+function formatWeekRun(weeks: number[]): string {
+  const runs: string[] = [];
+  let start = weeks[0];
+  let prev = weeks[0];
+  for (let i = 1; i < weeks.length; i++) {
+    if (weeks[i] === prev + 1) {
+      prev = weeks[i];
+      continue;
+    }
+    runs.push(start === prev ? `Week ${start}` : `Weeks ${start}–${prev}`);
+    start = weeks[i];
+    prev = weeks[i];
+  }
+  runs.push(start === prev ? `Week ${start}` : `Weeks ${start}–${prev}`);
+  return runs.join(", ");
+}
+
 function formatCoverageWeeks(weeks: { year: number; month: number; week: number }[]): string {
   if (weeks.length === 0) return "";
   const byMonth = new Map<string, number[]>();
@@ -84,11 +108,7 @@ function formatCoverageWeeks(weeks: { year: number; month: number; week: number 
   for (const [key, ws] of byMonth) {
     const [y, m] = key.split("-").map(Number);
     const sorted = [...ws].sort((a, b) => a - b);
-    const label =
-      sorted.length === 1
-        ? `Week ${sorted[0]}`
-        : `Weeks ${sorted[0]}–${sorted[sorted.length - 1]}`;
-    parts.push(`${label} · ${MONTH_NAMES[m - 1]} ${y}`);
+    parts.push(`${formatWeekRun(sorted)} · ${MONTH_NAMES[m - 1]} ${y}`);
   }
   return parts.join(", ");
 }
@@ -96,6 +116,7 @@ function formatCoverageWeeks(weeks: { year: number; month: number; week: number 
 export default function MyClassClient({
   initialClasses,
   initialCoveredClasses,
+  initialIncomingCoverages,
   initialTeachers,
   initialUserId,
   initialYear,
@@ -104,6 +125,7 @@ export default function MyClassClient({
 }: {
   initialClasses: ClassOption[];
   initialCoveredClasses: ClassOption[];
+  initialIncomingCoverages: IncomingCoverage[];
   initialTeachers: TeacherOption[];
   initialUserId: string;
   initialYear: number;
@@ -138,9 +160,9 @@ export default function MyClassClient({
   const [formClassId, setFormClassId] = useState("");
   const [formSubstituteId, setFormSubstituteId] = useState("");
   const [formMonthValue, setFormMonthValue] = useState("");
-  const [formWeekStart, setFormWeekStart] = useState(1);
-  const [formWeekEnd, setFormWeekEnd] = useState(1);
+  const [formWeeks, setFormWeeks] = useState<number[]>([]);
   const [arrangeError, setArrangeError] = useState("");
+  const [arrangeSuccess, setArrangeSuccess] = useState("");
   const [arrangeSaving, setArrangeSaving] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
@@ -325,15 +347,32 @@ export default function MyClassClient({
     setFormClassId(initialClasses[0]?.id ?? "");
     setFormSubstituteId("");
     setFormMonthValue(safeMonthValue);
-    setFormWeekStart(week);
-    setFormWeekEnd(week);
+    setFormWeeks([week]);
     setArrangeError("");
+    setArrangeSuccess("");
     setCoverageOpen(true);
     refreshCoverages();
   }
 
+  function toggleFormWeek(w: number) {
+    setFormWeeks((prev) =>
+      prev.includes(w)
+        ? prev.filter((x) => x !== w)
+        : [...prev, w].sort((a, b) => a - b)
+    );
+  }
+
+  function jumpToCoverage(c: IncomingCoverage) {
+    const first = c.weeks[0];
+    if (!first) return;
+    setYear(first.year);
+    setMonth(first.month);
+    setWeek(first.week);
+    setClassId(c.class.id);
+  }
+
   async function handleArrange() {
-    if (!formClassId || !formSubstituteId || arrangeSaving) return;
+    if (!formClassId || !formSubstituteId || formWeeks.length === 0 || arrangeSaving) return;
 
     const [y, m] = formMonthValue.split("-").map(Number);
     if (!Number.isInteger(y) || !Number.isInteger(m)) {
@@ -343,6 +382,7 @@ export default function MyClassClient({
 
     setArrangeSaving(true);
     setArrangeError("");
+    setArrangeSuccess("");
     try {
       const res = await fetch("/api/sunday-school/my-class/coverage", {
         method: "POST",
@@ -352,8 +392,7 @@ export default function MyClassClient({
           substituteId: formSubstituteId,
           year: y,
           month: m,
-          weekStart: formWeekStart,
-          weekEnd: formWeekEnd,
+          weeks: formWeeks,
         }),
       });
       const data = await res.json();
@@ -365,10 +404,15 @@ export default function MyClassClient({
         return;
       }
 
-      setCoverageOpen(false);
-      setBanner("Coverage arranged — the substitute can now tick this class for the selected weeks.");
-      if (bannerTimer.current) clearTimeout(bannerTimer.current);
-      bannerTimer.current = setTimeout(() => setBanner(null), 5000);
+      const className = initialClasses.find((c) => c.id === formClassId)?.name ?? "your class";
+      const substituteName = initialTeachers.find((t) => t.id === formSubstituteId)?.name ?? "the substitute";
+      setArrangeSuccess(
+        `Coverage arranged — ${substituteName} can now tick ${className} for ${formatCoverageWeeks(
+          formWeeks.map((w) => ({ year: y, month: m, week: w }))
+        )}.`
+      );
+      setFormSubstituteId("");
+      setFormWeeks([week]);
       await Promise.all([refreshCoverages(), refreshCoveredClasses(year, month, week)]);
     } catch {
       setArrangeError("Network error while arranging coverage.");
@@ -469,6 +513,56 @@ export default function MyClassClient({
           <span className="material-symbols-outlined" style={{ fontSize: "1.15rem" }}>swap_horiz</span>
           Arrange coverage
         </button>
+      )}
+
+      {initialIncomingCoverages.length > 0 && (
+        <div
+          style={{
+            marginBottom: "0.75rem",
+            padding: "0.75rem 0.85rem",
+            background: "#FDF3E3",
+            borderRadius: "0.75rem",
+            border: "1px solid #EED9B0",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.5rem",
+          }}
+        >
+          <p style={{ margin: 0, fontSize: "0.72rem", fontWeight: 800, color: "#8A5A00", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            You&rsquo;re covering
+          </p>
+          {initialIncomingCoverages.map((c) => (
+            <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.6rem" }}>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 800, color: "#2B2B2B" }}>
+                  {c.class.name} <span style={{ fontWeight: 600, color: COLORS.muted }}>for {c.teacher.name}</span>
+                </p>
+                <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: COLORS.muted }}>
+                  {formatCoverageWeeks(c.weeks)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => jumpToCoverage(c)}
+                style={{
+                  flexShrink: 0,
+                  minHeight: 34,
+                  padding: "0 0.7rem",
+                  borderRadius: "0.55rem",
+                  border: "none",
+                  background: COLORS.teal,
+                  color: "#FFFFFF",
+                  fontWeight: 800,
+                  fontSize: "0.78rem",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                View
+              </button>
+            </div>
+          ))}
+        </div>
       )}
 
       {allClasses.length > 1 && (
@@ -1072,55 +1166,53 @@ export default function MyClassClient({
                 ))}
             </select>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr", gap: "0.6rem", marginTop: "0.75rem" }}>
-              <div>
-                <label htmlFor="coverage-month" style={labelStyle}>Month</label>
-                <select
-                  id="coverage-month"
-                  value={formMonthValue}
-                  onChange={(e) => setFormMonthValue(e.target.value)}
-                  style={selectStyle}
-                >
-                  {monthOptions.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="coverage-week-start" style={labelStyle}>From week</label>
-                <select
-                  id="coverage-week-start"
-                  value={formWeekStart}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    setFormWeekStart(v);
-                    if (v > formWeekEnd) setFormWeekEnd(v);
-                  }}
-                  style={selectStyle}
-                >
-                  {WEEK_LABELS.map((label, i) => (
-                    <option key={label} value={i + 1}>{i + 1}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="coverage-week-end" style={labelStyle}>To week</label>
-                <select
-                  id="coverage-week-end"
-                  value={formWeekEnd}
-                  onChange={(e) => {
-                    const v = Number(e.target.value);
-                    setFormWeekEnd(v);
-                    if (v < formWeekStart) setFormWeekStart(v);
-                  }}
-                  style={selectStyle}
-                >
-                  {WEEK_LABELS.map((label, i) => (
-                    <option key={label} value={i + 1}>{i + 1}</option>
-                  ))}
-                </select>
-              </div>
+            <label htmlFor="coverage-month" style={{ ...labelStyle, marginTop: "0.75rem" }}>Month</label>
+            <select
+              id="coverage-month"
+              value={formMonthValue}
+              onChange={(e) => setFormMonthValue(e.target.value)}
+              style={selectStyle}
+            >
+              {monthOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+
+            <label style={{ ...labelStyle, marginTop: "0.75rem" }}>Weeks</label>
+            <div
+              role="group"
+              aria-label="Weeks to cover"
+              style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "0.4rem" }}
+            >
+              {WEEK_LABELS.map((label, i) => {
+                const w = i + 1;
+                const selected = formWeeks.includes(w);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => toggleFormWeek(w)}
+                    style={{
+                      minHeight: 44,
+                      borderRadius: "0.55rem",
+                      border: selected ? "2px solid #1F6B4D" : `1px solid ${COLORS.border}`,
+                      background: selected ? COLORS.teal : "#FFFFFF",
+                      color: selected ? "#FFFFFF" : "#2B2B2B",
+                      fontWeight: selected ? 800 : 600,
+                      fontSize: "0.82rem",
+                      fontFamily: "inherit",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {w}
+                  </button>
+                );
+              })}
             </div>
+            <p style={{ margin: "0.35rem 0 0", fontSize: "0.75rem", color: COLORS.muted }}>
+              Pick any combination of weeks — they don&rsquo;t need to be consecutive.
+            </p>
 
             {arrangeError && (
               <div style={{ background: "#FDF0F0", color: COLORS.danger, padding: "0.6rem 0.75rem", borderRadius: "0.5rem", fontSize: "0.8125rem", marginTop: "0.75rem" }}>
@@ -1128,27 +1220,33 @@ export default function MyClassClient({
               </div>
             )}
 
+            {arrangeSuccess && (
+              <div style={{ background: "#EFF7F3", color: COLORS.teal, padding: "0.6rem 0.75rem", borderRadius: "0.5rem", fontSize: "0.8125rem", fontWeight: 700, marginTop: "0.75rem" }}>
+                {arrangeSuccess}
+              </div>
+            )}
+
             <div style={{ display: "flex", gap: "0.6rem", marginTop: "1rem" }}>
               <button
                 type="button"
                 onClick={handleArrange}
-                disabled={arrangeSaving || !formClassId || !formSubstituteId}
+                disabled={arrangeSaving || !formClassId || !formSubstituteId || formWeeks.length === 0}
                 style={{
                   flex: 1,
                   minHeight: 48,
                   borderRadius: "0.75rem",
                   border: "none",
-                  background: arrangeSaving || !formClassId || !formSubstituteId ? "#C9C4B8" : COLORS.teal,
+                  background: arrangeSaving || !formClassId || !formSubstituteId || formWeeks.length === 0 ? "#C9C4B8" : COLORS.teal,
                   color: "#FFFFFF",
                   fontWeight: 800,
                   fontSize: "0.95rem",
                   fontFamily: "inherit",
-                  cursor: arrangeSaving || !formClassId || !formSubstituteId ? "not-allowed" : "pointer",
+                  cursor: arrangeSaving || !formClassId || !formSubstituteId || formWeeks.length === 0 ? "not-allowed" : "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "0.4rem",
-                  boxShadow: arrangeSaving || !formClassId || !formSubstituteId ? "none" : "0 4px 14px rgba(31,107,77,0.3)",
+                  boxShadow: arrangeSaving || !formClassId || !formSubstituteId || formWeeks.length === 0 ? "none" : "0 4px 14px rgba(31,107,77,0.3)",
                 }}
               >
                 {arrangeSaving && (

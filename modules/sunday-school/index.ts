@@ -15,6 +15,7 @@ export {
   listCoveredClassesForSubstitute,
   createCoverage,
   listMyCoverages,
+  listIncomingCoveragesForSubstitute,
   deleteCoverage,
 } from "./queries";
 export type { RosterParticipant, ClassRoster } from "./queries";

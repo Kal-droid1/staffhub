@@ -525,8 +525,7 @@ export async function createCoverage(args: {
   substituteId: string;
   year: number;
   month: number;
-  weekStart: number;
-  weekEnd: number;
+  weeks: number[];
 }) {
   const classInfo = await prisma.sundaySchoolClass.findFirst({
     where: { id: args.classId, teacherId: args.teacherId, deletedAt: null },
@@ -544,14 +543,27 @@ export async function createCoverage(args: {
   });
   if (!substitute) throw new Error("Substitute teacher not found.");
 
-  if (
-    !Number.isInteger(args.weekStart) ||
-    !Number.isInteger(args.weekEnd) ||
-    args.weekStart < 1 ||
-    args.weekEnd > 5 ||
-    args.weekStart > args.weekEnd
-  ) {
-    throw new Error("Invalid week range. Weeks must be between 1 and 5.");
+  const weeks = Array.from(new Set(args.weeks)).sort((a, b) => a - b);
+  if (weeks.length === 0) {
+    throw new Error("Select at least one week.");
+  }
+  for (const w of weeks) {
+    if (!Number.isInteger(w) || w < 1 || w > 5) {
+      throw new Error("Invalid week. Weeks must be between 1 and 5.");
+    }
+  }
+
+  // Coverage only makes sense for the current or upcoming weeks — reject
+  // weeks that have already passed so dead arrangements can't be created.
+  const current = getCurrentSundaySchoolPeriod();
+  const currentIdx = sundaySchoolPeriodIndex(current.year, current.month, current.week);
+  const pastWeeks = weeks.filter(
+    (w) => sundaySchoolPeriodIndex(args.year, args.month, w) < currentIdx
+  );
+  if (pastWeeks.length > 0) {
+    throw new Error(
+      `Coverage can only be arranged for the current or upcoming weeks — week${pastWeeks.length === 1 ? "" : "s"} ${pastWeeks.join(", ")} ${pastWeeks.length === 1 ? "is" : "are"} already past.`
+    );
   }
 
   const coverage = await prisma.$transaction(async (tx) => {
@@ -564,7 +576,7 @@ export async function createCoverage(args: {
       select: { id: true },
     });
 
-    for (let week = args.weekStart; week <= args.weekEnd; week++) {
+    for (const week of weeks) {
       await tx.sundaySchoolCoverageWeek.create({
         data: {
           coverageId: created.id,
@@ -597,6 +609,37 @@ export async function listMyCoverages(teacherId: string) {
     },
     orderBy: { createdAt: "desc" },
   });
+}
+
+export async function listIncomingCoveragesForSubstitute(substituteId: string) {
+  const coverages = await prisma.sundaySchoolCoverage.findMany({
+    where: { substituteId, class: { deletedAt: null } },
+    select: {
+      id: true,
+      class: { select: { id: true, name: true } },
+      teacher: { select: { id: true, name: true } },
+      weeks: {
+        select: { year: true, month: true, week: true },
+        orderBy: [{ year: "asc" }, { month: "asc" }, { week: "asc" }],
+      },
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const current = getCurrentSundaySchoolPeriod();
+  const currentIdx = sundaySchoolPeriodIndex(current.year, current.month, current.week);
+
+  return coverages
+    .map((c) => ({
+      id: c.id,
+      class: c.class,
+      teacher: c.teacher,
+      weeks: c.weeks.filter(
+        (w) => sundaySchoolPeriodIndex(w.year, w.month, w.week) >= currentIdx
+      ),
+    }))
+    .filter((c) => c.weeks.length > 0);
 }
 
 export async function deleteCoverage(args: { coverageId: string; userId: string }) {
