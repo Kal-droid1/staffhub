@@ -1,5 +1,6 @@
 import { PrismaClient, AttendanceStatus, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { normalizeEmail } from "../lib/email";
 
 const prisma = new PrismaClient();
 
@@ -58,10 +59,11 @@ async function main() {
   const userIds: string[] = [];
 
   for (const user of reportTestUsers) {
+    const email = normalizeEmail(user.email);
     const created = await prisma.user.upsert({
-      where: { email: user.email },
+      where: { email },
       update: { name: user.name, role: user.role, department: user.department, password: hashedPassword },
-      create: { name: user.name, email: user.email, password: hashedPassword, role: user.role, department: user.department },
+      create: { name: user.name, email, password: hashedPassword, role: user.role, department: user.department },
     });
     userIds.push(created.id);
     console.log(`  User: ${created.name} (${created.email})`);

@@ -36,7 +36,7 @@ async function main() {
     },
     select: { id: true, email: true, name: true },
   });
-  const userMap = new Map(users.map((u) => [u.email, u]));
+  const userMap = new Map(users.map((u) => [u.email.toLowerCase(), u]));
 
   const leaveType = await prisma.leaveType.findFirst();
   if (!leaveType) {
@@ -47,12 +47,12 @@ async function main() {
   const knownEmails = [
     "alice@staffhub.test",
     "bob@staffhub.test",
-    "Beka@gmail.com",
+    "beka@gmail.com",
     "kal@gmail.com",
   ];
 
   for (const email of knownEmails) {
-    if (!userMap.has(email)) {
+    if (!userMap.has(email.toLowerCase())) {
       console.error(`  ERROR: ${email} not found. Run db:seed first.`);
       process.exit(1);
     }
@@ -84,7 +84,7 @@ async function main() {
       pendingDays: [],
     },
     {
-      email: "Beka@gmail.com",
+      email: "beka@gmail.com",
       presentDays: weekdays.filter((d) => d !== 8 && d !== 17 && d !== 18 && d !== 24),
       absentDays: [8, 24],
       leaveDays: [
