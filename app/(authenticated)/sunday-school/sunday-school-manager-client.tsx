@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Card from "@/modules/core/components/card";
 import ConfirmDialog from "@/modules/core/components/confirm-dialog";
+import { MonthGridPicker } from "@/modules/core/components";
 import {
   getCurrentSundaySchoolExportMonthValue,
+  getCurrentSundaySchoolPeriod,
   getSundaySchoolExportMonthOptions,
 } from "@/modules/sunday-school/export-months";
 
@@ -45,6 +47,28 @@ interface SelectedParticipant {
   gradeLevel: string | null;
 }
 
+interface HistoryWeek {
+  week: number;
+  presentCount: number;
+  absentCount: number;
+  status: "not_started" | "in_progress" | "submitted";
+  submittedAt: string | null;
+}
+
+function formatHistoryDate(value: string | null): string {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: "Africa/Addis_Ababa",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export default function SundaySchoolManagerClient({ initialClasses, initialTeachers }: Props) {
   const router = useRouter();
   const [classes, setClasses] = useState<ClassRow[]>(initialClasses);
@@ -81,6 +105,46 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
   const [exportMonth, setExportMonth] = useState(getCurrentSundaySchoolExportMonthValue());
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+
+  // Attendance history state
+  const [historyTarget, setHistoryTarget] = useState<ClassRow | null>(null);
+  const [historyYear, setHistoryYear] = useState(0);
+  const [historyMonth, setHistoryMonth] = useState(0);
+  const [historyTeacherName, setHistoryTeacherName] = useState("");
+  const [historyWeeks, setHistoryWeeks] = useState<HistoryWeek[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+
+  async function loadHistory(classId: string, y: number, m: number) {
+    setHistoryLoading(true);
+    setHistoryError("");
+    try {
+      const res = await fetch(`/api/sunday-school/classes/${classId}/attendance?year=${y}&month=${m}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setHistoryError(data && typeof data === "object" && "error" in data ? String(data.error) : "Failed to load attendance history.");
+        setHistoryWeeks([]);
+      } else {
+        setHistoryWeeks(data.weeks ?? []);
+        setHistoryTeacherName(data.teacher?.name ?? "");
+      }
+    } catch {
+      setHistoryError("Network error while loading attendance history.");
+      setHistoryWeeks([]);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  async function openAttendanceHistory(cls: ClassRow) {
+    const period = getCurrentSundaySchoolPeriod();
+    setHistoryTarget(cls);
+    setHistoryYear(period.year);
+    setHistoryMonth(period.month);
+    setHistoryTeacherName(cls.teacher.name);
+    setHistoryError("");
+    await loadHistory(cls.id, period.year, period.month);
+  }
 
   function openCreate() {
     setEditingId(null);
@@ -686,8 +750,8 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                     <td data-label="Class">
                       <button
                         type="button"
-                        onClick={() => openEdit(cls)}
-                        title="Edit class"
+                        onClick={() => openAttendanceHistory(cls)}
+                        title="View attendance history"
                         style={{
                           background: "none",
                           border: "none",
@@ -718,37 +782,67 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                       {cls.participants.length}
                     </td>
                     <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setDeleteError("");
-                          setDeleteTarget(cls);
-                        }}
-                        title="Delete"
-                        aria-label={`Delete ${cls.name}`}
-                        style={{
-                          background: "none",
-                          border: "none",
-                          cursor: "pointer",
-                          padding: "0.5rem",
-                          borderRadius: "0.5rem",
-                          color: "var(--color-text-muted)",
-                          transition: "all 0.15s",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.color = "#D64545";
-                          e.currentTarget.style.background = "rgba(214,69,69,0.08)";
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.color = "var(--color-text-muted)";
-                          e.currentTarget.style.background = "none";
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>delete</span>
-                      </button>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+                        <button
+                          type="button"
+                          onClick={() => openEdit(cls)}
+                          title="Edit"
+                          aria-label={`Edit ${cls.name}`}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "0.5rem",
+                            borderRadius: "0.5rem",
+                            color: "var(--color-text-muted)",
+                            transition: "all 0.15s",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = "#1F6B4D";
+                            e.currentTarget.style.background = "rgba(31,107,77,0.08)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = "var(--color-text-muted)";
+                            e.currentTarget.style.background = "none";
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>edit</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeleteError("");
+                            setDeleteTarget(cls);
+                          }}
+                          title="Delete"
+                          aria-label={`Delete ${cls.name}`}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "0.5rem",
+                            borderRadius: "0.5rem",
+                            color: "var(--color-text-muted)",
+                            transition: "all 0.15s",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.color = "#D64545";
+                            e.currentTarget.style.background = "rgba(214,69,69,0.08)";
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.color = "var(--color-text-muted)";
+                            e.currentTarget.style.background = "none";
+                          }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>delete</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -822,6 +916,153 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {historyTarget && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 150, background: "rgba(0,0,0,0.4)" }}
+            onClick={() => setHistoryTarget(null)}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Attendance history for ${historyTarget.name}`}
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 151,
+              width: "min(560px, calc(100vw - 1.5rem))",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              background: "#FFFFFF",
+              borderRadius: "1rem",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+              padding: "1.25rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+              <div style={{ minWidth: 0 }}>
+                <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "var(--color-brand)" }}>
+                  Attendance history
+                </h2>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.875rem", fontWeight: 700, color: "#2B2B2B" }}>
+                  {historyTarget.name}
+                </p>
+                <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
+                  Teacher: {historyTeacherName || historyTarget.teacher.name} · Read-only
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryTarget(null)}
+                aria-label="Close"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1.5rem",
+                  color: "var(--color-brand)",
+                  lineHeight: 1,
+                  padding: "0.25rem",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ margin: "1rem 0" }}>
+              <MonthGridPicker
+                value={`${historyYear}-${historyMonth}`}
+                onChange={(y, m) => {
+                  setHistoryYear(y);
+                  setHistoryMonth(m);
+                  loadHistory(historyTarget.id, y, m);
+                }}
+              />
+            </div>
+
+            {historyError && (
+              <div className="form-error mb-2" role="alert">
+                {historyError}
+              </div>
+            )}
+
+            {historyLoading ? (
+              <div style={{ textAlign: "center", padding: "1.5rem 0", color: "var(--color-text-muted)" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "1.75rem", opacity: 0.6 }}>hourglass_top</span>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem" }}>Loading…</p>
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {historyWeeks.map((w) => {
+                  const isSubmitted = w.status === "submitted";
+                  const isInProgress = w.status === "in_progress";
+                  const badgeColor = isSubmitted ? "#1F6B4D" : isInProgress ? "#8A5A00" : "#6B7280";
+                  const badgeBg = isSubmitted ? "#EFF7F3" : isInProgress ? "#FDF3E3" : "#F1EFEA";
+                  const badgeIcon = isSubmitted ? "check_circle" : isInProgress ? "edit_note" : "radio_button_unchecked";
+                  const badgeLabel = isSubmitted ? "Submitted" : isInProgress ? "In progress" : "Not started";
+                  return (
+                    <div
+                      key={w.week}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: "0.75rem",
+                        padding: "0.75rem 0.85rem",
+                        borderRadius: "0.6rem",
+                        background: badgeBg,
+                        border: isSubmitted ? "1px solid rgba(31,107,77,0.25)" : isInProgress ? "1px solid #EED9B0" : "1px solid var(--color-border)",
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 800, color: "#2B2B2B" }}>
+                          Week {w.week}
+                        </p>
+                        <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: "var(--color-text-muted)" }}>
+                          {isSubmitted
+                            ? `${w.presentCount} present · ${w.absentCount} absent`
+                            : isInProgress
+                              ? `${w.presentCount} present · ${w.absentCount} absent so far`
+                              : "No attendance recorded"}
+                          {w.submittedAt ? ` · Submitted ${formatHistoryDate(w.submittedAt)}` : ""}
+                        </p>
+                      </div>
+                      <span
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.3rem",
+                          flexShrink: 0,
+                          padding: "0.25rem 0.6rem",
+                          borderRadius: "999px",
+                          fontSize: "0.72rem",
+                          fontWeight: 800,
+                          color: badgeColor,
+                          background: badgeBg,
+                          border: `1px solid ${badgeColor}33`,
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: "0.95rem" }}>{badgeIcon}</span>
+                        {badgeLabel}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
+              <button type="button" onClick={() => setHistoryTarget(null)} className="btn btn-ghost">
+                Close
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

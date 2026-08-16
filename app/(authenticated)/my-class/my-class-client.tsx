@@ -6,6 +6,7 @@ import {
   getSundaySchoolExportMonthOptions,
   MONTH_NAMES,
 } from "@/modules/sunday-school/export-months";
+import { MonthGridPicker } from "@/modules/core/components";
 
 interface ClassOption {
   id: string;
@@ -142,7 +143,6 @@ export default function MyClassClient({
   const [query, setQuery] = useState("");
   const [justSubmitted, setJustSubmitted] = useState(false);
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
-  const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [submittedByName, setSubmittedByName] = useState<string | null>(null);
 
@@ -591,109 +591,15 @@ export default function MyClassClient({
       )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "0.6rem", marginBottom: "0.75rem" }}>
-        <div style={{ position: "relative" }}>
+        <div>
           <label style={labelStyle}>Month</label>
-          <button
-            type="button"
-            aria-haspopup="dialog"
-            aria-expanded={monthPickerOpen}
-            onClick={() => setMonthPickerOpen((open) => !open)}
-            style={{
-              width: "100%",
-              minHeight: 48,
-              padding: "0 0.75rem",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "0.5rem",
-              fontSize: "0.95rem",
-              fontWeight: 700,
-              fontFamily: "inherit",
-              color: "#2B2B2B",
-              background: "#FFFFFF",
-              border: `1px solid ${monthPickerOpen ? COLORS.teal : COLORS.border}`,
-              borderRadius: "0.6rem",
-              cursor: "pointer",
-              textAlign: "left",
+          <MonthGridPicker
+            value={safeMonthValue}
+            onChange={(y, m) => {
+              setYear(y);
+              setMonth(m);
             }}
-          >
-            <span>{monthOptions.find((o) => o.value === safeMonthValue)?.label ?? safeMonthValue}</span>
-            <span
-              className="material-symbols-outlined"
-              style={{ color: COLORS.muted, fontSize: "1.25rem", transition: "transform 0.15s ease" }}
-            >
-              {monthPickerOpen ? "expand_less" : "expand_more"}
-            </span>
-          </button>
-
-          {monthPickerOpen && (
-            <>
-              <div
-                style={{ position: "fixed", inset: 0, zIndex: 130, background: "rgba(0,0,0,0.25)" }}
-                onClick={() => setMonthPickerOpen(false)}
-                aria-hidden="true"
-              />
-              <div
-                role="dialog"
-                aria-label="Choose month"
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 0.35rem)",
-                  left: 0,
-                  right: 0,
-                  zIndex: 131,
-                  background: "#FFFFFF",
-                  border: `1px solid ${COLORS.border}`,
-                  borderRadius: "0.9rem",
-                  boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
-                  padding: "0.75rem",
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
-                  gap: "0.45rem",
-                  maxHeight: "60vh",
-                  overflowY: "auto",
-                }}
-              >
-                {monthOptions.map((o) => {
-                  const selected = o.value === safeMonthValue;
-                  return (
-                    <button
-                      key={o.value}
-                      type="button"
-                      onClick={() => {
-                        const [y, m] = o.value.split("-").map(Number);
-                        setYear(y);
-                        setMonth(m);
-                        setMonthPickerOpen(false);
-                      }}
-                      style={{
-                        minHeight: 40,
-                        padding: "0 0.35rem",
-                        borderRadius: "0.55rem",
-                        border: selected ? "2px solid #1F6B4D" : `1px solid ${COLORS.border}`,
-                        background: selected ? COLORS.teal : "#FFFFFF",
-                        color: selected ? "#FFFFFF" : "#2B2B2B",
-                        fontWeight: selected ? 800 : 600,
-                        fontSize: "0.75rem",
-                        fontFamily: "inherit",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: "0.25rem",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {o.label.split(" ")[0]}
-                      <span style={{ opacity: selected ? 0.85 : 0.55, fontSize: "0.68rem" }}>
-                        {o.label.split(" ")[1]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
+          />
         </div>
         <div>
           <label htmlFor="week-select" style={labelStyle}>Week</label>

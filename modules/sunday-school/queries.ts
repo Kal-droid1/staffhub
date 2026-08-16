@@ -426,6 +426,73 @@ export async function getSundaySchoolAttendanceForExport(args: { year: number; m
   return Array.from(byParticipant.values());
 }
 
+export interface ClassAttendanceHistoryWeek {
+  week: number;
+  presentCount: number;
+  absentCount: number;
+  status: "not_started" | "in_progress" | "submitted";
+  submittedAt: string | null;
+}
+
+export async function getClassAttendanceHistory(args: {
+  classId: string;
+  year: number;
+  month: number;
+}) {
+  const classInfo = await prisma.sundaySchoolClass.findFirst({
+    where: { id: args.classId, deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      teacher: { select: { id: true, name: true } },
+    },
+  });
+  if (!classInfo) return null;
+
+  // Attendance records are tied to the class (classId) + participant +
+  // year/month/week, not to the current teacher, so reassigning a class's
+  // teacher never changes what this view shows for past weeks.
+  const records = await prisma.sundaySchoolAttendance.findMany({
+    where: { classId: classInfo.id, year: args.year, month: args.month },
+    select: { week: true, present: true, submittedAt: true },
+  });
+
+  const weeks: ClassAttendanceHistoryWeek[] = [];
+  for (let week = 1; week <= 5; week++) {
+    const weekRecords = records.filter((r) => r.week === week);
+    const presentCount = weekRecords.filter((r) => r.present === true).length;
+    const absentCount = weekRecords.filter((r) => r.present === false).length;
+
+    let latest: Date | null = null;
+    for (const r of weekRecords) {
+      if (r.submittedAt && (!latest || r.submittedAt > latest)) latest = r.submittedAt;
+    }
+
+    const hasSelection = presentCount + absentCount > 0;
+    const status = !hasSelection
+      ? ("not_started" as const)
+      : latest
+        ? ("submitted" as const)
+        : ("in_progress" as const);
+
+    weeks.push({
+      week,
+      presentCount,
+      absentCount,
+      status,
+      submittedAt: latest ? latest.toISOString() : null,
+    });
+  }
+
+  return {
+    classInfo: { id: classInfo.id, name: classInfo.name },
+    teacher: classInfo.teacher,
+    year: args.year,
+    month: args.month,
+    weeks,
+  };
+}
+
 export async function isCoverageSubstituteForWeek(args: {
   userId: string;
   classId: string;
