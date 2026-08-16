@@ -22,7 +22,8 @@
     "db:seed-july-2026-cleanup": "npx tsx prisma/seed-july-2026-cleanup.ts",
     "db:cleanup": "npx tsx prisma/cleanup-production.ts",
     "db:setup-hidden-account": "npx tsx prisma/setup-hidden-account.ts",
-    "db:normalize-emails": "npx tsx prisma/normalize-emails.ts"
+    "db:normalize-emails": "npx tsx prisma/normalize-emails.ts",
+    "db:list-usernames": "npx tsx prisma/list-usernames.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
