@@ -10,6 +10,7 @@ import { formatDays, formatAttendanceStatus, formatDate } from "@/lib/format";
 interface StaffMember {
   id: string;
   name: string;
+  username: string;
   email: string;
   role: string;
   department: string | null;
@@ -154,7 +155,7 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
 
   const [showEdit, setShowEdit] = useState(false);
   const [editingName, setEditingName] = useState(staff.name);
-  const [editingEmail, setEditingEmail] = useState(staff.email);
+  const [editingUsername, setEditingUsername] = useState(staff.username);
   const [editingRole, setEditingRole] = useState(staff.role);
   const [editingJobTitleId, setEditingJobTitleId] = useState(staff.jobTitleId ?? "");
   const [saving, setSaving] = useState(false);
@@ -309,7 +310,7 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
 
   async function handleSaveEdit(e: React.FormEvent) {
     e.preventDefault();
-    if (!editingName.trim() || !editingEmail.trim()) return;
+    if (!editingName.trim() || !editingUsername.trim()) return;
     setSaving(true);
     setError("");
 
@@ -319,7 +320,7 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
       body: JSON.stringify({
         id: staff.id,
         name: editingName.trim(),
-        email: editingEmail.trim(),
+        username: editingUsername.trim(),
         role: editingRole,
         jobTitleId: editingJobTitleId || null,
       }),
@@ -848,9 +849,9 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
                 border: "1px solid rgba(31,107,77,0.3)",
                 whiteSpace: "nowrap",
               }}>
-                Email
+                Username
               </span>
-              <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right", wordBreak: "break-word" }}>{staff.email}</span>
+              <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right", wordBreak: "break-word" }}>{staff.username}</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem", padding: "0.85rem 0", borderBottom: "1px solid rgba(191,201,193,0.25)" }}>
               <span style={{
@@ -2121,8 +2122,8 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
                 <input type="text" className="form-input" value={editingName} onChange={(e) => setEditingName(e.target.value)} required />
               </div>
               <div style={{ marginBottom: "0.75rem" }}>
-                <label className="form-label">Email</label>
-                <input type="email" className="form-input" value={editingEmail} onChange={(e) => setEditingEmail(e.target.value)} required />
+                <label className="form-label">Username</label>
+                <input type="text" className="form-input" value={editingUsername} onChange={(e) => setEditingUsername(e.target.value)} required />
               </div>
               <div style={{ marginBottom: "0.75rem" }}>
                 <label className="form-label">Role</label>

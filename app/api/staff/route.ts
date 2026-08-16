@@ -38,10 +38,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { name, email, password, role, department, jobTitleId, isTeacher } = body;
+  const { name, username, password, role, department, jobTitleId, isTeacher } = body;
 
-  if (!name || !email || !password || !role) {
-    return NextResponse.json({ error: "name, email, password, and role are required." }, { status: 400 });
+  if (!name || !username || !password || !role) {
+    return NextResponse.json({ error: "name, username, password, and role are required." }, { status: 400 });
+  }
+
+  if (typeof username !== "string" || username.trim().length <= 2) {
+    return NextResponse.json({ error: "Username must be at least 3 characters." }, { status: 400 });
   }
 
   if (!["STAFF", "MANAGER"].includes(role)) {
@@ -49,11 +53,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const user = await createStaffAccount({ name, email, password, role, department, jobTitleId, isTeacher });
+    const user = await createStaffAccount({ name, username, password, role, department, jobTitleId, isTeacher });
     return NextResponse.json(user, { status: 201 });
   } catch (e: unknown) {
     if ((e as { code?: string }).code === "P2002") {
-      return NextResponse.json({ error: "Email already in use." }, { status: 409 });
+      return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
     }
     throw e;
   }
@@ -66,10 +70,14 @@ export async function PUT(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { id, name, email, role, department, jobTitleId, isTeacher } = body;
+  const { id, name, username, role, department, jobTitleId, isTeacher } = body;
 
   if (!id) {
     return NextResponse.json({ error: "id is required." }, { status: 400 });
+  }
+
+  if (username !== undefined && (typeof username !== "string" || username.trim().length <= 2)) {
+    return NextResponse.json({ error: "Username must be at least 3 characters." }, { status: 400 });
   }
 
   if (!(await canViewUser(session?.user?.isHidden === true, id))) {
@@ -77,11 +85,11 @@ export async function PUT(req: NextRequest) {
   }
 
   try {
-    const user = await updateStaffAccount(id, { name, email, role, department, jobTitleId, isTeacher });
+    const user = await updateStaffAccount(id, { name, username, role, department, jobTitleId, isTeacher });
     return NextResponse.json(user);
   } catch (e: unknown) {
     if ((e as { code?: string }).code === "P2002") {
-      return NextResponse.json({ error: "Email already in use." }, { status: 409 });
+      return NextResponse.json({ error: "That username is already taken." }, { status: 409 });
     }
     if ((e as { code?: string }).code === "P2025") {
       return NextResponse.json({ error: "User not found." }, { status: 404 });

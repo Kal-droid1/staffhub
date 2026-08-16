@@ -2,11 +2,12 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { visibleUserWhere } from "@/lib/visibility";
-import { normalizeEmail } from "@/lib/email";
+import { normalizeUsername, isValidUsername } from "@/lib/username";
 
 const userSelect = {
   id: true,
   name: true,
+  username: true,
   email: true,
   role: true,
   department: true,
@@ -24,6 +25,7 @@ const userSelect = {
 const userSelectSerialized = {
   id: true,
   name: true,
+  username: true,
   email: true,
   role: true,
   department: true,
@@ -41,6 +43,7 @@ const userSelectSerialized = {
 export interface StaffRow {
   id: string;
   name: string;
+  username: string;
   email: string;
   role: string;
   department: string | null;
@@ -98,18 +101,25 @@ export async function getTrashedStaff(viewerIsHidden = false): Promise<StaffRow[
 
 export async function createStaffAccount(data: {
   name: string;
-  email: string;
+  username: string;
   password: string;
   role: string;
   department?: string;
   jobTitleId?: string | null;
   isTeacher?: boolean;
 }) {
+  if (!isValidUsername(data.username)) {
+    throw new Error("Username must be at least 3 characters.");
+  }
+  const username = normalizeUsername(data.username);
   const hashed = await bcrypt.hash(data.password, 12);
   return prisma.user.create({
     data: {
       name: data.name,
-      email: normalizeEmail(data.email),
+      username,
+      // The email column is retained for now but is no longer used for
+      // login; derive a placeholder so the NOT NULL + unique constraints hold.
+      email: `${username}@staffhub.local`,
       password: hashed,
       role: data.role as "STAFF" | "MANAGER",
       department: data.department || null,
@@ -124,7 +134,7 @@ export async function updateStaffAccount(
   id: string,
   data: {
     name?: string;
-    email?: string;
+    username?: string;
     role?: string;
     department?: string;
     jobTitleId?: string | null;
@@ -133,7 +143,12 @@ export async function updateStaffAccount(
 ) {
   const updateData: Record<string, unknown> = {};
   if (data.name !== undefined) updateData.name = data.name;
-  if (data.email !== undefined) updateData.email = normalizeEmail(data.email);
+  if (data.username !== undefined) {
+    if (!isValidUsername(data.username)) {
+      throw new Error("Username must be at least 3 characters.");
+    }
+    updateData.username = normalizeUsername(data.username);
+  }
   if (data.role !== undefined) updateData.role = data.role;
   if (data.department !== undefined) updateData.department = data.department || null;
   if (data.jobTitleId !== undefined) updateData.jobTitleId = data.jobTitleId || null;

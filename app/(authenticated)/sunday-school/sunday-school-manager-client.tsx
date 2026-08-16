@@ -13,7 +13,7 @@ import {
 interface TeacherOption {
   id: string;
   name: string;
-  email: string;
+  username: string;
 }
 
 interface ClassParticipant {
@@ -530,7 +530,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                   <option value="">Select a teacher…</option>
                   {initialTeachers.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name} ({t.email})
+                      {t.name} ({t.username})
                     </option>
                   ))}
                 </select>

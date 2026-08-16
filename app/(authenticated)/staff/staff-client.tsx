@@ -9,6 +9,7 @@ import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 interface StaffMember {
   id: string;
   name: string;
+  username: string;
   email: string;
   role: string;
   department: string | null;
@@ -31,6 +32,7 @@ interface JobTitle {
 interface TrashMember {
   id: string;
   name: string;
+  username: string;
   email: string;
   role: string;
   department: string | null;
@@ -220,7 +222,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingMember, setEditingMember] = useState<StaffMember | null>(null);
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [jobTitleId, setJobTitleId] = useState("");
   const [grantElevated, setGrantElevated] = useState(false);
   const [isTeacher, setIsTeacher] = useState(false);
@@ -319,7 +321,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
     setEditingId(null);
     setEditingMember(null);
     setName("");
-    setEmail("");
+    setUsername("");
     setJobTitleId("");
     setGrantElevated(false);
     setIsTeacher(false);
@@ -332,7 +334,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
     setEditingId(s.id);
     setEditingMember(s);
     setName(s.name);
-    setEmail(s.email);
+    setUsername(s.username);
     setJobTitleId(s.jobTitleId ?? "");
     setGrantElevated(s.role === "MANAGER");
     setIsTeacher(s.isTeacher === true);
@@ -343,7 +345,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (!name.trim() || !username.trim()) return;
     if (!editingId && !password) {
       setError("Password is required for new accounts.");
       return;
@@ -355,7 +357,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
     const isNew = !editingId;
     const payload: Record<string, unknown> = {
       name: name.trim(),
-      email: email.trim(),
+      username: username.trim(),
       role,
       jobTitleId: jobTitleId || null,
       isTeacher,
@@ -811,12 +813,13 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
               </div>
 
               <div style={{ marginBottom: "0.75rem" }}>
-                <label className="form-label">Email</label>
+                <label className="form-label">Username</label>
                 <input
-                  type="email"
+                  type="text"
                   className="form-input"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="off"
                   required
                 />
               </div>
@@ -1247,7 +1250,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
                 textTransform: "uppercase",
                 color: "#fff",
                 fontFamily: "var(--font-mono)",
-              }}>Email</th>
+              }}>Username</th>
               <th style={{
                 padding: "1.25rem 1.5rem",
                 fontSize: "0.75rem",
@@ -1350,8 +1353,8 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
                       </Link>
                     </div>
                   </td>
-                  <td data-label="Email" style={{ padding: "1.5rem 1.5rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
-                    {s.email}
+                  <td data-label="Username" style={{ padding: "1.5rem 1.5rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
+                    {s.username}
                   </td>
                   <td data-label="Role" style={{ padding: "1.5rem 1.5rem", textAlign: "center" }}>
                     <span style={{
@@ -1731,7 +1734,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
                   <thead>
                     <tr>
                       <th>Name</th>
-                      <th>Email</th>
+                      <th>Username</th>
                       <th style={{ textAlign: "center" }}>Role</th>
                       <th>Job Title</th>
                       <th>Deleted</th>
@@ -1742,7 +1745,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
                     {trash.map((s) => (
                       <tr key={s.id}>
                         <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
-                        <td data-label="Email">{s.email}</td>
+                        <td data-label="Username">{s.username}</td>
                         <td data-label="Role" style={{ textAlign: "center" }}>
                           <span style={{
                             display: "inline-block",

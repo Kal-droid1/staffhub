@@ -31,7 +31,7 @@ export async function isUserTeacher(userId: string): Promise<boolean> {
 export async function listTeachers() {
   return prisma.user.findMany({
     where: { isTeacher: true, deletedAt: null, isActive: true },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, username: true },
     orderBy: { name: "asc" },
   });
 }

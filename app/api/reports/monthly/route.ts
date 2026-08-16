@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
   const staff = summary.map((s) => ({
     id: s.user.id,
     name: s.user.name,
-    email: s.user.email,
+    username: s.user.username,
   }));
 
   const summaryJson = summary.map((s) => ({

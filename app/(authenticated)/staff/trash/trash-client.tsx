@@ -9,6 +9,7 @@ import { formatDate } from "@/lib/format";
 interface TrashMember {
   id: string;
   name: string;
+  username: string;
   email: string;
   role: string;
   department: string | null;
@@ -80,7 +81,7 @@ export default function TrashClient({ initialTrash }: Props) {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Email</th>
+                <th>Username</th>
                 <th style={{ textAlign: "center" }}>Role</th>
                 <th>Job Title</th>
                 <th>Deleted</th>
@@ -91,7 +92,7 @@ export default function TrashClient({ initialTrash }: Props) {
               {trash.map((s) => (
                 <tr key={s.id}>
                   <td data-label="Name" style={{ fontWeight: 600 }}>{s.name}</td>
-                  <td data-label="Email">{s.email}</td>
+                  <td data-label="Username">{s.username}</td>
                   <td data-label="Role" style={{ textAlign: "center" }}>
                     <span
                       style={{

@@ -437,7 +437,7 @@ export async function markAbsentForMissingUsers() {
 }
 
 export type MonthlyReportUser = {
-  user: { id: string; name: string; email: string; department: string | null };
+  user: { id: string; name: string; username: string; department: string | null };
   present: number;
   absent: number;
   leave: number;
@@ -473,7 +473,7 @@ export async function getMonthlyReport(
         select: {
           id: true,
           name: true,
-          email: true,
+          username: true,
           department: true,
           hideFromReports: true,
           deactivatedAt: true,
@@ -486,7 +486,7 @@ export async function getMonthlyReport(
   const byUser = new Map<
     string,
     {
-      user: { id: string; name: string; email: string; department: string | null };
+      user: { id: string; name: string; username: string; department: string | null };
       present: number;
       absent: number;
       leave: number;
@@ -546,7 +546,7 @@ export async function getMonthlyReport(
   if (userId && byUser.size === 0) {
     const user = await prisma.user.findUnique({
       where: { id: userId, ...(viewerIsHidden ? {} : { isHidden: false }) },
-      select: { id: true, name: true, email: true, department: true },
+      select: { id: true, name: true, username: true, department: true },
     });
     if (user) {
       byUser.set(userId, {
@@ -569,7 +569,7 @@ export async function getMonthlyReport(
           { deactivatedAt: { gte: monthStart } },
         ],
       },
-      select: { id: true, name: true, email: true, department: true },
+      select: { id: true, name: true, username: true, department: true },
     });
     for (const u of allUsers) {
       if (!byUser.has(u.id)) {

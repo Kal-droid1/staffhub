@@ -30,6 +30,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
     select: {
       id: true,
       name: true,
+      username: true,
       email: true,
       role: true,
       department: true,
@@ -96,6 +97,7 @@ export default async function StaffProfilePage({ params }: PageProps) {
   const userJson = {
     id: user.id,
     name: user.name,
+    username: user.username,
     email: user.email,
     role: user.role,
     department: user.department,

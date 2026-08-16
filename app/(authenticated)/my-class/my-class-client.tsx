@@ -18,7 +18,7 @@ interface ClassOption {
 interface TeacherOption {
   id: string;
   name: string;
-  email: string;
+  username: string;
 }
 
 interface CoverageArrangement {

@@ -9,7 +9,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,7 +27,7 @@ function LoginForm() {
     setLoading(true);
 
     const result = await signIn("credentials", {
-      email,
+      username,
       password,
       redirect: false,
     });
@@ -35,7 +35,7 @@ function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Invalid email or password");
+      setError("Invalid username or password");
       return;
     }
 
@@ -70,15 +70,16 @@ function LoginForm() {
         )}
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "1rem" }}>
-            <label htmlFor="email" className="form-label">
-              Email
+            <label htmlFor="username" className="form-label">
+              Username
             </label>
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
               className="form-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
               required
             />
           </div>

@@ -248,8 +248,8 @@ export default async function DashboardPage() {
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", marginTop: "1rem", flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
-                  <span style={pillLabelStyle}>Email</span>
-                  <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right", wordBreak: "break-word" }}>{user.email}</span>
+                  <span style={pillLabelStyle}>Username</span>
+                  <span style={{ fontWeight: 600, fontSize: "0.875rem", textAlign: "right", wordBreak: "break-word" }}>{user.username}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
                   <span style={pillLabelStyle}>

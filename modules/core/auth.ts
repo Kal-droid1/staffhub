@@ -3,12 +3,13 @@ import type { Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { normalizeEmail } from "@/lib/email";
+import { normalizeUsername } from "@/lib/username";
 import type { Role } from "@prisma/client";
 
 declare module "next-auth" {
   interface User {
     role: Role;
+    username: string;
     department: string | null;
     jobTitleName: string | null;
     avatarUrl: string | null;
@@ -19,6 +20,7 @@ declare module "next-auth" {
     user: {
       id: string;
       name: string;
+      username: string;
       email: string;
       role: Role;
       department: string | null;
@@ -35,6 +37,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: Role;
+    username: string;
     department: string | null;
     jobTitleName: string | null;
     avatarUrl: string | null;
@@ -48,19 +51,20 @@ export const authOptions: AuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        username: { label: "Username", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.username || !credentials?.password) {
           return null;
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: normalizeEmail(credentials.email) },
+          where: { username: normalizeUsername(credentials.username) },
           select: {
             id: true,
             name: true,
+            username: true,
             email: true,
             role: true,
             department: true,
@@ -89,6 +93,7 @@ export const authOptions: AuthOptions = {
         return {
           id: user.id,
           name: user.name,
+          username: user.username,
           email: user.email,
           role: user.role,
           department: user.department,
@@ -108,6 +113,7 @@ export const authOptions: AuthOptions = {
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.username = user.username;
         token.department = user.department;
         token.jobTitleName = user.jobTitleName;
         token.avatarUrl = user.avatarUrl;
@@ -118,7 +124,7 @@ export const authOptions: AuthOptions = {
       if (token.id) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { avatarUrl: true, isHidden: true, isActive: true, deletedAt: true, isTeacher: true },
+          select: { avatarUrl: true, isHidden: true, isActive: true, deletedAt: true, isTeacher: true, username: true },
         });
 
         if (!dbUser || !dbUser.isActive || dbUser.deletedAt) {
@@ -132,6 +138,7 @@ export const authOptions: AuthOptions = {
         token.avatarUrl = dbUser.avatarUrl;
         token.isHidden = dbUser.isHidden;
         token.isTeacher = dbUser.isTeacher;
+        token.username = dbUser.username;
       }
 
       return token;
@@ -148,6 +155,7 @@ export const authOptions: AuthOptions = {
       if (session.user) {
         session.user.id = token.id;
         session.user.role = token.role;
+        session.user.username = token.username;
         session.user.department = token.department;
         session.user.jobTitleName = token.jobTitleName;
         session.user.avatarUrl = token.avatarUrl;
