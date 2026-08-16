@@ -1370,7 +1370,7 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
                       color: roleStyle.text,
                       boxShadow: roleStyle.shadow,
                     }}>
-                      {s.role}
+                      {view === "teachers" ? "Teacher" : s.role}
                     </span>
                   </td>
                   <td data-label="Job Title" style={{ padding: "1.5rem 1.5rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
