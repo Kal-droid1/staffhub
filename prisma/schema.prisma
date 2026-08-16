@@ -55,6 +55,9 @@ model User {
   uploadedDocs    StaffDocument[]    @relation("UploadedDocuments")
   bulkLeaveActions BulkLeaveAction[] @relation("BulkLeaveCreator")
   sundaySchoolClasses SundaySchoolClass[]
+  sundaySchoolCoverageTeacher SundaySchoolCoverage[] @relation("SundaySchoolCoverageTeacher")
+  sundaySchoolCoverageSubstitute SundaySchoolCoverage[] @relation("SundaySchoolCoverageSubstitute")
+  sundaySchoolAttendanceSubmitted SundaySchoolAttendance[] @relation("SundaySchoolAttendanceSubmittedBy")
 }
 
 model Settings {
@@ -182,6 +185,7 @@ model SundaySchoolClass {
   teacher      User                         @relation(fields: [teacherId], references: [id], onDelete: Restrict)
   participants SundaySchoolClassParticipant[]
   attendance   SundaySchoolAttendance[]
+  coverage     SundaySchoolCoverage[]
   deletedAt    DateTime?
   createdAt    DateTime                     @default(now())
   updatedAt    DateTime                     @updatedAt
@@ -210,6 +214,8 @@ model SundaySchoolAttendance {
   week          Int
   present       Boolean?
   submittedAt   DateTime?
+  submittedById String?
+  submittedBy   User?             @relation("SundaySchoolAttendanceSubmittedBy", fields: [submittedById], references: [id], onDelete: SetNull)
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
 
@@ -217,3 +223,33 @@ model SundaySchoolAttendance {
   @@index([classId])
   @@index([year, month])
 }
+
+model SundaySchoolCoverage {
+  id           String                     @id @default(uuid())
+  classId      String
+  class        SundaySchoolClass          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId    String
+  teacher      User                       @relation("SundaySchoolCoverageTeacher", fields: [teacherId], references: [id], onDelete: Cascade)
+  substituteId String
+  substitute   User                       @relation("SundaySchoolCoverageSubstitute", fields: [substituteId], references: [id], onDelete: Cascade)
+  weeks        SundaySchoolCoverageWeek[]
+  createdAt    DateTime                   @default(now())
+  updatedAt    DateTime                   @updatedAt
+
+  @@index([classId])
+  @@index([substituteId])
+}
+
+model SundaySchoolCoverageWeek {
+  id         String               @id @default(uuid())
+  coverageId String
+  coverage   SundaySchoolCoverage @relation(fields: [coverageId], references: [id], onDelete: Cascade)
+  year       Int
+  month      Int
+  week       Int
+  createdAt  DateTime             @default(now())
+
+  @@unique([coverageId, year, month, week])
+  @@index([year, month, week])
+}
+

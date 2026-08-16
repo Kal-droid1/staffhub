@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { getCurrentSundaySchoolPeriod, sundaySchoolPeriodIndex } from "./export-months";
 
 export interface RosterParticipant {
   participantId: string;
@@ -16,6 +17,7 @@ export interface ClassRoster {
   week: number;
   roster: RosterParticipant[];
   submittedAt: string | null;
+  submittedByName: string | null;
 }
 
 export async function isUserTeacher(userId: string): Promise<boolean> {
@@ -54,12 +56,12 @@ export async function getClassRosterForTeacher(args: {
   week: number;
 }): Promise<ClassRoster> {
   const classInfo = await prisma.sundaySchoolClass.findFirst({
-    where: { id: args.classId, teacherId: args.teacherId, deletedAt: null },
+    where: { id: args.classId, deletedAt: null },
     select: { id: true, name: true },
   });
 
-  if (!classInfo) {
-    return { classInfo: null, year: args.year, month: args.month, week: args.week, roster: [], submittedAt: null };
+  if (!classInfo || !(await canAccessClassForWeek(args.teacherId, args.classId, args.year, args.month, args.week))) {
+    return { classInfo: null, year: args.year, month: args.month, week: args.week, roster: [], submittedAt: null, submittedByName: null };
   }
 
   const assignments = await prisma.sundaySchoolClassParticipant.findMany({
@@ -80,7 +82,7 @@ export async function getClassRosterForTeacher(args: {
   const participantIds = assignments.map((a) => a.participant.id);
 
   if (participantIds.length === 0) {
-    return { classInfo, year: args.year, month: args.month, week: args.week, roster: [], submittedAt: null };
+    return { classInfo, year: args.year, month: args.month, week: args.week, roster: [], submittedAt: null, submittedByName: null };
   }
 
   const records = await prisma.sundaySchoolAttendance.findMany({
@@ -90,7 +92,7 @@ export async function getClassRosterForTeacher(args: {
       month: args.month,
       week: args.week,
     },
-    select: { participantId: true, present: true, submittedAt: true },
+    select: { participantId: true, present: true, submittedAt: true, submittedBy: { select: { name: true } } },
   });
 
   const presentByParticipant = new Map(
@@ -99,11 +101,15 @@ export async function getClassRosterForTeacher(args: {
       .map((r) => [r.participantId, r.present as boolean])
   );
 
-  const submittedAt = records.reduce<string | null>((latest, r) => {
-    if (!r.submittedAt) return latest;
-    if (!latest) return r.submittedAt.toISOString();
-    return r.submittedAt.toISOString() > latest ? r.submittedAt.toISOString() : latest;
-  }, null);
+  let latestRecord: (typeof records)[number] | null = null;
+  for (const r of records) {
+    if (!r.submittedAt) continue;
+    if (!latestRecord || r.submittedAt.getTime() > latestRecord.submittedAt!.getTime()) {
+      latestRecord = r;
+    }
+  }
+  const submittedAt = latestRecord?.submittedAt ? latestRecord.submittedAt.toISOString() : null;
+  const submittedByName = latestRecord?.submittedBy?.name ?? null;
 
   const roster = assignments.map((a) => ({
     participantId: a.participant.id,
@@ -113,7 +119,7 @@ export async function getClassRosterForTeacher(args: {
     present: presentByParticipant.get(a.participant.id) ?? null,
   }));
 
-  return { classInfo, year: args.year, month: args.month, week: args.week, roster, submittedAt };
+  return { classInfo, year: args.year, month: args.month, week: args.week, roster, submittedAt, submittedByName };
 }
 
 export async function submitClassAttendance(args: {
@@ -125,11 +131,11 @@ export async function submitClassAttendance(args: {
   records: { participantId: string; present: boolean }[];
 }): Promise<{ updated: number; invalidParticipantIds: string[]; missingCount: number; submittedAt: string | null }> {
   const classInfo = await prisma.sundaySchoolClass.findFirst({
-    where: { id: args.classId, teacherId: args.teacherId, deletedAt: null },
+    where: { id: args.classId, deletedAt: null },
     select: { id: true },
   });
 
-  if (!classInfo) {
+  if (!classInfo || !(await canAccessClassForWeek(args.teacherId, args.classId, args.year, args.month, args.week))) {
     return { updated: 0, invalidParticipantIds: [], missingCount: 0, submittedAt: null };
   }
 
@@ -170,7 +176,7 @@ export async function submitClassAttendance(args: {
             week: args.week,
           },
         },
-        update: { present: r.present, classId: classInfo.id, submittedAt },
+        update: { present: r.present, classId: classInfo.id, submittedAt, submittedById: args.teacherId },
         create: {
           participantId: r.participantId,
           classId: classInfo.id,
@@ -179,6 +185,7 @@ export async function submitClassAttendance(args: {
           week: args.week,
           present: r.present,
           submittedAt,
+          submittedById: args.teacherId,
         },
       });
     })
@@ -417,4 +424,191 @@ export async function getSundaySchoolAttendanceForExport(args: { year: number; m
   }
 
   return Array.from(byParticipant.values());
+}
+
+export async function isCoverageSubstituteForWeek(args: {
+  userId: string;
+  classId: string;
+  year: number;
+  month: number;
+  week: number;
+}): Promise<boolean> {
+  const week = await prisma.sundaySchoolCoverageWeek.findFirst({
+    where: {
+      year: args.year,
+      month: args.month,
+      week: args.week,
+      coverage: {
+        classId: args.classId,
+        substituteId: args.userId,
+      },
+    },
+    select: { id: true },
+  });
+  return Boolean(week);
+}
+
+async function canAccessClassForWeek(
+  userId: string,
+  classId: string,
+  year: number,
+  month: number,
+  week: number
+): Promise<boolean> {
+  if (!classId) return false;
+  const classInfo = await prisma.sundaySchoolClass.findFirst({
+    where: { id: classId, deletedAt: null },
+    select: { teacherId: true },
+  });
+  if (!classInfo) return false;
+  if (classInfo.teacherId === userId) return true;
+  // Coverage only grants access while the covered week is current or upcoming;
+  // once the window passes, it stops having any effect.
+  if (!isCoverageWindowActive(year, month, week)) return false;
+  return isCoverageSubstituteForWeek({ userId, classId, year, month, week });
+}
+
+function isCoverageWindowActive(year: number, month: number, week: number): boolean {
+  const current = getCurrentSundaySchoolPeriod();
+  return (
+    sundaySchoolPeriodIndex(year, month, week) >=
+    sundaySchoolPeriodIndex(current.year, current.month, current.week)
+  );
+}
+
+export async function listCoveredClassesForSubstitute(
+  substituteId: string,
+  year: number,
+  month: number,
+  week: number
+) {
+  if (!isCoverageWindowActive(year, month, week)) return [];
+
+  const rows = await prisma.sundaySchoolCoverageWeek.findMany({
+    where: {
+      year,
+      month,
+      week,
+      coverage: {
+        substituteId,
+        class: { deletedAt: null },
+      },
+    },
+    select: {
+      coverage: {
+        select: {
+          class: { select: { id: true, name: true } },
+          teacher: { select: { id: true, name: true } },
+        },
+      },
+    },
+  });
+
+  const seen = new Set<string>();
+  return rows
+    .map((r) => ({
+      id: r.coverage.class.id,
+      name: r.coverage.class.name,
+      teacherId: r.coverage.teacher.id,
+      teacherName: r.coverage.teacher.name,
+    }))
+    .filter((c) => {
+      if (seen.has(c.id)) return false;
+      seen.add(c.id);
+      return true;
+    });
+}
+
+export async function createCoverage(args: {
+  teacherId: string;
+  classId: string;
+  substituteId: string;
+  year: number;
+  month: number;
+  weekStart: number;
+  weekEnd: number;
+}) {
+  const classInfo = await prisma.sundaySchoolClass.findFirst({
+    where: { id: args.classId, teacherId: args.teacherId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!classInfo) throw new Error("Class not found");
+
+  if (args.substituteId === args.teacherId) {
+    throw new Error("Choose another teacher as the substitute.");
+  }
+
+  const substitute = await prisma.user.findFirst({
+    where: { id: args.substituteId, isTeacher: true, deletedAt: null, isActive: true },
+    select: { id: true },
+  });
+  if (!substitute) throw new Error("Substitute teacher not found.");
+
+  if (
+    !Number.isInteger(args.weekStart) ||
+    !Number.isInteger(args.weekEnd) ||
+    args.weekStart < 1 ||
+    args.weekEnd > 5 ||
+    args.weekStart > args.weekEnd
+  ) {
+    throw new Error("Invalid week range. Weeks must be between 1 and 5.");
+  }
+
+  const coverage = await prisma.$transaction(async (tx) => {
+    const created = await tx.sundaySchoolCoverage.create({
+      data: {
+        classId: args.classId,
+        teacherId: args.teacherId,
+        substituteId: args.substituteId,
+      },
+      select: { id: true },
+    });
+
+    for (let week = args.weekStart; week <= args.weekEnd; week++) {
+      await tx.sundaySchoolCoverageWeek.create({
+        data: {
+          coverageId: created.id,
+          year: args.year,
+          month: args.month,
+          week,
+        },
+        select: { id: true },
+      });
+    }
+
+    return created;
+  });
+
+  return coverage;
+}
+
+export async function listMyCoverages(teacherId: string) {
+  return prisma.sundaySchoolCoverage.findMany({
+    where: { teacherId },
+    select: {
+      id: true,
+      class: { select: { id: true, name: true } },
+      substitute: { select: { id: true, name: true } },
+      weeks: {
+        select: { year: true, month: true, week: true },
+        orderBy: [{ year: "asc" }, { month: "asc" }, { week: "asc" }],
+      },
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function deleteCoverage(args: { coverageId: string; userId: string }) {
+  const coverage = await prisma.sundaySchoolCoverage.findFirst({
+    where: {
+      id: args.coverageId,
+      OR: [{ teacherId: args.userId }, { substituteId: args.userId }],
+    },
+    select: { id: true },
+  });
+  if (!coverage) throw new Error("Coverage not found");
+
+  await prisma.sundaySchoolCoverage.delete({ where: { id: coverage.id } });
+  return { ok: true };
 }

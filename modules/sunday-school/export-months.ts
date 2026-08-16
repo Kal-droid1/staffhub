@@ -34,6 +34,32 @@ export function getAddisNow(now: Date = new Date()): { year: number; month: numb
   return { year: Number(obj.year), month: Number(obj.month) };
 }
 
+export function getCurrentSundaySchoolPeriod(
+  now: Date = new Date()
+): { year: number; month: number; week: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Addis_Ababa",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+
+  const obj: Record<string, string> = {};
+  for (const p of parts) {
+    if (p.type !== "literal") obj[p.type] = p.value;
+  }
+
+  const year = Number(obj.year);
+  const month = Number(obj.month);
+  const day = Number(obj.day);
+  const week = Math.min(5, Math.ceil(day / 7));
+  return { year, month, week };
+}
+
+export function sundaySchoolPeriodIndex(year: number, month: number, week: number): number {
+  return (year * 12 + (month - 1)) * 5 + week;
+}
+
 function monthIndex(year: number, month: number): number {
   return year * 12 + (month - 1);
 }

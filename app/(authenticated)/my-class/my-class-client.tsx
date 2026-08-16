@@ -4,12 +4,29 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   SUNDAY_SCHOOL_FIRST_EXPORT_MONTH,
   getSundaySchoolExportMonthOptions,
+  MONTH_NAMES,
 } from "@/modules/sunday-school/export-months";
 
 interface ClassOption {
   id: string;
   name: string;
   teacherId: string;
+  teacherName?: string | null;
+  isSubstituteCoverage?: boolean;
+}
+
+interface TeacherOption {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface CoverageArrangement {
+  id: string;
+  class: { id: string; name: string };
+  substitute: { id: string; name: string };
+  weeks: { year: number; month: number; week: number }[];
+  createdAt: string;
 }
 
 interface RosterRow {
@@ -27,6 +44,7 @@ interface RosterResponse {
   week: number;
   roster: RosterRow[];
   submittedAt: string | null;
+  submittedByName: string | null;
 }
 
 const WEEK_LABELS = ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5"];
@@ -54,18 +72,48 @@ function formatSubmittedAt(value: string | null): string {
   }).format(date);
 }
 
+function formatCoverageWeeks(weeks: { year: number; month: number; week: number }[]): string {
+  if (weeks.length === 0) return "";
+  const byMonth = new Map<string, number[]>();
+  for (const w of weeks) {
+    const key = `${w.year}-${w.month}`;
+    if (!byMonth.has(key)) byMonth.set(key, []);
+    byMonth.get(key)!.push(w.week);
+  }
+  const parts: string[] = [];
+  for (const [key, ws] of byMonth) {
+    const [y, m] = key.split("-").map(Number);
+    const sorted = [...ws].sort((a, b) => a - b);
+    const label =
+      sorted.length === 1
+        ? `Week ${sorted[0]}`
+        : `Weeks ${sorted[0]}–${sorted[sorted.length - 1]}`;
+    parts.push(`${label} · ${MONTH_NAMES[m - 1]} ${y}`);
+  }
+  return parts.join(", ");
+}
+
 export default function MyClassClient({
   initialClasses,
+  initialCoveredClasses,
+  initialTeachers,
+  initialUserId,
   initialYear,
   initialMonth,
   initialWeek,
 }: {
   initialClasses: ClassOption[];
+  initialCoveredClasses: ClassOption[];
+  initialTeachers: TeacherOption[];
+  initialUserId: string;
   initialYear: number;
   initialMonth: number;
   initialWeek: number;
 }) {
-  const [classId, setClassId] = useState<string>(initialClasses[0]?.id ?? "");
+  const [classId, setClassId] = useState<string>(() => {
+    if (initialClasses[0]) return initialClasses[0].id;
+    return initialCoveredClasses[0]?.id ?? "";
+  });
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [week, setWeek] = useState(initialWeek);
@@ -74,6 +122,9 @@ export default function MyClassClient({
   const [collapsedWeeks, setCollapsedWeeks] = useState<Set<string>>(new Set());
   const [monthPickerOpen, setMonthPickerOpen] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
+  const [submittedByName, setSubmittedByName] = useState<string | null>(null);
+
+  const [coveredClasses, setCoveredClasses] = useState<ClassOption[]>(initialCoveredClasses);
 
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [classInfo, setClassInfo] = useState<{ id: string; name: string } | null>(null);
@@ -81,6 +132,17 @@ export default function MyClassClient({
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
+
+  const [coverageOpen, setCoverageOpen] = useState(false);
+  const [arrangements, setArrangements] = useState<CoverageArrangement[]>([]);
+  const [formClassId, setFormClassId] = useState("");
+  const [formSubstituteId, setFormSubstituteId] = useState("");
+  const [formMonthValue, setFormMonthValue] = useState("");
+  const [formWeekStart, setFormWeekStart] = useState(1);
+  const [formWeekEnd, setFormWeekEnd] = useState(1);
+  const [arrangeError, setArrangeError] = useState("");
+  const [arrangeSaving, setArrangeSaving] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -92,6 +154,21 @@ export default function MyClassClient({
 
   const currentKey = `${classId}-${year}-${month}-${week}`;
   const isCollapsed = collapsedWeeks.has(currentKey);
+
+  const allClasses = useMemo(() => {
+    const map = new Map<string, ClassOption>();
+    for (const c of initialClasses) {
+      map.set(c.id, { ...c, isSubstituteCoverage: false, teacherName: null });
+    }
+    for (const c of coveredClasses) {
+      if (!map.has(c.id)) {
+        map.set(c.id, { ...c, isSubstituteCoverage: true });
+      }
+    }
+    return Array.from(map.values());
+  }, [initialClasses, coveredClasses]);
+
+  const selectedClass = allClasses.find((c) => c.id === classId);
 
   const loadRoster = useCallback(
     async (selectedClassId: string, selectedYear: number, selectedMonth: number, selectedWeek: number) => {
@@ -108,6 +185,7 @@ export default function MyClassClient({
       setJustSubmitted(false);
       setQuery("");
       setSubmittedAt(null);
+      setSubmittedByName(null);
 
       try {
         const res = await fetch(
@@ -123,6 +201,7 @@ export default function MyClassClient({
           setRoster(data.roster);
           setClassInfo(data.classInfo);
           setSubmittedAt(data.submittedAt ?? null);
+          setSubmittedByName(data.submittedByName ?? null);
         }
       } catch {
         setError("Network error while loading roster.");
@@ -135,9 +214,43 @@ export default function MyClassClient({
     []
   );
 
+  const refreshCoveredClasses = useCallback(async (y: number, m: number, w: number) => {
+    try {
+      const res = await fetch(
+        `/api/sunday-school/my-class/coverage/classes?year=${y}&month=${m}&week=${w}`
+      );
+      const data = await res.json();
+      if (res.ok) setCoveredClasses(data.classes ?? []);
+    } catch {
+      // Non-fatal: the roster endpoint enforces access anyway.
+    }
+  }, []);
+
+  const refreshCoverages = useCallback(async () => {
+    try {
+      const res = await fetch("/api/sunday-school/my-class/coverage");
+      const data = await res.json();
+      if (res.ok) setArrangements(data.coverages ?? []);
+    } catch {
+      // Non-fatal.
+    }
+  }, []);
+
   useEffect(() => {
     loadRoster(classId, year, month, week);
   }, [classId, year, month, week, loadRoster]);
+
+  useEffect(() => {
+    setCoveredClasses([]);
+    refreshCoveredClasses(year, month, week);
+  }, [year, month, week, refreshCoveredClasses]);
+
+  useEffect(() => {
+    const ids = new Set(allClasses.map((c) => c.id));
+    if (!classId || !ids.has(classId)) {
+      setClassId(allClasses[0]?.id ?? "");
+    }
+  }, [allClasses, classId]);
 
   useEffect(() => {
     return () => {
@@ -194,6 +307,7 @@ export default function MyClassClient({
             ? String(data.submittedAt)
             : new Date().toISOString()
         );
+        setSubmittedByName(null);
         setCollapsedWeeks((prev) => new Set(prev).add(currentKey));
 
         if (bannerTimer.current) clearTimeout(bannerTimer.current);
@@ -204,6 +318,86 @@ export default function MyClassClient({
       setJustSubmitted(false);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  function openCoverageModal() {
+    setFormClassId(initialClasses[0]?.id ?? "");
+    setFormSubstituteId("");
+    setFormMonthValue(safeMonthValue);
+    setFormWeekStart(week);
+    setFormWeekEnd(week);
+    setArrangeError("");
+    setCoverageOpen(true);
+    refreshCoverages();
+  }
+
+  async function handleArrange() {
+    if (!formClassId || !formSubstituteId || arrangeSaving) return;
+
+    const [y, m] = formMonthValue.split("-").map(Number);
+    if (!Number.isInteger(y) || !Number.isInteger(m)) {
+      setArrangeError("Please pick a valid month.");
+      return;
+    }
+
+    setArrangeSaving(true);
+    setArrangeError("");
+    try {
+      const res = await fetch("/api/sunday-school/my-class/coverage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          classId: formClassId,
+          substituteId: formSubstituteId,
+          year: y,
+          month: m,
+          weekStart: formWeekStart,
+          weekEnd: formWeekEnd,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setArrangeError(
+          data && typeof data === "object" && "error" in data ? String(data.error) : "Failed to arrange coverage."
+        );
+        return;
+      }
+
+      setCoverageOpen(false);
+      setBanner("Coverage arranged — the substitute can now tick this class for the selected weeks.");
+      if (bannerTimer.current) clearTimeout(bannerTimer.current);
+      bannerTimer.current = setTimeout(() => setBanner(null), 5000);
+      await Promise.all([refreshCoverages(), refreshCoveredClasses(year, month, week)]);
+    } catch {
+      setArrangeError("Network error while arranging coverage.");
+    } finally {
+      setArrangeSaving(false);
+    }
+  }
+
+  async function handleCancelCoverage(id: string) {
+    if (cancellingId) return;
+    setCancellingId(id);
+    setArrangeError("");
+    try {
+      const res = await fetch(`/api/sunday-school/my-class/coverage/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setArrangeError(
+          data && typeof data === "object" && "error" in data ? String(data.error) : "Failed to cancel coverage."
+        );
+        return;
+      }
+      setArrangements((prev) => prev.filter((a) => a.id !== id));
+      await refreshCoveredClasses(year, month, week);
+    } catch {
+      setArrangeError("Network error while cancelling coverage.");
+    } finally {
+      setCancellingId(null);
     }
   }
 
@@ -249,7 +443,35 @@ export default function MyClassClient({
         </p>
       </div>
 
-      {initialClasses.length > 1 && (
+      {initialClasses.length > 0 && (
+        <button
+          type="button"
+          onClick={openCoverageModal}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.4rem",
+            minHeight: 46,
+            marginBottom: "0.75rem",
+            borderRadius: "0.75rem",
+            border: `1px solid ${COLORS.teal}`,
+            background: "#FFFFFF",
+            color: COLORS.teal,
+            fontWeight: 800,
+            fontSize: "0.9rem",
+            fontFamily: "inherit",
+            cursor: "pointer",
+            boxShadow: "0 1px 4px rgba(31,107,77,0.1)",
+          }}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: "1.15rem" }}>swap_horiz</span>
+          Arrange coverage
+        </button>
+      )}
+
+      {allClasses.length > 1 && (
         <div style={{ marginBottom: "0.6rem" }}>
           <label
             htmlFor="class-select"
@@ -263,8 +485,12 @@ export default function MyClassClient({
             onChange={(e) => setClassId(e.target.value)}
             style={selectStyle}
           >
-            {initialClasses.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+            {allClasses.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.isSubstituteCoverage
+                  ? `${c.name} (substitute for ${c.teacherName ?? "another teacher"})`
+                  : c.name}
+              </option>
             ))}
           </select>
         </div>
@@ -476,7 +702,7 @@ export default function MyClassClient({
                     {unreviewedCount > 0
                       ? `${roster.length - unreviewedCount} of ${roster.length} reviewed · ${unreviewedCount} still need a selection`
                       : submittedAt
-                        ? `${formatSubmittedAt(submittedAt)} · ${presentCount} present · ${absentCount} absent`
+                        ? `${formatSubmittedAt(submittedAt)}${submittedByName ? ` · Submitted by ${submittedByName}` : ""} · ${presentCount} present · ${absentCount} absent`
                         : `${presentCount} present · ${absentCount} absent`}
                   </p>
                 </div>
@@ -497,6 +723,26 @@ export default function MyClassClient({
                   {unreviewedCount > 0 ? ` · ${unreviewedCount} to review` : ""}
                 </span>
               </div>
+
+              {selectedClass?.isSubstituteCoverage && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.35rem",
+                    marginBottom: "0.75rem",
+                    padding: "0.35rem 0.6rem",
+                    borderRadius: "0.5rem",
+                    background: "#FDF3E3",
+                    color: "#8A5A00",
+                    fontSize: "0.75rem",
+                    fontWeight: 800,
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: "0.95rem" }}>swap_horiz</span>
+                  Substitute coverage — week {week} only · covering for {selectedClass.teacherName ?? "another teacher"}
+                </div>
+              )}
 
               <button
                 type="button"
@@ -761,6 +1007,238 @@ export default function MyClassClient({
                   : `Submit attendance (${roster.length})`}
           </button>
         </div>
+      )}
+
+      {coverageOpen && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 140, background: "rgba(0,0,0,0.4)" }}
+            onClick={() => setCoverageOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Arrange coverage"
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 141,
+              width: "min(480px, calc(100vw - 1.5rem))",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              background: "#FFFFFF",
+              borderRadius: "1rem",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+              padding: "1.25rem",
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: COLORS.teal }}>
+              Arrange coverage
+            </h2>
+            <p style={{ margin: "0.25rem 0 1rem", fontSize: "0.8125rem", color: COLORS.muted }}>
+              Hand one of your classes to another teacher for specific week(s). They get temporary
+              access to tick attendance, then it reverts automatically.
+            </p>
+
+            <label htmlFor="coverage-class" style={labelStyle}>Class</label>
+            <select
+              id="coverage-class"
+              value={formClassId}
+              onChange={(e) => setFormClassId(e.target.value)}
+              style={selectStyle}
+            >
+              {initialClasses.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+
+            <label htmlFor="coverage-substitute" style={{ ...labelStyle, marginTop: "0.75rem" }}>
+              Substitute teacher
+            </label>
+            <select
+              id="coverage-substitute"
+              value={formSubstituteId}
+              onChange={(e) => setFormSubstituteId(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Select a teacher…</option>
+              {initialTeachers
+                .filter((t) => t.id !== initialUserId)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+            </select>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1.3fr 1fr 1fr", gap: "0.6rem", marginTop: "0.75rem" }}>
+              <div>
+                <label htmlFor="coverage-month" style={labelStyle}>Month</label>
+                <select
+                  id="coverage-month"
+                  value={formMonthValue}
+                  onChange={(e) => setFormMonthValue(e.target.value)}
+                  style={selectStyle}
+                >
+                  {monthOptions.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="coverage-week-start" style={labelStyle}>From week</label>
+                <select
+                  id="coverage-week-start"
+                  value={formWeekStart}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setFormWeekStart(v);
+                    if (v > formWeekEnd) setFormWeekEnd(v);
+                  }}
+                  style={selectStyle}
+                >
+                  {WEEK_LABELS.map((label, i) => (
+                    <option key={label} value={i + 1}>{i + 1}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="coverage-week-end" style={labelStyle}>To week</label>
+                <select
+                  id="coverage-week-end"
+                  value={formWeekEnd}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    setFormWeekEnd(v);
+                    if (v < formWeekStart) setFormWeekStart(v);
+                  }}
+                  style={selectStyle}
+                >
+                  {WEEK_LABELS.map((label, i) => (
+                    <option key={label} value={i + 1}>{i + 1}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {arrangeError && (
+              <div style={{ background: "#FDF0F0", color: COLORS.danger, padding: "0.6rem 0.75rem", borderRadius: "0.5rem", fontSize: "0.8125rem", marginTop: "0.75rem" }}>
+                {arrangeError}
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "0.6rem", marginTop: "1rem" }}>
+              <button
+                type="button"
+                onClick={handleArrange}
+                disabled={arrangeSaving || !formClassId || !formSubstituteId}
+                style={{
+                  flex: 1,
+                  minHeight: 48,
+                  borderRadius: "0.75rem",
+                  border: "none",
+                  background: arrangeSaving || !formClassId || !formSubstituteId ? "#C9C4B8" : COLORS.teal,
+                  color: "#FFFFFF",
+                  fontWeight: 800,
+                  fontSize: "0.95rem",
+                  fontFamily: "inherit",
+                  cursor: arrangeSaving || !formClassId || !formSubstituteId ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.4rem",
+                  boxShadow: arrangeSaving || !formClassId || !formSubstituteId ? "none" : "0 4px 14px rgba(31,107,77,0.3)",
+                }}
+              >
+                {arrangeSaving && (
+                  <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>hourglass_top</span>
+                )}
+                {arrangeSaving ? "Arranging…" : "Arrange coverage"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setCoverageOpen(false)}
+                disabled={arrangeSaving}
+                style={{
+                  minHeight: 48,
+                  padding: "0 1.1rem",
+                  borderRadius: "0.75rem",
+                  border: `1px solid ${COLORS.border}`,
+                  background: "#FFFFFF",
+                  color: COLORS.muted,
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  fontFamily: "inherit",
+                  cursor: arrangeSaving ? "not-allowed" : "pointer",
+                }}
+              >
+                Close
+              </button>
+            </div>
+
+            <div style={{ marginTop: "1.25rem", borderTop: `1px solid ${COLORS.border}`, paddingTop: "1rem" }}>
+              <h3 style={{ margin: "0 0 0.6rem", fontSize: "0.75rem", fontWeight: 800, color: COLORS.teal, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                Your arrangements
+              </h3>
+              {arrangements.length === 0 ? (
+                <p style={{ margin: 0, fontSize: "0.8125rem", color: COLORS.muted }}>
+                  No coverage arrangements yet.
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {arrangements.map((a) => (
+                    <div
+                      key={a.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "space-between",
+                        gap: "0.6rem",
+                        padding: "0.65rem 0.75rem",
+                        background: "#FAF7F0",
+                        borderRadius: "0.6rem",
+                        border: `1px solid ${COLORS.border}`,
+                      }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ margin: 0, fontSize: "0.875rem", fontWeight: 800, color: "#2B2B2B" }}>
+                          {a.class.name}
+                        </p>
+                        <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: COLORS.muted }}>
+                          Substitute: {a.substitute.name}
+                        </p>
+                        <p style={{ margin: "0.1rem 0 0", fontSize: "0.75rem", color: COLORS.muted }}>
+                          {formatCoverageWeeks(a.weeks)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleCancelCoverage(a.id)}
+                        disabled={cancellingId !== null}
+                        style={{
+                          flexShrink: 0,
+                          minHeight: 34,
+                          padding: "0 0.7rem",
+                          borderRadius: "0.55rem",
+                          border: `1px solid ${COLORS.danger}`,
+                          background: "#FFFFFF",
+                          color: COLORS.danger,
+                          fontWeight: 700,
+                          fontSize: "0.78rem",
+                          fontFamily: "inherit",
+                          cursor: cancellingId !== null ? "not-allowed" : "pointer",
+                        }}
+                      >
+                        {cancellingId === a.id ? "Cancelling…" : "Cancel"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
