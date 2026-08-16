@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { visibleUserWhere } from "@/lib/visibility";
+import { normalizeEmail } from "@/lib/email";
 
 const userSelect = {
   id: true,
@@ -108,7 +109,7 @@ export async function createStaffAccount(data: {
   return prisma.user.create({
     data: {
       name: data.name,
-      email: data.email,
+      email: normalizeEmail(data.email),
       password: hashed,
       role: data.role as "STAFF" | "MANAGER",
       department: data.department || null,
@@ -132,7 +133,7 @@ export async function updateStaffAccount(
 ) {
   const updateData: Record<string, unknown> = {};
   if (data.name !== undefined) updateData.name = data.name;
-  if (data.email !== undefined) updateData.email = data.email;
+  if (data.email !== undefined) updateData.email = normalizeEmail(data.email);
   if (data.role !== undefined) updateData.role = data.role;
   if (data.department !== undefined) updateData.department = data.department || null;
   if (data.jobTitleId !== undefined) updateData.jobTitleId = data.jobTitleId || null;
