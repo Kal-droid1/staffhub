@@ -6,8 +6,8 @@ import Link from "next/link";
 import Card from "@/modules/core/components/card";
 import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 import {
-  SUNDAY_SCHOOL_EXPORT_MONTH_OPTIONS,
-  SUNDAY_SCHOOL_FIRST_EXPORT_MONTH,
+  getCurrentSundaySchoolExportMonthValue,
+  getSundaySchoolExportMonthOptions,
 } from "@/modules/sunday-school/export-months";
 
 interface TeacherOption {
@@ -78,7 +78,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
   const [deleteError, setDeleteError] = useState("");
 
   // Export state
-  const [exportMonth, setExportMonth] = useState(SUNDAY_SCHOOL_FIRST_EXPORT_MONTH);
+  const [exportMonth, setExportMonth] = useState(getCurrentSundaySchoolExportMonthValue());
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
 
@@ -428,7 +428,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
             style={{ minWidth: 180 }}
             aria-label="Export month"
           >
-            {SUNDAY_SCHOOL_EXPORT_MONTH_OPTIONS.map((o) => (
+            {getSundaySchoolExportMonthOptions().map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>

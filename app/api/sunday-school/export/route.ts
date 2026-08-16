@@ -3,7 +3,10 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/modules/core/auth";
 import { hasRole } from "@/modules/core/roles";
 import { buildSundaySchoolXlsx, sundaySchoolExportFileName } from "@/modules/sunday-school/report";
-import { isSupportedSundaySchoolExportMonth } from "@/modules/sunday-school/export-months";
+import {
+  isSupportedSundaySchoolExportMonth,
+  getSundaySchoolExportMonthOptions,
+} from "@/modules/sunday-school/export-months";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -23,8 +26,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Invalid month. Must be 1-12." }, { status: 400 });
   }
   if (!isSupportedSundaySchoolExportMonth(year, month)) {
+    const options = getSundaySchoolExportMonthOptions();
+    const first = options[0]?.label ?? "the first supported month";
+    const last = options[options.length - 1]?.label ?? "the last supported month";
     return NextResponse.json(
-      { error: "Sunday School export is only available for July 2026 – June 2027." },
+      { error: `Sunday School export is only available for ${first} – ${last}.` },
       { status: 400 }
     );
   }

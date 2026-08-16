@@ -57,3 +57,35 @@ export function copyCellStyle(srcCell: ExcelJS.Cell, dstCell: ExcelJS.Cell) {
   dstStyle.alignment = srcStyle.alignment;
   dstStyle.numFmt = srcStyle.numFmt;
 }
+
+export function cloneWorksheet(
+  workbook: ExcelJS.Workbook,
+  source: ExcelJS.Worksheet,
+  name: string
+): ExcelJS.Worksheet {
+  const clone = workbook.addWorksheet(name);
+
+  for (let c = 1; c <= source.columnCount; c++) {
+    const srcCol = source.getColumn(c);
+    const dstCol = clone.getColumn(c);
+    if (srcCol.width !== undefined) dstCol.width = srcCol.width;
+    if (srcCol.hidden) dstCol.hidden = srcCol.hidden;
+  }
+
+  source.eachRow({ includeEmpty: true }, (srcRow, rowNumber) => {
+    const dstRow = clone.getRow(rowNumber);
+    dstRow.height = srcRow.height;
+
+    srcRow.eachCell({ includeEmpty: true }, (srcCell, colNumber) => {
+      const dstCell = dstRow.getCell(colNumber);
+      dstCell.value = srcCell.value;
+      copyCellStyle(srcCell, dstCell);
+    });
+  });
+
+  for (const range of source.model.merges) {
+    clone.mergeCells(range);
+  }
+
+  return clone;
+}

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  SUNDAY_SCHOOL_EXPORT_MONTH_OPTIONS,
   SUNDAY_SCHOOL_FIRST_EXPORT_MONTH,
+  getSundaySchoolExportMonthOptions,
 } from "@/modules/sunday-school/export-months";
 
 interface ClassOption {
@@ -84,7 +84,7 @@ export default function MyClassClient({
 
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const monthOptions = SUNDAY_SCHOOL_EXPORT_MONTH_OPTIONS;
+  const monthOptions = useMemo(() => getSundaySchoolExportMonthOptions(), []);
 
   const safeMonthValue = monthOptions.some((o) => o.value === `${year}-${month}`)
     ? `${year}-${month}`
@@ -330,6 +330,8 @@ export default function MyClassClient({
                   display: "grid",
                   gridTemplateColumns: "repeat(3, 1fr)",
                   gap: "0.45rem",
+                  maxHeight: "60vh",
+                  overflowY: "auto",
                 }}
               >
                 {monthOptions.map((o) => {

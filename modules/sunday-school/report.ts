@@ -1,8 +1,9 @@
 import ExcelJS from "exceljs";
 import { readFileSync } from "fs";
 import { join } from "path";
-import { stripCommentsFromTemplate, copyRowStyle } from "@/lib/excel-template";
+import { stripCommentsFromTemplate, copyRowStyle, cloneWorksheet } from "@/lib/excel-template";
 import { getSundaySchoolAttendanceForExport } from "./queries";
+import { MONTH_NAMES } from "./export-months";
 
 const DATA_START_ROW = 11;
 const NO_COL = 5; // E
@@ -10,11 +11,10 @@ const ID_COL = 6; // F
 const NAME_COL = 7; // G
 const WEEK_COLS = [8, 9, 10, 11, 12]; // H, I, J, K, L
 const TOTAL_COL = 13; // M
+const WEEK_COUNT_ROW = 6;
 
-const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const CLONE_SOURCE_YEAR = 2026;
+const CLONE_SOURCE_MONTH = 7;
 
 function colLetter(col: number): string {
   let result = "";
@@ -27,7 +27,7 @@ function colLetter(col: number): string {
   return result;
 }
 
-function monthSheetName(year: number, month: number): string | null {
+function templateSheetName(year: number, month: number): string | null {
   const name = MONTH_NAMES[month - 1];
   if (year === 2026 && month >= 7 && month <= 12) {
     return `${name} ${year}`;
@@ -38,6 +38,39 @@ function monthSheetName(year: number, month: number): string | null {
     return `${name} ${year}`;
   }
   return null;
+}
+
+function canonicalSheetName(year: number, month: number): string {
+  return `${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+function resolveSundaySchoolSheet(
+  workbook: ExcelJS.Workbook,
+  year: number,
+  month: number
+): ExcelJS.Worksheet {
+  const templateName = templateSheetName(year, month);
+  if (templateName) {
+    const existing = workbook.getWorksheet(templateName);
+    if (existing) return existing;
+  }
+
+  const canonicalName = canonicalSheetName(year, month);
+  const existing = workbook.getWorksheet(canonicalName);
+  if (existing) return existing;
+
+  const sourceName = templateSheetName(CLONE_SOURCE_YEAR, CLONE_SOURCE_MONTH);
+  if (!sourceName) {
+    throw new Error(`Sunday School template source sheet is missing.`);
+  }
+  const source = workbook.getWorksheet(sourceName);
+  if (!source) {
+    throw new Error(`Sunday School template source sheet "${sourceName}" not found.`);
+  }
+
+  const clone = cloneWorksheet(workbook, source, canonicalName);
+  clone.getCell(WEEK_COUNT_ROW, WEEK_COLS[0]).value = 5;
+  return clone;
 }
 
 function rowHasLabel(sheet: ExcelJS.Worksheet, row: number, label: string): boolean {
@@ -60,23 +93,13 @@ function getWeekCount(sheet: ExcelJS.Worksheet): number {
 }
 
 export async function buildSundaySchoolXlsx(args: { year: number; month: number }) {
-  const sheetName = monthSheetName(args.year, args.month);
-  if (!sheetName) {
-    throw new Error(
-      `No Sunday School template sheet for ${MONTH_NAMES[args.month - 1]} ${args.year}.`
-    );
-  }
-
   const rawTemplate = readFileSync(join(process.cwd(), "sunday-school-report-template.xlsx"));
   const cleanTemplate = stripCommentsFromTemplate(rawTemplate);
   const workbook = new ExcelJS.Workbook();
   // @ts-expect-error -- Buffer type mismatch between Node and exceljs types; works at runtime
   await workbook.xlsx.load(cleanTemplate);
 
-  const sheet = workbook.getWorksheet(sheetName);
-  if (!sheet) {
-    throw new Error(`Sunday School template sheet "${sheetName}" not found.`);
-  }
+  const sheet = resolveSundaySchoolSheet(workbook, args.year, args.month);
 
   for (const ws of [...workbook.worksheets]) {
     if (ws.id !== sheet.id) {
@@ -90,7 +113,7 @@ export async function buildSundaySchoolXlsx(args: { year: number; month: number 
 
   const originalSummaryRow = findRowByLabel(sheet, DATA_START_ROW, "Total weekly attendants");
   if (originalSummaryRow === null) {
-    throw new Error(`Sunday School template sheet "${sheetName}" is missing its summary rows.`);
+    throw new Error(`Sunday School template sheet "${sheet.name}" is missing its summary rows.`);
   }
 
   const originalDataEnd = originalSummaryRow - 1;
