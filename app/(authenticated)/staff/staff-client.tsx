@@ -292,20 +292,23 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
     return autoRole(jt?.name);
   }
 
-  const isTeacherOnlyEdit = Boolean(
-    editingMember &&
-    editingMember.isTeacher &&
-    !editingMember.jobTitleId &&
-    editingMember.role !== "MANAGER" &&
-    editingMember.role !== "ADMIN"
-  );
+  function isTeacherOnlyMember(s: StaffMember): boolean {
+    return s.isTeacher === true && !s.jobTitleId && s.role !== "MANAGER" && s.role !== "ADMIN";
+  }
+
+  const isTeacherOnlyEdit = Boolean(editingMember && isTeacherOnlyMember(editingMember));
 
   function upsertInView(updated: StaffMember) {
-    if (view === "teachers") {
-      setTeachers((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    } else {
-      setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    }
+    const teacherOnly = isTeacherOnlyMember(updated);
+    const target = teacherOnly ? setTeachers : setStaff;
+    const other = teacherOnly ? setStaff : setTeachers;
+    other((prev) => prev.filter((s) => s.id !== updated.id));
+    target((prev) => {
+      if (prev.some((s) => s.id === updated.id)) {
+        return prev.map((s) => (s.id === updated.id ? updated : s));
+      }
+      return [...prev, updated];
+    });
   }
 
   function removeFromView(id: string) {
@@ -379,7 +382,11 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
     }
 
     if (isNew) {
-      setStaff((prev) => [...prev, data]);
+      if (isTeacherOnlyMember(data)) {
+        setTeachers((prev) => [...prev, data]);
+      } else {
+        setStaff((prev) => [...prev, data]);
+      }
     } else {
       upsertInView(data);
     }
