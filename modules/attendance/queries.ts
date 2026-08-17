@@ -1,5 +1,25 @@
 import { prisma } from "@/lib/prisma";
+import { isTeacherOnlyUser } from "@/modules/core/roles";
 import type { AttendanceStatus } from "@prisma/client";
+
+// Bob Manager (the named demo/test account) is exempted from the monthly
+// attendance report regardless of role. Matches the BOB_EMAIL convention
+// used across prisma scripts.
+const BOB_MANAGER_EMAIL = "bob@staffhub.test";
+
+function isExcludedFromMonthlyReport(user: {
+  isTeacher?: boolean | null;
+  role?: string | null;
+  jobTitle?: { name: string } | null;
+  email?: string | null;
+}): boolean {
+  if (user.email?.toLowerCase() === BOB_MANAGER_EMAIL) return true;
+  return isTeacherOnlyUser({
+    isTeacher: user.isTeacher,
+    role: user.role,
+    jobTitleName: user.jobTitle?.name ?? null,
+  });
+}
 
 const TIMEZONE = "Africa/Addis_Ababa";
 
@@ -475,6 +495,10 @@ export async function getMonthlyReport(
           name: true,
           username: true,
           department: true,
+          email: true,
+          role: true,
+          isTeacher: true,
+          jobTitle: { select: { name: true } },
           hideFromReports: true,
           deactivatedAt: true,
         },
@@ -503,6 +527,7 @@ export async function getMonthlyReport(
 
   for (const r of records) {
     if (r.user.hideFromReports) continue;
+    if (isExcludedFromMonthlyReport(r.user)) continue;
 
     const uid = r.userId;
     if (!byUser.has(uid)) {
@@ -546,9 +571,9 @@ export async function getMonthlyReport(
   if (userId && byUser.size === 0) {
     const user = await prisma.user.findUnique({
       where: { id: userId, ...(viewerIsHidden ? {} : { isHidden: false }) },
-      select: { id: true, name: true, username: true, department: true },
+      select: { id: true, name: true, username: true, department: true, email: true, role: true, isTeacher: true, jobTitle: { select: { name: true } } },
     });
-    if (user) {
+    if (user && !isExcludedFromMonthlyReport(user)) {
       byUser.set(userId, {
         user,
         present: 0,
@@ -569,9 +594,10 @@ export async function getMonthlyReport(
           { deactivatedAt: { gte: monthStart } },
         ],
       },
-      select: { id: true, name: true, username: true, department: true },
+      select: { id: true, name: true, username: true, department: true, email: true, role: true, isTeacher: true, jobTitle: { select: { name: true } } },
     });
     for (const u of allUsers) {
+      if (isExcludedFromMonthlyReport(u)) continue;
       if (!byUser.has(u.id)) {
         byUser.set(u.id, {
           user: u,
