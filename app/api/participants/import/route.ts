@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
 
   let created = 0;
   let updated = 0;
+  const createdRecords: { name: string; localParticipantId: string }[] = [];
+  const updatedRecords: { name: string; localParticipantId: string }[] = [];
   const errors: string[] = [];
 
   for (const row of body.rows) {
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
           },
         });
         updated++;
+        updatedRecords.push({ name: row.name, localParticipantId: row.localParticipantId });
       } else {
         await prisma.participant.create({
           data: {
@@ -80,11 +83,12 @@ export async function POST(req: NextRequest) {
           },
         });
         created++;
+        createdRecords.push({ name: row.name, localParticipantId: row.localParticipantId });
       }
     } catch (e) {
       errors.push(`Failed to process ${row.localParticipantId}: ${e instanceof Error ? e.message : "Unknown error"}`);
     }
   }
 
-  return NextResponse.json({ created, updated, errors });
+  return NextResponse.json({ created, updated, createdRecords, updatedRecords, errors });
 }

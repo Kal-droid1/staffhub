@@ -65,7 +65,14 @@ export default function ImportClient() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
-  const [result, setResult] = useState<{ created: number; updated: number; total: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{
+    created: number;
+    updated: number;
+    total: number;
+    createdRecords: { name: string; localParticipantId: string }[];
+    updatedRecords: { name: string; localParticipantId: string }[];
+    errors: string[];
+  } | null>(null);
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -89,6 +96,8 @@ export default function ImportClient() {
 
       let totalCreated = 0;
       let totalUpdated = 0;
+      const createdRecords: { name: string; localParticipantId: string }[] = [];
+      const updatedRecords: { name: string; localParticipantId: string }[] = [];
       const allErrors: string[] = [];
 
       for (let start = 0; start < allRows.length; start += BATCH_SIZE) {
@@ -105,13 +114,22 @@ export default function ImportClient() {
         } else {
           totalCreated += data.created ?? 0;
           totalUpdated += data.updated ?? 0;
+          createdRecords.push(...(data.createdRecords ?? []));
+          updatedRecords.push(...(data.updatedRecords ?? []));
           if (data.errors?.length) allErrors.push(...data.errors);
         }
 
         setProgress({ done: Math.min(start + BATCH_SIZE, allRows.length), total: allRows.length });
       }
 
-      setResult({ created: totalCreated, updated: totalUpdated, total: allRows.length, errors: allErrors });
+      setResult({
+        created: totalCreated,
+        updated: totalUpdated,
+        total: allRows.length,
+        createdRecords,
+        updatedRecords,
+        errors: allErrors,
+      });
     } catch {
       setError("Failed to read file or upload.");
     }
@@ -211,6 +229,52 @@ export default function ImportClient() {
               <p className="text-muted" style={{ margin: 0, fontSize: "0.8rem" }}>Total rows</p>
             </div>
           </div>
+
+          {result.createdRecords.length > 0 && (
+            <div style={{ marginTop: "1rem" }}>
+              <p style={{ margin: "0 0 0.25rem", fontWeight: 700, fontSize: "0.9rem", color: "var(--color-brand)" }}>
+                Created ({result.createdRecords.length}):
+              </p>
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: "1.25rem",
+                  fontSize: "0.85rem",
+                  maxHeight: 200,
+                  overflowY: "auto",
+                }}
+              >
+                {result.createdRecords.map((r, i) => (
+                  <li key={i}>
+                    {r.name} ({r.localParticipantId})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.updatedRecords.length > 0 && (
+            <div style={{ marginTop: "1rem" }}>
+              <p style={{ margin: "0 0 0.25rem", fontWeight: 700, fontSize: "0.9rem", color: "var(--color-brand)" }}>
+                Updated ({result.updatedRecords.length}):
+              </p>
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: "1.25rem",
+                  fontSize: "0.85rem",
+                  maxHeight: 200,
+                  overflowY: "auto",
+                }}
+              >
+                {result.updatedRecords.map((r, i) => (
+                  <li key={i}>
+                    {r.name} ({r.localParticipantId})
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {result.errors.length > 0 && (
             <div style={{ marginTop: "1rem" }}>

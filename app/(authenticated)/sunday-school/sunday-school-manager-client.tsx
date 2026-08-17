@@ -93,7 +93,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
   const [uploadError, setUploadError] = useState("");
   const [pendingBulkMove, setPendingBulkMove] = useState<{
     participants: SelectedParticipant[];
-    conflicts: { name: string; fromClass: string }[];
+    conflicts: { id: string; name: string; fromClass: string }[];
   } | null>(null);
 
   // Delete state
@@ -286,7 +286,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
       const matched = (data.matched ?? []) as SelectedParticipant[];
       const notFound = (data.notFound ?? []) as { id: string; name: string }[];
 
-      const conflicts: { name: string; fromClass: string }[] = [];
+      const conflicts: { id: string; name: string; fromClass: string }[] = [];
       for (const p of matched) {
         const otherClass = classes.find(
           (cls) =>
@@ -294,7 +294,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
             cls.participants.some((cp) => cp.participant.id === p.id)
         );
         if (otherClass) {
-          conflicts.push({ name: p.name, fromClass: otherClass.name });
+          conflicts.push({ id: p.id, name: p.name, fromClass: otherClass.name });
         }
       }
 
@@ -340,7 +340,18 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
   }
 
   function cancelBulkMove() {
+    if (!pendingBulkMove) return;
+    const conflictIds = new Set(pendingBulkMove.conflicts.map((c) => c.id));
+    const assigned = pendingBulkMove.participants.filter((p) => !conflictIds.has(p.id));
+    setSelectedParticipants(assigned);
     setPendingBulkMove(null);
+    setUploadMessage(
+      `Assigned ${assigned.length} participant${assigned.length !== 1 ? "s" : ""}${
+        pendingBulkMove.conflicts.length > 0
+          ? `; skipped ${pendingBulkMove.conflicts.length} already assigned to another class.`
+          : "."
+      }`
+    );
   }
 
   async function confirmDelete() {
@@ -891,6 +902,9 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
             <p style={{ margin: 0 }}>
               Saving will replace this class&rsquo;s roster with the {pendingBulkMove?.participants.length} matched
               participant{pendingBulkMove?.participants.length === 1 ? "" : "s"} from the file.
+            </p>
+            <p style={{ margin: "0.5rem 0 0" }}>
+              Cancel assigns everyone except the {pendingBulkMove?.conflicts.length} listed above.
             </p>
           </>
         }
