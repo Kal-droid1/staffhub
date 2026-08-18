@@ -16,6 +16,7 @@ interface StaffMember {
   department: string | null;
   jobTitleId: string | null;
   jobTitle: { id: string; name: string } | null;
+  isTeacher: boolean;
   isActive: boolean;
   hideFromReports: boolean;
   deactivatedAt: string | null;
@@ -127,6 +128,11 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
   const router = useRouter();
 
   const isSelf = staff.id === currentUserId;
+
+  // Teacher-only accounts (isTeacher with no job title and no elevated role) don't
+  // do daily staff sign-in or accrue leave, so hide the staff-specific cards/actions.
+  const isTeacherOnly =
+    staff.isTeacher === true && !staff.jobTitleId && staff.role !== "MANAGER" && staff.role !== "ADMIN";
 
   const [jobTitles, setJobTitles] = useState<JobTitleOption[]>([]);
 
@@ -737,10 +743,11 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
         </div>
       </header>
 
-      {/* Two-column layout: Details + Leave Balances (left) | Attendance Snapshot + Documents (right) */}
+      {/* Layout: Details + Leave Balances (left) | Attendance Snapshot + Documents (right).
+          Teacher-only accounts skip the right column, so the grid collapses to one column. */}
       <div className="stack-mobile" style={{
         display: "grid",
-        gridTemplateColumns: "1fr 2fr",
+        gridTemplateColumns: isTeacherOnly ? "1fr" : "1fr 2fr",
         alignItems: "start",
         gap: "1.5rem",
         marginBottom: "1.5rem",
@@ -925,6 +932,7 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
             </div>
           </div>
           <div className="wrap-mobile" style={{ display: "flex", gap: "0.5rem", paddingTop: "1rem", borderTop: "1px solid rgba(191,201,193,0.3)" }}>
+            {!isTeacherOnly && (
             <button
               onClick={() => setShowGrantsModal(true)}
               style={{
@@ -955,6 +963,7 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
             >
               Leave Grants
             </button>
+            )}
             <button
               onClick={openResetPassword}
               style={{
@@ -1258,6 +1267,7 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
         </div>
 
         {/* Right column */}
+        {!isTeacherOnly && (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         {/* Attendance Snapshot */}
         <section style={{
@@ -1823,6 +1833,7 @@ export default function StaffProfileClient({ currentUserId, staff, balances, rec
           )}
         </section>
         </div>
+        )}
       </div>
 
       {/* Request History */}
