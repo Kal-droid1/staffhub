@@ -75,15 +75,25 @@ export default function MonthGridPicker({ value, onChange }: MonthGridPickerProp
               top: "calc(100% + 0.35rem)",
               left: 0,
               zIndex: 131,
-              minWidth: "min(300px, 90vw)",
+              // Explicit width, not shrink-to-fit: an absolutely positioned grid
+              // with width:auto resolves its size from intrinsic sizing, which
+              // varies by engine and by how much room the parent gives it. In
+              // narrow parents (e.g. the 170px picker inside modals) that used to
+              // collapse the popup and squeeze the month buttons down to nothing
+              // but the year. A definite width makes every engine lay out the
+              // grid the same way: 3 columns of >=120px (each fits "September
+              // 2026") on desktop, 2 columns on phones, capped to the viewport
+              // so the popup never overflows the modal it is opened from.
+              width: "min(408px, calc(100vw - 5rem))",
               background: "#FFFFFF",
               border: `1px solid ${BORDER}`,
               borderRadius: "0.9rem",
               boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
               padding: "0.75rem",
               display: "grid",
-              // auto-fill with a minimum column width so narrow modals get 2 columns
-              // (each wide enough for "September 2026") while wider pages get 3.
+              // auto-fill with a minimum column width so narrow popups get fewer
+              // columns (each wide enough for "September 2026") while wider ones
+              // get 3.
               gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
               gap: "0.45rem",
               maxHeight: "60vh",
@@ -123,9 +133,7 @@ export default function MonthGridPicker({ value, onChange }: MonthGridPickerProp
                 >
                   <span
                     style={{
-                      minWidth: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      flexShrink: 0,
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -133,9 +141,12 @@ export default function MonthGridPicker({ value, onChange }: MonthGridPickerProp
                   </span>
                   <span
                     style={{
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                       opacity: selected ? 0.85 : 0.55,
                       fontSize: "0.68rem",
-                      flexShrink: 0,
                     }}
                   >
                     {o.label.split(" ")[1]}

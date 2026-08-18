@@ -1345,19 +1345,28 @@ export default function StaffClient({ currentUserId, initialStaff, initialTeache
                         hasAvatar={Boolean(s.avatarUrl)}
                         isActive={s.isActive}
                       />
-                      <Link
-                        href={`/staff/${s.id}`}
-                        style={{
-                          color: "#1F6B4D",
-                          textDecoration: "none",
-                          fontWeight: 600,
-                          fontSize: "0.95rem",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
-                        onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
-                      >
-                        {s.name}
-                      </Link>
+                      {/* Teacher-only accounts have a simplified profile page (no separate
+                          staff profile to navigate to), so render the name as plain text.
+                          Staff-who-also-teach keep the link to their full profile. */}
+                      {view === "teachers" && isTeacherOnlyMember(s) ? (
+                        <span style={{ color: "#1F6B4D", fontWeight: 600, fontSize: "0.95rem" }}>
+                          {s.name}
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/staff/${s.id}`}
+                          style={{
+                            color: "#1F6B4D",
+                            textDecoration: "none",
+                            fontWeight: 600,
+                            fontSize: "0.95rem",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                          onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                        >
+                          {s.name}
+                        </Link>
+                      )}
                     </div>
                   </td>
                   <td data-label="Username" style={{ padding: "1.5rem 1.5rem", color: "var(--color-text-muted)", fontWeight: 500 }}>
