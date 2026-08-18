@@ -810,25 +810,35 @@ export interface ChronicAbsence {
 }
 
 /**
- * Participants with at least `minAbsences` submitted "Absent" records within a
- * rolling window of `windowWeeks` attendance weeks ending at the real current
- * week (Addis time). Only records that were actually submitted count — records
- * with present = null or missing submittedAt are never treated as absences.
+ * Participants with at least `minAbsences` submitted "Absent" records. The
+ * records are counted either within a specific month's weeks (when `year` and
+ * `month` are given) or within a rolling window of `windowWeeks` attendance
+ * weeks ending at the real current week (Addis time). Only records that were
+ * actually submitted count — records with present = null or missing submittedAt
+ * are never treated as absences.
  */
 export async function getChronicAbsences(args: {
   minAbsences?: number;
   windowWeeks?: number;
+  year?: number;
+  month?: number;
 }): Promise<ChronicAbsence[]> {
   const minAbsences = Math.max(1, Math.floor(args.minAbsences ?? 3));
   const windowWeeks = Math.max(1, Math.min(20, Math.floor(args.windowWeeks ?? 5)));
 
-  const current = getCurrentSundaySchoolPeriod();
-  const currentIdx = sundaySchoolPeriodIndex(current.year, current.month, current.week);
-  const startIdx = currentIdx - (windowWeeks - 1);
+  const { year, month } = args;
+  let periods: { year: number; month: number; week: number }[];
+  if (year !== undefined && month !== undefined) {
+    periods = [1, 2, 3, 4, 5].map((week) => ({ year, month, week }));
+  } else {
+    const current = getCurrentSundaySchoolPeriod();
+    const currentIdx = sundaySchoolPeriodIndex(current.year, current.month, current.week);
+    const startIdx = currentIdx - (windowWeeks - 1);
 
-  const periods: { year: number; month: number; week: number }[] = [];
-  for (let idx = startIdx; idx <= currentIdx; idx++) {
-    periods.push(periodFromIndex(idx));
+    periods = [];
+    for (let idx = startIdx; idx <= currentIdx; idx++) {
+      periods.push(periodFromIndex(idx));
+    }
   }
 
   const records = await prisma.sundaySchoolAttendance.findMany({

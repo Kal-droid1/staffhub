@@ -10,6 +10,7 @@ import {
   getCurrentSundaySchoolExportMonthValue,
   getCurrentSundaySchoolPeriod,
   getSundaySchoolExportMonthOptions,
+  MONTH_NAMES,
 } from "@/modules/sunday-school/export-months";
 
 interface TeacherOption {
@@ -137,9 +138,17 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
   const [absencesLoading, setAbsencesLoading] = useState(false);
   const [absencesError, setAbsencesError] = useState("");
 
+  // Popup/modal state
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [absencesOpen, setAbsencesOpen] = useState(false);
+  const [absenceMode, setAbsenceMode] = useState<"rolling" | "month">("rolling");
+  const [absenceMonth, setAbsenceMonth] = useState(getCurrentSundaySchoolExportMonthValue());
+
   const realPeriod = useMemo(() => getCurrentSundaySchoolPeriod(), []);
+  const monthOptions = useMemo(() => getSundaySchoolExportMonthOptions(), []);
 
   useEffect(() => {
+    if (!summaryOpen) return;
     let cancelled = false;
     setSummaryLoading(true);
     setSummaryError("");
@@ -172,15 +181,23 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
     return () => {
       cancelled = true;
     };
-  }, [summaryPeriod]);
+  }, [summaryPeriod, summaryOpen]);
 
   useEffect(() => {
+    if (!absencesOpen) return;
     let cancelled = false;
     setAbsencesLoading(true);
     setAbsencesError("");
     (async () => {
       try {
-        const res = await fetch(`/api/sunday-school/chronic-absences?minAbsences=${absenceThreshold}`);
+        const params =
+          absenceMode === "month"
+            ? (() => {
+                const [y, m] = absenceMonth.split("-").map(Number);
+                return `&year=${y}&month=${m}`;
+              })()
+            : "";
+        const res = await fetch(`/api/sunday-school/chronic-absences?minAbsences=${absenceThreshold}${params}`);
         const data = await res.json();
         if (cancelled) return;
         if (!res.ok) {
@@ -205,7 +222,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
     return () => {
       cancelled = true;
     };
-  }, [absenceThreshold]);
+  }, [absenceThreshold, absenceMode, absenceMonth, absencesOpen]);
 
   // Attendance history state
   const [historyTarget, setHistoryTarget] = useState<ClassRow | null>(null);
@@ -626,6 +643,65 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
           Trash
         </Link>
 
+        <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+          <button
+            type="button"
+            onClick={() => setSummaryOpen(true)}
+            title="Submission status — who has submitted attendance for the selected week"
+            aria-label="Open submission status"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "0.5rem",
+              borderRadius: "0.5rem",
+              color: "var(--color-text-muted)",
+              transition: "all 0.15s",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#1F6B4D";
+              e.currentTarget.style.background = "rgba(31,107,77,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--color-text-muted)";
+              e.currentTarget.style.background = "none";
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>checklist</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setAbsencesOpen(true)}
+            title="Chronic absences — participants with repeated absences"
+            aria-label="Open chronic absences"
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: "0.5rem",
+              borderRadius: "0.5rem",
+              color: "var(--color-text-muted)",
+              transition: "all 0.15s",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#B23B3B";
+              e.currentTarget.style.background = "rgba(214,69,69,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--color-text-muted)";
+              e.currentTarget.style.background = "none";
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "1.375rem" }}>flag</span>
+          </button>
+        </div>
+
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginLeft: "auto" }}>
           <select
             value={exportMonth}
@@ -634,7 +710,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
             style={{ minWidth: 180 }}
             aria-label="Export month"
           >
-            {getSundaySchoolExportMonthOptions().map((o) => (
+            {monthOptions.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
@@ -649,270 +725,6 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
           {exportError}
         </div>
       )}
-
-      <Card style={{ marginBottom: "1.25rem" }}>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "0.75rem",
-            marginBottom: "0.75rem",
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "var(--color-brand)" }}>
-              Submission status
-            </h2>
-            <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "var(--color-text-muted)" }}>
-              Which classes have submitted attendance for the selected week
-            </p>
-          </div>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: "0.6rem", flexWrap: "wrap" }}>
-            <div style={{ width: 160 }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  color: "var(--color-brand)",
-                  marginBottom: "0.3rem",
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Month
-              </label>
-              <MonthGridPicker
-                value={`${summaryPeriod.year}-${summaryPeriod.month}`}
-                onChange={(y, m) => setSummaryPeriod((prev) => ({ ...prev, year: y, month: m }))}
-              />
-            </div>
-            <div style={{ width: 130 }}>
-              <label
-                htmlFor="summary-week"
-                style={{
-                  display: "block",
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  color: "var(--color-brand)",
-                  marginBottom: "0.3rem",
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                }}
-              >
-                Week
-              </label>
-              <select
-                id="summary-week"
-                value={summaryPeriod.week}
-                onChange={(e) => setSummaryPeriod((prev) => ({ ...prev, week: Number(e.target.value) }))}
-                className="form-select"
-              >
-                {[1, 2, 3, 4, 5].map((w) => {
-                  const isToday =
-                    summaryPeriod.year === realPeriod.year &&
-                    summaryPeriod.month === realPeriod.month &&
-                    w === realPeriod.week;
-                  return (
-                    <option key={w} value={w}>
-                      {isToday ? `Week ${w} (Today)` : `Week ${w}`}
-                    </option>
-                  );
-                })}
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {summaryError && (
-          <div className="form-error mb-2" role="alert">
-            {summaryError}
-          </div>
-        )}
-
-        {summaryLoading ? (
-          <div style={{ textAlign: "center", padding: "1.25rem 0", color: "var(--color-text-muted)" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: "1.5rem", opacity: 0.6 }}>hourglass_top</span>
-            <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem" }}>Loading…</p>
-          </div>
-        ) : summary.length === 0 ? (
-          <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
-            No classes with participants for this week.
-          </p>
-        ) : summaryGroups.length === 0 ? (
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0.7rem 0.85rem",
-              borderRadius: "0.6rem",
-              background: "#EFF7F3",
-              border: "1px solid rgba(31,107,77,0.25)",
-              color: "#1F6B4D",
-              fontSize: "0.875rem",
-              fontWeight: 800,
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>check_circle</span>
-            All {summary.length} class{summary.length === 1 ? "" : "es"} submitted for Week {summaryPeriod.week}.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {summaryGroups.map((g) => (
-              <div
-                key={g.key}
-                style={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: "0.6rem",
-                  padding: "0.6rem 0.75rem",
-                  borderRadius: "0.6rem",
-                  background: g.bg,
-                  border: `1px solid ${g.border}`,
-                }}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ color: g.color, fontSize: "1.15rem", marginTop: "0.1rem", flexShrink: 0 }}
-                >
-                  {g.icon}
-                </span>
-                <div style={{ minWidth: 0 }}>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "0.75rem",
-                      fontWeight: 800,
-                      color: g.color,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    {g.label} ({g.items.length})
-                  </p>
-                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.875rem", color: "#2B2B2B", lineHeight: 1.45 }}>
-                    {g.items.map((c) => c.name).join(", ")}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      <Card style={{ marginBottom: "1.25rem" }}>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: "0.75rem",
-            marginBottom: "0.75rem",
-          }}
-        >
-          <div style={{ minWidth: 0 }}>
-            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "var(--color-brand)" }}>
-              Chronic absences
-            </h2>
-            <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "var(--color-text-muted)" }}>
-              Participants with repeated absences in the last 5 weeks — for family follow-up. Only submitted
-              &ldquo;Absent&rdquo; records are counted.
-            </p>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <label htmlFor="absence-threshold" className="text-muted text-sm" style={{ fontWeight: 700 }}>
-              Absences ≥
-            </label>
-            <input
-              id="absence-threshold"
-              type="number"
-              min={1}
-              max={20}
-              value={absenceThreshold}
-              onChange={(e) => {
-                const v = Number(e.target.value);
-                if (Number.isInteger(v) && v >= 1 && v <= 20) setAbsenceThreshold(v);
-              }}
-              className="form-input"
-              style={{ width: 72, minHeight: 36, textAlign: "center" }}
-              aria-label="Minimum absences threshold"
-            />
-          </div>
-        </div>
-
-        {absencesError && (
-          <div className="form-error mb-2" role="alert">
-            {absencesError}
-          </div>
-        )}
-
-        {absencesLoading ? (
-          <div style={{ textAlign: "center", padding: "1.25rem 0", color: "var(--color-text-muted)" }}>
-            <span className="material-symbols-outlined" style={{ fontSize: "1.5rem", opacity: 0.6 }}>hourglass_top</span>
-            <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem" }}>Loading…</p>
-          </div>
-        ) : absences.length === 0 ? (
-          <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
-            No participants with {absenceThreshold} or more absences in the last 5 weeks.
-          </p>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {absences.map((a) => (
-              <div
-                key={a.participantId}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "0.75rem",
-                  padding: "0.65rem 0.75rem",
-                  borderRadius: "0.6rem",
-                  background: "#FDF0F0",
-                  border: "1px solid rgba(214,69,69,0.2)",
-                }}
-              >
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 800, color: "#2B2B2B" }}>{a.name}</p>
-                  <p
-                    style={{
-                      margin: "0.15rem 0 0",
-                      fontSize: "0.75rem",
-                      color: "var(--color-text-muted)",
-                      fontFamily: "var(--font-mono)",
-                    }}
-                  >
-                    {a.localParticipantId}
-                    {a.className ? ` · ${a.className}` : ""}
-                  </p>
-                </div>
-                <span
-                  style={{
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.25rem",
-                    padding: "0.25rem 0.6rem",
-                    borderRadius: "999px",
-                    background: "#FDF0F0",
-                    color: "#B23B3B",
-                    border: "1px solid rgba(214,69,69,0.3)",
-                    fontSize: "0.75rem",
-                    fontWeight: 800,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: "0.9rem" }}>close</span>
-                  {a.absenceCount} absent
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
 
       {showForm && (
         <div
@@ -1325,6 +1137,453 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
       />
+
+      {summaryOpen && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 150, background: "rgba(0,0,0,0.4)" }}
+            onClick={() => setSummaryOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Submission status"
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 151,
+              width: "min(560px, calc(100vw - 1.5rem))",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              background: "#FFFFFF",
+              borderRadius: "1rem",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+              padding: "1.25rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+              <div style={{ minWidth: 0 }}>
+                <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "var(--color-brand)" }}>
+                  Submission status
+                </h2>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.8rem", color: "var(--color-text-muted)" }}>
+                  Which classes have submitted attendance for the selected week
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSummaryOpen(false)}
+                aria-label="Close"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1.5rem",
+                  color: "var(--color-brand)",
+                  lineHeight: 1,
+                  padding: "0.25rem",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "flex-end", gap: "0.6rem", flexWrap: "wrap", margin: "1rem 0" }}>
+              <div style={{ width: 170 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    color: "var(--color-brand)",
+                    marginBottom: "0.3rem",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Month
+                </label>
+                <MonthGridPicker
+                  value={`${summaryPeriod.year}-${summaryPeriod.month}`}
+                  onChange={(y, m) => setSummaryPeriod((prev) => ({ ...prev, year: y, month: m }))}
+                />
+              </div>
+              <div style={{ width: 140 }}>
+                <label
+                  htmlFor="summary-week"
+                  style={{
+                    display: "block",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    color: "var(--color-brand)",
+                    marginBottom: "0.3rem",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Week
+                </label>
+                <select
+                  id="summary-week"
+                  value={summaryPeriod.week}
+                  onChange={(e) => setSummaryPeriod((prev) => ({ ...prev, week: Number(e.target.value) }))}
+                  className="form-select"
+                >
+                  {[1, 2, 3, 4, 5].map((w) => {
+                    const isToday =
+                      summaryPeriod.year === realPeriod.year &&
+                      summaryPeriod.month === realPeriod.month &&
+                      w === realPeriod.week;
+                    return (
+                      <option key={w} value={w}>
+                        {isToday ? `Week ${w} (Today)` : `Week ${w}`}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
+            {summaryError && (
+              <div className="form-error mb-2" role="alert">
+                {summaryError}
+              </div>
+            )}
+
+            {summaryLoading ? (
+              <div style={{ textAlign: "center", padding: "1.5rem 0", color: "var(--color-text-muted)" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "1.75rem", opacity: 0.6 }}>hourglass_top</span>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem" }}>Loading…</p>
+              </div>
+            ) : summary.length === 0 ? (
+              <p className="text-muted" style={{ margin: 0, fontSize: "0.875rem" }}>
+                No classes with participants for this week.
+              </p>
+            ) : summaryGroups.length === 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5rem",
+                  padding: "0.7rem 0.85rem",
+                  borderRadius: "0.6rem",
+                  background: "#EFF7F3",
+                  border: "1px solid rgba(31,107,77,0.25)",
+                  color: "#1F6B4D",
+                  fontSize: "0.875rem",
+                  fontWeight: 800,
+                }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>check_circle</span>
+                All {summary.length} class{summary.length === 1 ? "" : "es"} submitted for Week {summaryPeriod.week}.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {summaryGroups.map((g) => (
+                  <div
+                    key={g.key}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "0.6rem",
+                      padding: "0.6rem 0.75rem",
+                      borderRadius: "0.6rem",
+                      background: g.bg,
+                      border: `1px solid ${g.border}`,
+                    }}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ color: g.color, fontSize: "1.15rem", marginTop: "0.1rem", flexShrink: 0 }}
+                    >
+                      {g.icon}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: "0.75rem",
+                          fontWeight: 800,
+                          color: g.color,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        {g.label} ({g.items.length})
+                      </p>
+                      <p style={{ margin: "0.15rem 0 0", fontSize: "0.875rem", color: "#2B2B2B", lineHeight: 1.45 }}>
+                        {g.items.map((c) => c.name).join(", ")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
+              <button type="button" onClick={() => setSummaryOpen(false)} className="btn btn-ghost">
+                Close
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {absencesOpen && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 150, background: "rgba(0,0,0,0.4)" }}
+            onClick={() => setAbsencesOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Chronic absences"
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 151,
+              width: "min(560px, calc(100vw - 1.5rem))",
+              maxHeight: "85vh",
+              overflowY: "auto",
+              background: "#FFFFFF",
+              borderRadius: "1rem",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+              padding: "1.25rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+              <div style={{ minWidth: 0 }}>
+                <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 800, color: "var(--color-brand)" }}>
+                  Chronic absences
+                </h2>
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.8rem", color: "var(--color-text-muted)" }}>
+                  Participants with repeated absences — for family follow-up. Only submitted &ldquo;Absent&rdquo;
+                  records are counted.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAbsencesOpen(false)}
+                aria-label="Close"
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontSize: "1.5rem",
+                  color: "var(--color-brand)",
+                  lineHeight: 1,
+                  padding: "0.25rem",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "0.75rem",
+                margin: "1rem 0 0.25rem",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.3rem",
+                  padding: "0.2rem",
+                  background: "#F1EFEA",
+                  borderRadius: "0.6rem",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setAbsenceMode("rolling")}
+                  aria-pressed={absenceMode === "rolling"}
+                  style={{
+                    minHeight: 36,
+                    padding: "0 0.85rem",
+                    borderRadius: "0.45rem",
+                    border: "none",
+                    background: absenceMode === "rolling" ? "#FFFFFF" : "transparent",
+                    color: absenceMode === "rolling" ? "#1F6B4D" : "var(--color-text-muted)",
+                    fontWeight: absenceMode === "rolling" ? 800 : 600,
+                    fontSize: "0.8rem",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    boxShadow: absenceMode === "rolling" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                  }}
+                >
+                  Last 5 weeks
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAbsenceMode("month")}
+                  aria-pressed={absenceMode === "month"}
+                  style={{
+                    minHeight: 36,
+                    padding: "0 0.85rem",
+                    borderRadius: "0.45rem",
+                    border: "none",
+                    background: absenceMode === "month" ? "#FFFFFF" : "transparent",
+                    color: absenceMode === "month" ? "#1F6B4D" : "var(--color-text-muted)",
+                    fontWeight: absenceMode === "month" ? 800 : 600,
+                    fontSize: "0.8rem",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    boxShadow: absenceMode === "month" ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
+                  }}
+                >
+                  Pick a month
+                </button>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <label htmlFor="absence-threshold" className="text-muted text-sm" style={{ fontWeight: 700 }}>
+                  Absences ≥
+                </label>
+                <input
+                  id="absence-threshold"
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={absenceThreshold}
+                  onChange={(e) => {
+                    const v = Number(e.target.value);
+                    if (Number.isInteger(v) && v >= 1 && v <= 20) setAbsenceThreshold(v);
+                  }}
+                  className="form-input"
+                  style={{ width: 72, minHeight: 36, textAlign: "center" }}
+                  aria-label="Minimum absences threshold"
+                />
+              </div>
+            </div>
+
+            {absenceMode === "month" && (
+              <div style={{ marginTop: "0.75rem", maxWidth: 260 }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    color: "var(--color-brand)",
+                    marginBottom: "0.3rem",
+                    letterSpacing: "0.04em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Month
+                </label>
+                <MonthGridPicker
+                  value={absenceMonth}
+                  onChange={(y, m) => setAbsenceMonth(`${y}-${m}`)}
+                />
+              </div>
+            )}
+
+            <p
+              style={{
+                margin: "0.75rem 0 0",
+                fontSize: "0.78rem",
+                fontWeight: 600,
+                color: "var(--color-text-muted)",
+              }}
+            >
+              {absenceMode === "rolling"
+                ? `Counting absences in the last 5 weeks (through ${MONTH_NAMES[realPeriod.month - 1]} ${realPeriod.year}, Week ${realPeriod.week}).`
+                : `Counting absences in ${monthOptions.find((o) => o.value === absenceMonth)?.label ?? absenceMonth}.`}
+            </p>
+
+            {absencesError && (
+              <div className="form-error mb-2" role="alert">
+                {absencesError}
+              </div>
+            )}
+
+            {absencesLoading ? (
+              <div style={{ textAlign: "center", padding: "1.5rem 0", color: "var(--color-text-muted)" }}>
+                <span className="material-symbols-outlined" style={{ fontSize: "1.75rem", opacity: 0.6 }}>hourglass_top</span>
+                <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem" }}>Loading…</p>
+              </div>
+            ) : absences.length === 0 ? (
+              <p className="text-muted" style={{ margin: 0, fontSize: "0.875rem" }}>
+                No participants with {absenceThreshold} or more absences in{" "}
+                {absenceMode === "rolling"
+                  ? "the last 5 weeks."
+                  : `${monthOptions.find((o) => o.value === absenceMonth)?.label ?? absenceMonth}.`}
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                {absences.map((a) => (
+                  <div
+                    key={a.participantId}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: "0.75rem",
+                      padding: "0.65rem 0.75rem",
+                      borderRadius: "0.6rem",
+                      background: "#FDF0F0",
+                      border: "1px solid rgba(214,69,69,0.2)",
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 800, color: "#2B2B2B" }}>{a.name}</p>
+                      <p
+                        style={{
+                          margin: "0.15rem 0 0",
+                          fontSize: "0.75rem",
+                          color: "var(--color-text-muted)",
+                          fontFamily: "var(--font-mono)",
+                        }}
+                      >
+                        {a.localParticipantId}
+                        {a.className ? ` · ${a.className}` : ""}
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.25rem",
+                        padding: "0.25rem 0.6rem",
+                        borderRadius: "999px",
+                        background: "#FDF0F0",
+                        color: "#B23B3B",
+                        border: "1px solid rgba(214,69,69,0.3)",
+                        fontSize: "0.75rem",
+                        fontWeight: 800,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: "0.9rem" }}>close</span>
+                      {a.absenceCount} absent
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
+              <button type="button" onClick={() => setAbsencesOpen(false)} className="btn btn-ghost">
+                Close
+              </button>
+            </div>
+          </div>
+        </>
+      )}
 
       {historyTarget && (
         <>
