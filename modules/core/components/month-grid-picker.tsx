@@ -82,10 +82,14 @@ export default function MonthGridPicker({ value, onChange }: MonthGridPickerProp
               boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
               padding: "0.75rem",
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
+              // minmax(0, 1fr) lets the tracks shrink below the buttons'
+              // min-content width so the grid fits whatever container it's in
+              // (full page or narrow modal) instead of overflowing sideways.
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
               gap: "0.45rem",
               maxHeight: "60vh",
               overflowY: "auto",
+              overflowX: "hidden",
             }}
           >
             {monthOptions.map((o) => {
@@ -99,8 +103,10 @@ export default function MonthGridPicker({ value, onChange }: MonthGridPickerProp
                     onChange(y, m);
                     setOpen(false);
                   }}
+                  title={o.label}
                   style={{
                     minHeight: 40,
+                    minWidth: 0,
                     padding: "0 0.35rem",
                     borderRadius: "0.55rem",
                     border: selected ? "2px solid #1F6B4D" : `1px solid ${BORDER}`,
@@ -114,11 +120,26 @@ export default function MonthGridPicker({ value, onChange }: MonthGridPickerProp
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "0.25rem",
-                    whiteSpace: "nowrap",
+                    overflow: "hidden",
                   }}
                 >
-                  {o.label.split(" ")[0]}
-                  <span style={{ opacity: selected ? 0.85 : 0.55, fontSize: "0.68rem" }}>
+                  <span
+                    style={{
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {o.label.split(" ")[0]}
+                  </span>
+                  <span
+                    style={{
+                      opacity: selected ? 0.85 : 0.55,
+                      fontSize: "0.68rem",
+                      flexShrink: 0,
+                    }}
+                  >
                     {o.label.split(" ")[1]}
                   </span>
                 </button>
