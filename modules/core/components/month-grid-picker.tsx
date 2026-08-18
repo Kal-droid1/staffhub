@@ -74,18 +74,17 @@ export default function MonthGridPicker({ value, onChange }: MonthGridPickerProp
               position: "absolute",
               top: "calc(100% + 0.35rem)",
               left: 0,
-              right: 0,
               zIndex: 131,
+              minWidth: "min(300px, 90vw)",
               background: "#FFFFFF",
               border: `1px solid ${BORDER}`,
               borderRadius: "0.9rem",
               boxShadow: "0 12px 32px rgba(0,0,0,0.12)",
               padding: "0.75rem",
               display: "grid",
-              // minmax(0, 1fr) lets the tracks shrink below the buttons'
-              // min-content width so the grid fits whatever container it's in
-              // (full page or narrow modal) instead of overflowing sideways.
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              // auto-fill with a minimum column width so narrow modals get 2 columns
+              // (each wide enough for "September 2026") while wider pages get 3.
+              gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
               gap: "0.45rem",
               maxHeight: "60vh",
               overflowY: "auto",
@@ -106,8 +105,7 @@ export default function MonthGridPicker({ value, onChange }: MonthGridPickerProp
                   title={o.label}
                   style={{
                     minHeight: 40,
-                    minWidth: 0,
-                    padding: "0 0.35rem",
+                    padding: "0.35rem 0.45rem",
                     borderRadius: "0.55rem",
                     border: selected ? "2px solid #1F6B4D" : `1px solid ${BORDER}`,
                     background: selected ? TEAL : "#FFFFFF",
