@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Card from "@/modules/core/components/card";
@@ -55,6 +55,22 @@ interface HistoryWeek {
   submittedAt: string | null;
 }
 
+interface SubmissionSummaryRow {
+  classId: string;
+  name: string;
+  teacherName: string;
+  participantCount: number;
+  status: "not_started" | "in_progress" | "submitted";
+}
+
+interface ChronicAbsenceRow {
+  participantId: string;
+  name: string;
+  localParticipantId: string;
+  className: string | null;
+  absenceCount: number;
+}
+
 function formatHistoryDate(value: string | null): string {
   if (!value) return "";
   const date = new Date(value);
@@ -105,6 +121,91 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
   const [exportMonth, setExportMonth] = useState(getCurrentSundaySchoolExportMonthValue());
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
+
+  // Submission summary state
+  const [summaryPeriod, setSummaryPeriod] = useState(() => {
+    const p = getCurrentSundaySchoolPeriod();
+    return { year: p.year, month: p.month, week: p.week };
+  });
+  const [summary, setSummary] = useState<SubmissionSummaryRow[]>([]);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState("");
+
+  // Chronic absences state
+  const [absenceThreshold, setAbsenceThreshold] = useState(3);
+  const [absences, setAbsences] = useState<ChronicAbsenceRow[]>([]);
+  const [absencesLoading, setAbsencesLoading] = useState(false);
+  const [absencesError, setAbsencesError] = useState("");
+
+  const realPeriod = useMemo(() => getCurrentSundaySchoolPeriod(), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSummaryLoading(true);
+    setSummaryError("");
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/sunday-school/submission-summary?year=${summaryPeriod.year}&month=${summaryPeriod.month}&week=${summaryPeriod.week}`
+        );
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setSummaryError(
+            data && typeof data === "object" && "error" in data
+              ? String(data.error)
+              : "Failed to load submission status."
+          );
+          setSummary([]);
+        } else {
+          setSummary(data.classes ?? []);
+        }
+      } catch {
+        if (!cancelled) {
+          setSummaryError("Network error while loading submission status.");
+          setSummary([]);
+        }
+      } finally {
+        if (!cancelled) setSummaryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [summaryPeriod]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setAbsencesLoading(true);
+    setAbsencesError("");
+    (async () => {
+      try {
+        const res = await fetch(`/api/sunday-school/chronic-absences?minAbsences=${absenceThreshold}`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (!res.ok) {
+          setAbsencesError(
+            data && typeof data === "object" && "error" in data
+              ? String(data.error)
+              : "Failed to load absence data."
+          );
+          setAbsences([]);
+        } else {
+          setAbsences(data.participants ?? []);
+        }
+      } catch {
+        if (!cancelled) {
+          setAbsencesError("Network error while loading absence data.");
+          setAbsences([]);
+        }
+      } finally {
+        if (!cancelled) setAbsencesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [absenceThreshold]);
 
   // Attendance history state
   const [historyTarget, setHistoryTarget] = useState<ClassRow | null>(null);
@@ -475,6 +576,36 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
     setExporting(false);
   }
 
+  const summaryGroups = [
+    {
+      key: "not_started",
+      label: "Not yet submitted",
+      icon: "radio_button_unchecked",
+      color: "#B23B3B",
+      bg: "#FDF0F0",
+      border: "rgba(214,69,69,0.25)",
+      items: summary.filter((c) => c.status === "not_started"),
+    },
+    {
+      key: "in_progress",
+      label: "In progress",
+      icon: "edit_note",
+      color: "#8A5A00",
+      bg: "#FDF3E3",
+      border: "#EED9B0",
+      items: summary.filter((c) => c.status === "in_progress"),
+    },
+    {
+      key: "submitted",
+      label: "Submitted",
+      icon: "check_circle",
+      color: "#1F6B4D",
+      bg: "#EFF7F3",
+      border: "rgba(31,107,77,0.25)",
+      items: summary.filter((c) => c.status === "submitted"),
+    },
+  ].filter((g) => g.items.length > 0);
+
   return (
     <div className="page-container" style={{ maxWidth: 1080 }}>
       <h1 className="page-title" style={{ marginBottom: "0.5rem" }}>
@@ -518,6 +649,270 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
           {exportError}
         </div>
       )}
+
+      <Card style={{ marginBottom: "1.25rem" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "0.75rem",
+            marginBottom: "0.75rem",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "var(--color-brand)" }}>
+              Submission status
+            </h2>
+            <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "var(--color-text-muted)" }}>
+              Which classes have submitted attendance for the selected week
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: "0.6rem", flexWrap: "wrap" }}>
+            <div style={{ width: 160 }}>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  color: "var(--color-brand)",
+                  marginBottom: "0.3rem",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Month
+              </label>
+              <MonthGridPicker
+                value={`${summaryPeriod.year}-${summaryPeriod.month}`}
+                onChange={(y, m) => setSummaryPeriod((prev) => ({ ...prev, year: y, month: m }))}
+              />
+            </div>
+            <div style={{ width: 130 }}>
+              <label
+                htmlFor="summary-week"
+                style={{
+                  display: "block",
+                  fontSize: "0.72rem",
+                  fontWeight: 700,
+                  color: "var(--color-brand)",
+                  marginBottom: "0.3rem",
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Week
+              </label>
+              <select
+                id="summary-week"
+                value={summaryPeriod.week}
+                onChange={(e) => setSummaryPeriod((prev) => ({ ...prev, week: Number(e.target.value) }))}
+                className="form-select"
+              >
+                {[1, 2, 3, 4, 5].map((w) => {
+                  const isToday =
+                    summaryPeriod.year === realPeriod.year &&
+                    summaryPeriod.month === realPeriod.month &&
+                    w === realPeriod.week;
+                  return (
+                    <option key={w} value={w}>
+                      {isToday ? `Week ${w} (Today)` : `Week ${w}`}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {summaryError && (
+          <div className="form-error mb-2" role="alert">
+            {summaryError}
+          </div>
+        )}
+
+        {summaryLoading ? (
+          <div style={{ textAlign: "center", padding: "1.25rem 0", color: "var(--color-text-muted)" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "1.5rem", opacity: 0.6 }}>hourglass_top</span>
+            <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem" }}>Loading…</p>
+          </div>
+        ) : summary.length === 0 ? (
+          <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+            No classes with participants for this week.
+          </p>
+        ) : summaryGroups.length === 0 ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+              padding: "0.7rem 0.85rem",
+              borderRadius: "0.6rem",
+              background: "#EFF7F3",
+              border: "1px solid rgba(31,107,77,0.25)",
+              color: "#1F6B4D",
+              fontSize: "0.875rem",
+              fontWeight: 800,
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: "1.1rem" }}>check_circle</span>
+            All {summary.length} class{summary.length === 1 ? "" : "es"} submitted for Week {summaryPeriod.week}.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {summaryGroups.map((g) => (
+              <div
+                key={g.key}
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: "0.6rem",
+                  padding: "0.6rem 0.75rem",
+                  borderRadius: "0.6rem",
+                  background: g.bg,
+                  border: `1px solid ${g.border}`,
+                }}
+              >
+                <span
+                  className="material-symbols-outlined"
+                  style={{ color: g.color, fontSize: "1.15rem", marginTop: "0.1rem", flexShrink: 0 }}
+                >
+                  {g.icon}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.75rem",
+                      fontWeight: 800,
+                      color: g.color,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {g.label} ({g.items.length})
+                  </p>
+                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.875rem", color: "#2B2B2B", lineHeight: 1.45 }}>
+                    {g.items.map((c) => c.name).join(", ")}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card style={{ marginBottom: "1.25rem" }}>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: "0.75rem",
+            marginBottom: "0.75rem",
+          }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: 800, color: "var(--color-brand)" }}>
+              Chronic absences
+            </h2>
+            <p style={{ margin: "0.2rem 0 0", fontSize: "0.8rem", color: "var(--color-text-muted)" }}>
+              Participants with repeated absences in the last 5 weeks — for family follow-up. Only submitted
+              &ldquo;Absent&rdquo; records are counted.
+            </p>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <label htmlFor="absence-threshold" className="text-muted text-sm" style={{ fontWeight: 700 }}>
+              Absences ≥
+            </label>
+            <input
+              id="absence-threshold"
+              type="number"
+              min={1}
+              max={20}
+              value={absenceThreshold}
+              onChange={(e) => {
+                const v = Number(e.target.value);
+                if (Number.isInteger(v) && v >= 1 && v <= 20) setAbsenceThreshold(v);
+              }}
+              className="form-input"
+              style={{ width: 72, minHeight: 36, textAlign: "center" }}
+              aria-label="Minimum absences threshold"
+            />
+          </div>
+        </div>
+
+        {absencesError && (
+          <div className="form-error mb-2" role="alert">
+            {absencesError}
+          </div>
+        )}
+
+        {absencesLoading ? (
+          <div style={{ textAlign: "center", padding: "1.25rem 0", color: "var(--color-text-muted)" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: "1.5rem", opacity: 0.6 }}>hourglass_top</span>
+            <p style={{ margin: "0.4rem 0 0", fontSize: "0.85rem" }}>Loading…</p>
+          </div>
+        ) : absences.length === 0 ? (
+          <p className="text-muted" style={{ margin: 0, fontSize: "0.85rem" }}>
+            No participants with {absenceThreshold} or more absences in the last 5 weeks.
+          </p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {absences.map((a) => (
+              <div
+                key={a.participantId}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "0.75rem",
+                  padding: "0.65rem 0.75rem",
+                  borderRadius: "0.6rem",
+                  background: "#FDF0F0",
+                  border: "1px solid rgba(214,69,69,0.2)",
+                }}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ margin: 0, fontSize: "0.9rem", fontWeight: 800, color: "#2B2B2B" }}>{a.name}</p>
+                  <p
+                    style={{
+                      margin: "0.15rem 0 0",
+                      fontSize: "0.75rem",
+                      color: "var(--color-text-muted)",
+                      fontFamily: "var(--font-mono)",
+                    }}
+                  >
+                    {a.localParticipantId}
+                    {a.className ? ` · ${a.className}` : ""}
+                  </p>
+                </div>
+                <span
+                  style={{
+                    flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    padding: "0.25rem 0.6rem",
+                    borderRadius: "999px",
+                    background: "#FDF0F0",
+                    color: "#B23B3B",
+                    border: "1px solid rgba(214,69,69,0.3)",
+                    fontSize: "0.75rem",
+                    fontWeight: 800,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: "0.9rem" }}>close</span>
+                  {a.absenceCount} absent
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {showForm && (
         <div

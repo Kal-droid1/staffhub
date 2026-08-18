@@ -18,6 +18,8 @@ export {
   listIncomingCoveragesForSubstitute,
   getClassAttendanceHistory,
   deleteCoverage,
+  getSundaySchoolSubmissionSummary,
+  getChronicAbsences,
 } from "./queries";
 export type { RosterParticipant, ClassRoster } from "./queries";
 export { buildSundaySchoolXlsx, sundaySchoolExportFileName } from "./report";

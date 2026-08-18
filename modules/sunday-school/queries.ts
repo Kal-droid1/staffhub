@@ -722,3 +722,170 @@ export async function deleteCoverage(args: { coverageId: string; userId: string 
   await prisma.sundaySchoolCoverage.delete({ where: { id: coverage.id } });
   return { ok: true };
 }
+
+export interface ClassSubmissionStatus {
+  classId: string;
+  name: string;
+  teacherName: string;
+  participantCount: number;
+  status: "not_started" | "in_progress" | "submitted";
+}
+
+/**
+ * Per-class submission status for one week, mirroring the status logic used by
+ * the teacher's My Class page and the manager's class history view:
+ *  - not_started: no selections at all for this week
+ *  - in_progress: selections exist but nothing has been submitted
+ *  - submitted:   at least one record carries a submittedAt timestamp
+ * Classes with no participants are excluded (they can never be submitted).
+ */
+export async function getSundaySchoolSubmissionSummary(args: {
+  year: number;
+  month: number;
+  week: number;
+}): Promise<ClassSubmissionStatus[]> {
+  const classes = await prisma.sundaySchoolClass.findMany({
+    where: { deletedAt: null },
+    select: {
+      id: true,
+      name: true,
+      teacher: { select: { name: true } },
+      _count: { select: { participants: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  const records = await prisma.sundaySchoolAttendance.findMany({
+    where: { year: args.year, month: args.month, week: args.week },
+    select: { classId: true, present: true, submittedAt: true },
+  });
+
+  const byClass = new Map<string, { hasSelection: boolean; latest: Date | null }>();
+  for (const r of records) {
+    if (!r.classId) continue;
+    let entry = byClass.get(r.classId);
+    if (!entry) {
+      entry = { hasSelection: false, latest: null };
+      byClass.set(r.classId, entry);
+    }
+    if (r.present !== null) entry.hasSelection = true;
+    if (r.submittedAt && (!entry.latest || r.submittedAt > entry.latest)) {
+      entry.latest = r.submittedAt;
+    }
+  }
+
+  return classes
+    .filter((c) => c._count.participants > 0)
+    .map((c) => {
+      const entry = byClass.get(c.id);
+      const status = !entry?.hasSelection
+        ? ("not_started" as const)
+        : entry.latest
+          ? ("submitted" as const)
+          : ("in_progress" as const);
+      return {
+        classId: c.id,
+        name: c.name,
+        teacherName: c.teacher.name,
+        participantCount: c._count.participants,
+        status,
+      };
+    });
+}
+
+function periodFromIndex(index: number): { year: number; month: number; week: number } {
+  const week = ((index - 1) % 5) + 1;
+  const monthIndex = Math.floor((index - 1) / 5);
+  const year = Math.floor(monthIndex / 12);
+  const month = (monthIndex % 12) + 1;
+  return { year, month, week };
+}
+
+export interface ChronicAbsence {
+  participantId: string;
+  name: string;
+  localParticipantId: string;
+  className: string | null;
+  absenceCount: number;
+}
+
+/**
+ * Participants with at least `minAbsences` submitted "Absent" records within a
+ * rolling window of `windowWeeks` attendance weeks ending at the real current
+ * week (Addis time). Only records that were actually submitted count — records
+ * with present = null or missing submittedAt are never treated as absences.
+ */
+export async function getChronicAbsences(args: {
+  minAbsences?: number;
+  windowWeeks?: number;
+}): Promise<ChronicAbsence[]> {
+  const minAbsences = Math.max(1, Math.floor(args.minAbsences ?? 3));
+  const windowWeeks = Math.max(1, Math.min(20, Math.floor(args.windowWeeks ?? 5)));
+
+  const current = getCurrentSundaySchoolPeriod();
+  const currentIdx = sundaySchoolPeriodIndex(current.year, current.month, current.week);
+  const startIdx = currentIdx - (windowWeeks - 1);
+
+  const periods: { year: number; month: number; week: number }[] = [];
+  for (let idx = startIdx; idx <= currentIdx; idx++) {
+    periods.push(periodFromIndex(idx));
+  }
+
+  const records = await prisma.sundaySchoolAttendance.findMany({
+    where: {
+      present: false,
+      submittedAt: { not: null },
+      OR: periods.map((p) => ({ year: p.year, month: p.month, week: p.week })),
+    },
+    select: {
+      participantId: true,
+      participant: {
+        select: {
+          name: true,
+          localParticipantId: true,
+          sundaySchoolClasses: {
+            where: { class: { deletedAt: null } },
+            select: { class: { select: { name: true } } },
+          },
+        },
+      },
+    },
+  });
+
+  const byParticipant = new Map<
+    string,
+    {
+      participantId: string;
+      name: string;
+      localParticipantId: string;
+      className: string | null;
+      count: number;
+    }
+  >();
+
+  for (const r of records) {
+    let entry = byParticipant.get(r.participantId);
+    if (!entry) {
+      entry = {
+        participantId: r.participantId,
+        name: r.participant.name,
+        localParticipantId: r.participant.localParticipantId,
+        className: r.participant.sundaySchoolClasses[0]?.class.name ?? null,
+        count: 0,
+      };
+      byParticipant.set(r.participantId, entry);
+    }
+    entry.count += 1;
+  }
+
+  return Array.from(byParticipant.values())
+    .filter((p) => p.count >= minAbsences)
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .map((p) => ({
+      participantId: p.participantId,
+      name: p.name,
+      localParticipantId: p.localParticipantId,
+      className: p.className,
+      absenceCount: p.count,
+    }));
+}
