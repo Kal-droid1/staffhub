@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   SUNDAY_SCHOOL_FIRST_EXPORT_MONTH,
+  getCurrentSundaySchoolPeriod,
   getSundaySchoolExportMonthOptions,
   MONTH_NAMES,
 } from "@/modules/sunday-school/export-months";
@@ -154,6 +155,7 @@ export default function MyClassClient({
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const [coverageOpen, setCoverageOpen] = useState(false);
   const [arrangements, setArrangements] = useState<CoverageArrangement[]>([]);
@@ -169,6 +171,17 @@ export default function MyClassClient({
   const bannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const monthOptions = useMemo(() => getSundaySchoolExportMonthOptions(), []);
+
+  const realPeriod = useMemo(() => getCurrentSundaySchoolPeriod(), []);
+  const selectedIsCurrent =
+    year === realPeriod.year && month === realPeriod.month && week === realPeriod.week;
+
+  const confirmMessage = useMemo(() => {
+    if (year === realPeriod.year && month === realPeriod.month) {
+      return `You're submitting attendance for Week ${week}, but today is Week ${realPeriod.week}. Continue?`;
+    }
+    return `You're submitting attendance for Week ${week} of ${MONTH_NAMES[month - 1]} ${year}, but today is Week ${realPeriod.week} of ${MONTH_NAMES[realPeriod.month - 1]} ${realPeriod.year}. Continue?`;
+  }, [year, month, week, realPeriod]);
 
   const safeMonthValue = monthOptions.some((o) => o.value === `${year}-${month}`)
     ? `${year}-${month}`
@@ -298,6 +311,18 @@ export default function MyClassClient({
       return;
     }
 
+    if (!selectedIsCurrent) {
+      setConfirmOpen(true);
+      return;
+    }
+
+    await performSubmit();
+  }
+
+  async function performSubmit() {
+    if (submitting) return;
+
+    setConfirmOpen(false);
     setSubmitting(true);
     setError("");
     setBanner(null);
@@ -609,9 +634,16 @@ export default function MyClassClient({
             onChange={(e) => setWeek(Number(e.target.value))}
             style={selectStyle}
           >
-            {WEEK_LABELS.map((label, i) => (
-              <option key={label} value={i + 1}>{label}</option>
-            ))}
+            {WEEK_LABELS.map((label, i) => {
+              const w = i + 1;
+              const isRealWeek =
+                year === realPeriod.year && month === realPeriod.month && w === realPeriod.week;
+              return (
+                <option key={label} value={w}>
+                  {isRealWeek ? `Week ${w} (Today)` : label}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>
@@ -1007,6 +1039,80 @@ export default function MyClassClient({
                   : `Submit attendance (${roster.length})`}
           </button>
         </div>
+      )}
+
+      {confirmOpen && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 140, background: "rgba(0,0,0,0.4)" }}
+            onClick={() => setConfirmOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="Confirm submission for a different week"
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 141,
+              width: "min(420px, calc(100vw - 1.5rem))",
+              background: "#FFFFFF",
+              borderRadius: "1rem",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+              padding: "1.25rem",
+            }}
+          >
+            <h2 style={{ margin: 0, fontSize: "1.05rem", fontWeight: 800, color: COLORS.teal }}>
+              Submit for a different week?
+            </h2>
+            <p style={{ margin: "0.5rem 0 0", fontSize: "0.875rem", color: "#2B2B2B", lineHeight: 1.5 }}>
+              {confirmMessage}
+            </p>
+            <div style={{ display: "flex", gap: "0.6rem", marginTop: "1.1rem" }}>
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                style={{
+                  minHeight: 48,
+                  padding: "0 1.1rem",
+                  borderRadius: "0.75rem",
+                  border: `1px solid ${COLORS.border}`,
+                  background: "#FFFFFF",
+                  color: COLORS.muted,
+                  fontWeight: 700,
+                  fontSize: "0.9rem",
+                  fontFamily: "inherit",
+                  cursor: "pointer",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={performSubmit}
+                disabled={submitting}
+                style={{
+                  flex: 1,
+                  minHeight: 48,
+                  borderRadius: "0.75rem",
+                  border: "none",
+                  background: submitting ? "#6b7b6f" : COLORS.teal,
+                  color: "#FFFFFF",
+                  fontWeight: 800,
+                  fontSize: "0.95rem",
+                  fontFamily: "inherit",
+                  cursor: submitting ? "not-allowed" : "pointer",
+                  boxShadow: submitting ? "none" : "0 4px 14px rgba(31,107,77,0.3)",
+                }}
+              >
+                {submitting ? "Saving…" : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       {coverageOpen && (
