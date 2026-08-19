@@ -86,10 +86,18 @@ function findRowByLabel(sheet: ExcelJS.Worksheet, startRow: number, label: strin
   return null;
 }
 
-function getWeekCount(sheet: ExcelJS.Worksheet): number {
-  const raw = sheet.getCell(6, WEEK_COLS[0]).value;
-  const n = typeof raw === "number" ? raw : Number(raw);
-  return Number.isInteger(n) && n >= 1 && n <= 5 ? n : 5;
+/**
+ * Count the real number of Sundays in a calendar month.
+ * This is used instead of the template's pre-filled cell value,
+ * which could be wrong (e.g. 4 when the month actually has 5 Sundays).
+ */
+function countSundaysInMonth(year: number, month: number): number {
+  let count = 0;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  for (let d = 1; d <= lastDay; d++) {
+    if (new Date(Date.UTC(year, month - 1, d)).getUTCDay() === 0) count++;
+  }
+  return count;
 }
 
 export async function buildSundaySchoolXlsx(args: { year: number; month: number }) {
@@ -107,7 +115,7 @@ export async function buildSundaySchoolXlsx(args: { year: number; month: number 
     }
   }
 
-  const weekCount = getWeekCount(sheet);
+  const weekCount = countSundaysInMonth(args.year, args.month);
   const usedWeekCols = WEEK_COLS.slice(0, weekCount);
   const unusedWeekCols = WEEK_COLS.slice(weekCount);
 
