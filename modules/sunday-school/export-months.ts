@@ -107,3 +107,17 @@ export function isSupportedSundaySchoolExportMonth(
     (m) => m.year === year && m.month === month
   );
 }
+
+/**
+ * Count the real number of Sundays in a calendar month.
+ * Used by the export (server) and the UI labels (client) so they
+ * always agree on the week count for any given month.
+ */
+export function countSundaysInMonth(year: number, month: number): number {
+  let count = 0;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  for (let d = 1; d <= lastDay; d++) {
+    if (new Date(Date.UTC(year, month - 1, d)).getUTCDay() === 0) count++;
+  }
+  return count;
+}

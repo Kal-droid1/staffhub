@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { stripCommentsFromTemplate, copyRowStyle, cloneWorksheet } from "@/lib/excel-template";
 import { getSundaySchoolAttendanceForExport } from "./queries";
-import { MONTH_NAMES } from "./export-months";
+import { MONTH_NAMES, countSundaysInMonth } from "./export-months";
 
 const DATA_START_ROW = 11;
 const NO_COL = 5; // E
@@ -86,19 +86,7 @@ function findRowByLabel(sheet: ExcelJS.Worksheet, startRow: number, label: strin
   return null;
 }
 
-/**
- * Count the real number of Sundays in a calendar month.
- * This is used instead of the template's pre-filled cell value,
- * which could be wrong (e.g. 4 when the month actually has 5 Sundays).
- */
-function countSundaysInMonth(year: number, month: number): number {
-  let count = 0;
-  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  for (let d = 1; d <= lastDay; d++) {
-    if (new Date(Date.UTC(year, month - 1, d)).getUTCDay() === 0) count++;
-  }
-  return count;
-}
+
 
 export async function buildSundaySchoolXlsx(args: { year: number; month: number }) {
   const rawTemplate = readFileSync(join(process.cwd(), "sunday-school-report-template.xlsx"));

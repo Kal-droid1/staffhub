@@ -10,6 +10,7 @@ import {
   getCurrentSundaySchoolExportMonthValue,
   getCurrentSundaySchoolPeriod,
   getSundaySchoolExportMonthOptions,
+  countSundaysInMonth,
   MONTH_NAMES,
 } from "@/modules/sunday-school/export-months";
 
@@ -714,6 +715,15 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
+          {(() => {
+            const [ey, em] = exportMonth.split("-").map(Number);
+            const sundays = countSundaysInMonth(ey, em);
+            return (
+              <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--color-text-muted)", whiteSpace: "nowrap" }}>
+                {sundays} Sunday{sundays !== 1 ? "s" : ""}
+              </span>
+            );
+          })()}
           <button onClick={handleExport} disabled={exporting} className="btn btn-secondary">
             {exporting ? "Exporting…" : "Export Attendance"}
           </button>
@@ -1210,6 +1220,9 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                   value={`${summaryPeriod.year}-${summaryPeriod.month}`}
                   onChange={(y, m) => setSummaryPeriod((prev) => ({ ...prev, year: y, month: m }))}
                 />
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.72rem", fontWeight: 600, color: "var(--color-text-muted)", textAlign: "center" }}>
+                  {countSundaysInMonth(summaryPeriod.year, summaryPeriod.month)} Sunday{countSundaysInMonth(summaryPeriod.year, summaryPeriod.month) !== 1 ? "s" : ""} this month
+                </p>
               </div>
               <div style={{ width: 140 }}>
                 <label
@@ -1488,6 +1501,15 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                   value={absenceMonth}
                   onChange={(y, m) => setAbsenceMonth(`${y}-${m}`)}
                 />
+                {(() => {
+                  const [ay, am] = absenceMonth.split("-").map(Number);
+                  const sundays = countSundaysInMonth(ay, am);
+                  return (
+                    <p style={{ margin: "0.25rem 0 0", fontSize: "0.72rem", fontWeight: 600, color: "var(--color-text-muted)", textAlign: "center" }}>
+                      {sundays} Sunday{sundays !== 1 ? "s" : ""} this month
+                    </p>
+                  );
+                })()}
               </div>
             )}
 
