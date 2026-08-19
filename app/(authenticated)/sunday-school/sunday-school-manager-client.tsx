@@ -1257,6 +1257,8 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                     );
                   })}
                 </select>
+                {/* Placeholder to match the Sunday-count helper text under Month */}
+                <p style={{ margin: "0.25rem 0 0", fontSize: "0.72rem", visibility: "hidden" }}>&nbsp;</p>
               </div>
             </div>
 

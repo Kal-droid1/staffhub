@@ -69,7 +69,6 @@ function resolveSundaySchoolSheet(
   }
 
   const clone = cloneWorksheet(workbook, source, canonicalName);
-  clone.getCell(WEEK_COUNT_ROW, WEEK_COLS[0]).value = 5;
   return clone;
 }
 
@@ -106,6 +105,18 @@ export async function buildSundaySchoolXlsx(args: { year: number; month: number 
   const weekCount = countSundaysInMonth(args.year, args.month);
   const usedWeekCols = WEEK_COLS.slice(0, weekCount);
   const unusedWeekCols = WEEK_COLS.slice(weekCount);
+
+  // Overwrite the label cell ("No. of class weeks in this month") with the
+  // live-calculated Sunday count so the header matches the filled-in columns.
+  sheet.getCell(WEEK_COUNT_ROW, WEEK_COLS[0]).value = weekCount;
+
+  // Ensure every week column has the same width so summary rows (percentage,
+  // total, monthly average) display correctly even when a previously-inactive
+  // column (e.g. Week 5) now carries real data.
+  const refWidth = sheet.getColumn(WEEK_COLS[0]).width ?? 10;
+  for (const c of WEEK_COLS) {
+    sheet.getColumn(c).width = refWidth;
+  }
 
   const originalSummaryRow = findRowByLabel(sheet, DATA_START_ROW, "Total weekly attendants");
   if (originalSummaryRow === null) {
