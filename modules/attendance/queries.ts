@@ -134,7 +134,7 @@ export async function createLeaveRequest(
 ) {
   const effectiveEnd = endDate ?? startDate ?? todayDate();
 
-  return prisma.attendanceRecord.create({
+  return prisma.leaveRequest.create({
     data: {
       userId,
       date: effectiveEnd,
@@ -169,11 +169,18 @@ export async function createFieldWorkRequest(
 
   if (dates.length === 0) return null;
 
-  const existing = await prisma.attendanceRecord.findMany({
+  const existingLR = await prisma.leaveRequest.findMany({
     where: { userId, date: { in: dates } },
     select: { date: true },
   });
-  const existingSet = new Set(existing.map((r) => r.date.toISOString()));
+  const existingAR = await prisma.attendanceRecord.findMany({
+    where: { userId, date: { in: dates } },
+    select: { date: true },
+  });
+  const existingSet = new Set([
+    ...existingLR.map((r) => r.date.toISOString()),
+    ...existingAR.map((r) => r.date.toISOString()),
+  ]);
 
   const records = dates
     .filter((d) => !existingSet.has(d.toISOString()))
@@ -188,9 +195,9 @@ export async function createFieldWorkRequest(
 
   if (records.length === 0) return null;
 
-  await prisma.attendanceRecord.createMany({ data: records });
+  await prisma.leaveRequest.createMany({ data: records });
 
-  return prisma.attendanceRecord.findFirst({
+  return prisma.leaveRequest.findFirst({
     where: { batchId },
     include: {
       user: { select: { id: true, name: true, email: true, department: true, jobTitle: { select: { name: true } } } },
@@ -241,9 +248,26 @@ export async function createLeaveRequestBatch(
 
   if (records.length === 0) return null;
 
-  await prisma.attendanceRecord.createMany({ data: records });
+  // Skip dates that already have a leave request or attendance record
+  const existingLR = await prisma.leaveRequest.findMany({
+    where: { userId, date: { in: records.map((r) => r.date) } },
+    select: { date: true },
+  });
+  const existingAR = await prisma.attendanceRecord.findMany({
+    where: { userId, date: { in: records.map((r) => r.date) } },
+    select: { date: true },
+  });
+  const existingSet = new Set([
+    ...existingLR.map((r) => r.date.toISOString()),
+    ...existingAR.map((r) => r.date.toISOString()),
+  ]);
+  const filtered = records.filter((r) => !existingSet.has(r.date.toISOString()));
 
-  return prisma.attendanceRecord.findFirst({
+  if (filtered.length === 0) return null;
+
+  await prisma.leaveRequest.createMany({ data: filtered });
+
+  return prisma.leaveRequest.findFirst({
     where: { batchId },
     include: {
       user: { select: { id: true, name: true, email: true, department: true, jobTitle: { select: { name: true } } } },
@@ -252,8 +276,8 @@ export async function createLeaveRequestBatch(
 }
 
 export async function getPendingRecords(viewerIsHidden = false) {
-  return prisma.attendanceRecord.findMany({
-    where: { status: "PENDING", user: { isHidden: viewerIsHidden ? undefined : false } },
+  return prisma.leaveRequest.findMany({
+    where: { reviewedById: null, user: { isHidden: viewerIsHidden ? undefined : false } },
     include: {
       user: { select: { id: true, name: true, email: true, department: true, jobTitle: { select: { name: true } } } },
     },
@@ -262,8 +286,8 @@ export async function getPendingRecords(viewerIsHidden = false) {
 }
 
 export async function countPendingRequestGroups(viewerIsHidden = false): Promise<number> {
-  const records = await prisma.attendanceRecord.findMany({
-    where: { status: "PENDING", user: { isHidden: viewerIsHidden ? undefined : false } },
+  const records = await prisma.leaveRequest.findMany({
+    where: { reviewedById: null, user: { isHidden: viewerIsHidden ? undefined : false } },
     select: { batchId: true, id: true },
   });
   return new Set(records.map((r) => r.batchId || r.id)).size;
@@ -305,8 +329,8 @@ export async function getTeamAttendanceToday(viewerIsHidden = false): Promise<{
 }
 
 export async function getMyPendingRecords(userId: string) {
-  return prisma.attendanceRecord.findMany({
-    where: { userId, status: "PENDING" },
+  return prisma.leaveRequest.findMany({
+    where: { userId, reviewedById: null },
     orderBy: { date: "asc" },
   });
 }
@@ -321,7 +345,7 @@ export type FieldWorkBatch = {
 };
 
 export async function getMyFieldWorkBatches(userId: string): Promise<FieldWorkBatch[]> {
-  const records = await prisma.attendanceRecord.findMany({
+  const records = await prisma.leaveRequest.findMany({
     where: { userId, requestedStatus: "FIELD_WORK" },
     select: {
       id: true,
@@ -353,43 +377,69 @@ export async function getMyFieldWorkBatches(userId: string): Promise<FieldWorkBa
 }
 
 export async function approveRecord(recordId: string, reviewerId: string) {
-  const record = await prisma.attendanceRecord.findUnique({ where: { id: recordId } });
-  if (!record) return null;
+  const request = await prisma.leaveRequest.findUnique({ where: { id: recordId } });
+  if (!request) return null;
 
-  const where = record.batchId
-    ? { batchId: record.batchId }
+  const where = request.batchId
+    ? { batchId: request.batchId }
     : { id: recordId };
 
-  await prisma.attendanceRecord.updateMany({
+  // Get all requests in the batch (or just this one)
+  const requests = await prisma.leaveRequest.findMany({ where });
+
+  // For each request, create or update the AttendanceRecord with the leave status
+  for (const req of requests) {
+    await prisma.attendanceRecord.upsert({
+      where: { userId_date: { userId: req.userId, date: req.date } },
+      create: {
+        userId: req.userId,
+        date: req.date,
+        requestedStatus: req.requestedStatus,
+        status: req.requestedStatus,
+        note: req.note,
+        attachmentUrl: req.attachmentUrl,
+        leaveTypeId: req.leaveTypeId,
+      },
+      update: {
+        requestedStatus: req.requestedStatus,
+        status: req.requestedStatus,
+        note: req.note,
+        attachmentUrl: req.attachmentUrl,
+        leaveTypeId: req.leaveTypeId,
+      },
+    });
+  }
+
+  // Mark all requests in the batch as reviewed (approved)
+  await prisma.leaveRequest.updateMany({
     where,
     data: {
-      status: record.requestedStatus,
       reviewedById: reviewerId,
       reviewedAt: new Date(),
     },
   });
 
-  return prisma.attendanceRecord.findUnique({ where: { id: recordId } });
+  return prisma.leaveRequest.findUnique({ where: { id: recordId } });
 }
 
 export async function rejectRecord(recordId: string, reviewerId: string) {
-  const record = await prisma.attendanceRecord.findUnique({ where: { id: recordId } });
-  if (!record) return null;
+  const request = await prisma.leaveRequest.findUnique({ where: { id: recordId } });
+  if (!request) return null;
 
-  const where = record.batchId
-    ? { batchId: record.batchId }
+  const where = request.batchId
+    ? { batchId: request.batchId }
     : { id: recordId };
 
-  await prisma.attendanceRecord.updateMany({
+  // Mark all requests in the batch as reviewed (rejected) — no AttendanceRecord change
+  await prisma.leaveRequest.updateMany({
     where,
     data: {
-      status: "ABSENT",
       reviewedById: reviewerId,
       reviewedAt: new Date(),
     },
   });
 
-  return prisma.attendanceRecord.findUnique({ where: { id: recordId } });
+  return prisma.leaveRequest.findUnique({ where: { id: recordId } });
 }
 
 export async function getSettings() {

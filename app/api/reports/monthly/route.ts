@@ -284,12 +284,16 @@ function statusToMark(status: string | undefined): string | null {
   if (!status) return null;
   switch (status) {
     case "PRESENT":
-    case "FIELD_WORK": return "\u2713";
-    case "ABSENT":  return "A";
+    case "FIELD_WORK":
+    case "APPROVED": return "\u2713";
+    case "ABSENT":
+    case "REJECTED": return "A";
     case "PERMISSION":
     case "ANNUAL_LEAVE":
     case "OTHER":
       return "L";
+    case "PENDING":
+      return "P";
     default:
       return null;
   }

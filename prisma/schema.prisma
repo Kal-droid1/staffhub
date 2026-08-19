@@ -51,6 +51,8 @@ model User {
   updatedAt       DateTime           @updatedAt
   attendance      AttendanceRecord[] @relation("UserAttendance")
   reviewed        AttendanceRecord[] @relation("ReviewedBy")
+  leaveRequests   LeaveRequest[]    @relation("LeaveRequestUser")
+  reviewedLeaveRequests LeaveRequest[] @relation("LeaveRequestReviewer")
   leaveGrants     LeaveGrant[]
   documents       StaffDocument[]    @relation("StaffDocuments")
   uploadedDocs    StaffDocument[]    @relation("UploadedDocuments")
@@ -90,6 +92,27 @@ model AttendanceRecord {
   @@unique([userId, date])
 }
 
+model LeaveRequest {
+  id              String           @id @default(uuid())
+  userId          String
+  user            User             @relation("LeaveRequestUser", fields: [userId], references: [id])
+  date            DateTime         @db.Date
+  signInTime      DateTime?
+  requestedStatus AttendanceStatus
+  note            String?
+  attachmentUrl   String?
+  leaveTypeId     String?
+  leaveType       LeaveType?       @relation(fields: [leaveTypeId], references: [id])
+  batchId         String?
+  status          AttendanceStatus @default(PENDING)
+  reviewedById    String?
+  reviewedBy      User?            @relation("LeaveRequestReviewer", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  createdAt       DateTime         @default(now())
+
+  @@unique([userId, date])
+}
+
 model LeaveType {
   id               String             @id @default(uuid())
   name             String             @unique
@@ -100,6 +123,7 @@ model LeaveType {
   createdAt        DateTime           @default(now())
   grants           LeaveGrant[]
   attendance       AttendanceRecord[]
+  leaveRequests    LeaveRequest[]
   bulkLeaveActions BulkLeaveAction[]
 }
 
