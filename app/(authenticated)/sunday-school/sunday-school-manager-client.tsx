@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import Card from "@/modules/core/components/card";
 import ConfirmDialog from "@/modules/core/components/confirm-dialog";
 import { MonthGridPicker } from "@/modules/core/components";
@@ -35,6 +34,13 @@ interface ClassRow {
   teacherId: string;
   teacher: { id: string; name: string };
   participants: ClassParticipant[];
+}
+
+interface TrashClass {
+  id: string;
+  name: string;
+  teacher: { id: string; name: string } | null;
+  deletedAt: string | null;
 }
 
 interface Props {
@@ -118,6 +124,15 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
   const [deleteTarget, setDeleteTarget] = useState<ClassRow | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+
+  // Trash modal state
+  const [showTrash, setShowTrash] = useState(false);
+  const [trashClasses, setTrashClasses] = useState<TrashClass[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [restoringTrashId, setRestoringTrashId] = useState<string | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<TrashClass | null>(null);
+  const [permanentDeleteConfirm, setPermanentDeleteConfirm] = useState("");
+  const [permanentDeleting, setPermanentDeleting] = useState(false);
 
   // Export state
   const [exportMonth, setExportMonth] = useState(getCurrentSundaySchoolExportMonthValue());
@@ -507,6 +522,64 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
     setDeleting(false);
   }
 
+  async function openTrash() {
+    setShowTrash(true);
+    setTrashClasses([]);
+    setTrashLoading(true);
+    try {
+      const res = await fetch("/api/sunday-school/classes/trash");
+      if (res.ok) {
+        const data = await res.json();
+        setTrashClasses(data);
+      }
+    } catch {
+      // keep the modal open with an empty list on network failure
+    }
+    setTrashLoading(false);
+  }
+
+  async function handleTrashRestore(id: string) {
+    setRestoringTrashId(id);
+    const res = await fetch(`/api/sunday-school/classes/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "restore" }),
+    });
+    if (res.ok) {
+      setTrashClasses((prev) => prev.filter((s) => s.id !== id));
+      const listRes = await fetch("/api/sunday-school/classes");
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        setClasses(listData.classes);
+      }
+    }
+    setRestoringTrashId(null);
+    router.refresh();
+  }
+
+  async function handlePermanentDelete() {
+    if (!permanentDeleteTarget || permanentDeleteConfirm !== "DELETE") return;
+    setPermanentDeleting(true);
+    const res = await fetch(`/api/sunday-school/classes/${permanentDeleteTarget.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "permanent-delete", confirmation: permanentDeleteConfirm }),
+    });
+    if (res.ok) {
+      setTrashClasses((prev) => prev.filter((s) => s.id !== permanentDeleteTarget.id));
+      setPermanentDeleteTarget(null);
+      setPermanentDeleteConfirm("");
+    }
+    setPermanentDeleting(false);
+    router.refresh();
+  }
+
+  function formatTrashDate(dateStr: string | null) {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}, ${d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
+  }
+
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) {
@@ -640,9 +713,9 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
           </button>
         )}
 
-        <Link href="/sunday-school/trash" className="btn btn-ghost">
+        <button onClick={openTrash} className="btn btn-ghost">
           Trash
-        </Link>
+        </button>
 
         <div style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
           <button
@@ -719,13 +792,13 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
             const [ey, em] = exportMonth.split("-").map(Number);
             const sundays = countSundaysInMonth(ey, em);
             return (
-              <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--color-text-muted)", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "0.72rem", fontWeight: 400, color: "var(--color-text-muted)", opacity: 0.8, whiteSpace: "nowrap" }}>
                 {sundays} Sunday{sundays !== 1 ? "s" : ""}
               </span>
             );
           })()}
           <button onClick={handleExport} disabled={exporting} className="btn btn-secondary">
-            {exporting ? "Exporting…" : "Export Attendance"}
+            {exporting ? "Downloading…" : "Download Attendance"}
           </button>
         </div>
       </div>
@@ -1148,6 +1221,181 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
         onCancel={() => setDeleteTarget(null)}
       />
 
+      {showTrash && (
+        <>
+          <div
+            style={{ position: "fixed", inset: 0, zIndex: 140, background: "rgba(0,0,0,0.4)", backdropFilter: "blur(4px)" }}
+            onClick={() => { setShowTrash(false); setPermanentDeleteTarget(null); setPermanentDeleteConfirm(""); }}
+            aria-hidden="true"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Sunday School trash"
+            style={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              zIndex: 141,
+              width: "min(760px, calc(100vw - 1.5rem))",
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+              background: "#FAF7F0",
+              borderRadius: "12px",
+              borderTop: "4px solid #D9A441",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "1.25rem 1.5rem 0", flexShrink: 0 }}>
+              <h3 style={{ margin: 0, color: "#1F6B4D", fontSize: "1.1rem", fontWeight: 700 }}>Trash</h3>
+              <button
+                type="button"
+                onClick={() => { setShowTrash(false); setPermanentDeleteTarget(null); setPermanentDeleteConfirm(""); }}
+                aria-label="Close"
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1, padding: "1rem 1.5rem 1.5rem" }}>
+              {trashLoading ? (
+                <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0", margin: 0 }}>Loading…</p>
+              ) : trashClasses.length === 0 ? (
+                <p style={{ textAlign: "center", color: "var(--color-text-muted)", padding: "2rem 0", margin: 0 }}>Trash is empty.</p>
+              ) : (
+                <div className="table-responsive">
+                  <table className="table-card" style={{ boxShadow: "none", border: "none", borderRadius: 0, width: "100%" }}>
+                    <thead>
+                      <tr>
+                        <th>Class</th>
+                        <th>Teacher</th>
+                        <th>Deleted</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {trashClasses.map((s) => (
+                        <tr key={s.id}>
+                          <td data-label="Class" style={{ fontWeight: 600 }}>{s.name}</td>
+                          <td data-label="Teacher">{s.teacher?.name || "—"}</td>
+                          <td data-label="Deleted" style={{ fontSize: "0.85rem", color: "var(--color-muted)" }}>
+                            {formatTrashDate(s.deletedAt)}
+                          </td>
+                          <td data-label="Actions" style={{ whiteSpace: "nowrap" }}>
+                            <div className="flex-row gap-sm">
+                              <button
+                                onClick={() => handleTrashRestore(s.id)}
+                                disabled={restoringTrashId === s.id}
+                                className="btn btn-success btn-sm"
+                              >
+                                {restoringTrashId === s.id ? "…" : "Restore"}
+                              </button>
+                              <button
+                                onClick={() => { setPermanentDeleteTarget(s); setPermanentDeleteConfirm(""); }}
+                                className="btn btn-danger btn-sm"
+                              >
+                                Delete Forever
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {permanentDeleteTarget && (
+            <div style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <div
+                style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.2)" }}
+                onClick={() => { setPermanentDeleteTarget(null); setPermanentDeleteConfirm(""); }}
+                aria-hidden="true"
+              />
+              <div
+                style={{
+                  position: "relative",
+                  background: "#FAF7F0",
+                  borderRadius: "12px",
+                  borderTop: "4px solid #ba1a1a",
+                  boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+                  maxWidth: 440,
+                  width: "calc(100% - 2rem)",
+                  margin: "0 1rem",
+                  padding: "1.5rem",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                  <h3 style={{ margin: 0, color: "#ba1a1a", fontSize: "1.05rem", fontWeight: 700 }}>Permanent Delete</h3>
+                  <button
+                    type="button"
+                    onClick={() => { setPermanentDeleteTarget(null); setPermanentDeleteConfirm(""); }}
+                    aria-label="Close"
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.5rem", color: "#1F6B4D", lineHeight: 1, padding: "0.25rem" }}
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p style={{ margin: "0 0 1rem", fontSize: "0.9rem", color: "var(--color-text)" }}>
+                  Permanently delete <strong>{permanentDeleteTarget.name}</strong>? This cannot be undone. Attendance records for this class will be kept but unlinked.
+                </p>
+                <div style={{ marginBottom: "1rem" }}>
+                  <label className="form-label">Type DELETE to confirm</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={permanentDeleteConfirm}
+                    onChange={(e) => setPermanentDeleteConfirm(e.target.value)}
+                    placeholder="DELETE"
+                  />
+                </div>
+                <div className="flex-row gap-sm">
+                  <button
+                    onClick={handlePermanentDelete}
+                    disabled={permanentDeleting || permanentDeleteConfirm !== "DELETE"}
+                    style={{
+                      padding: "0.4rem 1rem",
+                      background: "#ba1a1a",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "0.5rem",
+                      fontWeight: 600,
+                      fontSize: "0.8125rem",
+                      cursor: permanentDeleteConfirm === "DELETE" && !permanentDeleting ? "pointer" : "not-allowed",
+                      fontFamily: "inherit",
+                      opacity: permanentDeleteConfirm === "DELETE" && !permanentDeleting ? 1 : 0.6,
+                    }}
+                  >
+                    {permanentDeleting ? "Deleting…" : "Permanently Delete"}
+                  </button>
+                  <button
+                    onClick={() => { setPermanentDeleteTarget(null); setPermanentDeleteConfirm(""); }}
+                    style={{
+                      padding: "0.4rem 1rem",
+                      background: "none",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "0.5rem",
+                      fontWeight: 500,
+                      fontSize: "0.8125rem",
+                      cursor: "pointer",
+                      color: "var(--color-text)",
+                      fontFamily: "inherit",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
       {summaryOpen && (
         <>
           <div
@@ -1244,6 +1492,7 @@ export default function SundaySchoolManagerClient({ initialClasses, initialTeach
                   value={summaryPeriod.week}
                   onChange={(e) => setSummaryPeriod((prev) => ({ ...prev, week: Number(e.target.value) }))}
                   className="form-select"
+                  style={{ minHeight: 48 }}
                 >
                   {[1, 2, 3, 4, 5].map((w) => {
                     const isToday =
